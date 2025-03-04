@@ -1,0 +1,51 @@
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: #004aad;
+    width: 100%;
+  }
+  
+  .logo {
+    height: 80px;
+  }
+  
+  .navigation {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+  
+  .nav-item {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    font-family: 'Lexend Peta', sans-serif;
+  }
+  
+  .language-selector {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .lang-flag img {
+    width: 30px;
+    height: auto;
+    border-radius: 3px;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .navigation {
+      gap: 1rem;
+    }
+    
+    .nav-item {
+      font-size: 0.9rem;
+    }
+    
+    .logo {
+      height: 60px;
+    }
+  }
