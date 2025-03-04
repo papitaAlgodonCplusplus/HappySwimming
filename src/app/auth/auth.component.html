@@ -1,49 +1,49 @@
 <div class="auth-container">
-    <div class="login-section">
-      <h1 class="title">ACCEDE</h1>
-      
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input type="email" id="email" [(ngModel)]="email" name="email" class="form-control">
-      </div>
-      
-      <div class="form-group">
-        <label for="password">Contraseña</label>
-        <input type="password" id="password" [(ngModel)]="password" name="password" class="form-control">
-      </div>
-      
-      <div class="forgot-password">
-        <a href="#">He olvidado mi contraseña</a>
-      </div>
-      
-      <div class="button-group">
-        <button class="btn btn-login" (click)="login()">Entrar</button>
-        <button class="btn btn-register" routerLink="/register">Registrarse</button>
+  <div class="login-section">
+    <h1 class="title">ACCEDE</h1>
+    
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" id="email" [(ngModel)]="email" name="email" class="form-control">
+    </div>
+    
+    <div class="form-group">
+      <label for="password">Contraseña</label>
+      <input type="password" id="password" [(ngModel)]="password" name="password" class="form-control">
+    </div>
+    
+    <div class="forgot-password">
+      <a href="#">He olvidado mi contraseña</a>
+    </div>
+    
+    <div class="button-group">
+      <button class="btn btn-login" (click)="login()">Entrar</button>
+      <button class="btn btn-register" routerLink="/register">Registrarse</button>
+    </div>
+  </div>
+  
+  <div class="image-section">
+    <div class="logo-header">
+      <img src="assets/happy-swimming-logo.png" alt="Happy Swimming Logo" class="logo">
+      <div class="navigation">
+        <a href="#" class="nav-item">ABOUT US</a>
+        <a href="#" class="nav-item">SERVICES</a>
+        <a href="#" class="nav-item">CONTACT US</a>
+        <div class="language-selector">
+          <a href="#" class="lang-flag"><img src="assets/es-flag.png" alt="Spanish"></a>
+          <a href="#" class="lang-flag"><img src="assets/en-flag.png" alt="English"></a>
+        </div>
       </div>
     </div>
     
-    <div class="image-section">
-      <div class="logo-header">
-        <img src="assets/happy-swimming-logo.png" alt="Happy Swimming Logo" class="logo">
-        <div class="navigation">
-          <a href="#" class="nav-item">ABOUT US</a>
-          <a href="#" class="nav-item">SERVICES</a>
-          <a href="#" class="nav-item">CONTACT US</a>
-          <div class="language-selector">
-            <a href="#" class="lang-flag"><img src="assets/es-flag.png" alt="Spanish"></a>
-            <a href="#" class="lang-flag"><img src="assets/en-flag.png" alt="English"></a>
-          </div>
-        </div>
-      </div>
-      
-      <div class="buttons-container">
-        <button class="user-btn">Client</button>
-        <button class="user-btn">Professionals</button>
-      </div>
-      
-      <div class="hero-content">
-        <h1 class="hero-title">HAPPYSWIMMING</h1>
-        <p class="hero-subtitle">providing swimming services</p>
-      </div>
+    <div class="buttons-container">
+      <button class="user-btn">Client</button>
+      <button class="user-btn">Professionals</button>
+    </div>
+    
+    <div class="hero-content">
+      <h1 class="hero-title">HAPPYSWIMMING</h1>
+      <p class="hero-subtitle">providing swimming services</p>
     </div>
   </div>
+</div>
