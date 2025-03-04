@@ -42,6 +42,16 @@
   width: 30px;
   height: auto;
   border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.lang-flag img.active {
+  box-shadow: 0 0 0 2px white;
+  transform: scale(1.1);
+}
+
+.lang-flag:hover img {
+  transform: scale(1.1);
 }
 
 /* Responsive adjustments */
