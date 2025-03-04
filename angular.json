@@ -25,7 +25,7 @@
               "src/assets",
               {
                 "glob": "**/*",
-                "input": "src/custom-image-folder",
+                "input": "src/assets",
                 "output": "/assets/"
               }
             ],
@@ -86,7 +86,7 @@
               "src/assets",
               {
                 "glob": "**/*",
-                "input": "src/custom-image-folder",
+                "input": "src/assets",
                 "output": "/assets/"
               }
             ],
