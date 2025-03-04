@@ -1,39 +1,39 @@
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
 </style>
 
+<app-header></app-header>
 <div class="auth-container">
   <div class="login-section">
     <h1 class="title">ACCEDE</h1>
-    
+
     <div class="form-group">
       <label for="email">Email</label>
       <input type="email" id="email" [(ngModel)]="email" name="email" class="form-control">
     </div>
-    
+
     <div class="form-group">
       <label for="password">Contraseña</label>
       <input type="password" id="password" [(ngModel)]="password" name="password" class="form-control">
     </div>
-    
+
     <div class="forgot-password">
       <a href="#">He olvidado mi contraseña</a>
     </div>
-    
+
     <div class="button-group">
-      <button class="btn btn-login" (click)="login()">Entrar</button>
-      <button class="btn btn-register" routerLink="/register">Registrarse</button>
+      <button class="btn btn-normal" (click)="login()">Entrar</button>
+      <button class="btn btn-normal" routerLink="/register">Registrarse</button>
     </div>
   </div>
-  
+
   <div class="image-section">
-    <app-header></app-header>
-    
+
     <div class="buttons-container">
       <button class="user-btn client-btn">Client</button>
       <button class="user-btn professional-btn">Professionals</button>
     </div>
-    
+
     <div class="hero-content">
       <h1 class="hero-title">HAPPYSWIMMING</h1>
       <p class="hero-subtitle">providing swimming services</p>
