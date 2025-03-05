@@ -1,11 +1,18 @@
 <div class="header">
-  <a [routerLink]="['/auth']">
+  <a [routerLink]="['/']">
     <img src="assets/happy-swimming-logo.png" alt="Happy Swimming Logo" class="logo">
   </a>
   <div class="navigation">
     <a [routerLink]="['/about']" class="nav-item">{{ 'aboutUs' | translate }}</a>
     <a href="#" class="nav-item">{{ 'services' | translate }}</a>
     <a href="#" class="nav-item">{{ 'contactUs' | translate }}</a>
+    
+    <!-- Show these options when authenticated -->
+    <ng-container *ngIf="isAuthenticated">
+      <a [routerLink]="['/dashboard']" class="nav-item auth-link">{{ userName }}</a>
+      <a (click)="logout()" class="nav-item auth-link logout-link">Logout</a>
+    </ng-container>
+    
     <div class="language-selector">
       <a href="javascript:void(0)" class="lang-flag" (click)="switchLanguage('es')">
         <img src="assets/es-flag.png" alt="Spanish" [class.active]="currentLang === 'es'">

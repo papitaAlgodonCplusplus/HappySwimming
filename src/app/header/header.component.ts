@@ -1,8 +1,9 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { TranslationService } from '../services/translation.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { AuthService } from '../services/auth.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -15,14 +16,19 @@ import { Subscription } from 'rxjs';
 })
 export class HeaderComponent implements OnInit, OnDestroy {
   currentLang: string = 'es'; // Default language
+  isAuthenticated: boolean = false;
+  userRole: string | null = null;
+  userName: string = '';
+  
   private langSubscription: Subscription | null = null;
   private loadedSubscription: Subscription | null = null;
-
-  constructor(
-    private translationService: TranslationService,
-    private cdr: ChangeDetectorRef,
-    private router: Router
-  ) {}
+  private authSubscription: Subscription | null = null;
+  
+  // Use inject for dependency injection
+  private translationService = inject(TranslationService);
+  private authService = inject(AuthService);
+  private cdr = inject(ChangeDetectorRef);
+  private router = inject(Router);
 
   ngOnInit(): void {
     // Subscribe to language changes
@@ -39,6 +45,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges(); // Force immediate change detection
       }
     });
+    
+    // Subscribe to auth state changes
+    this.authSubscription = this.authService.getCurrentUser().subscribe(user => {
+      this.isAuthenticated = !!user;
+      this.userRole = user ? user.role : null;
+      this.userName = user ? user.name : '';
+      this.cdr.detectChanges();
+    });
   }
 
   switchLanguage(lang: string): void {
@@ -49,6 +63,15 @@ export class HeaderComponent implements OnInit, OnDestroy {
   navigateToAuth(): void {
     this.router.navigate(['/auth']);
   }
+  
+  navigateToDashboard(): void {
+    this.router.navigate(['/dashboard']);
+  }
+  
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/auth']);
+  }
 
   ngOnDestroy(): void {
     // Clean up subscriptions
@@ -57,6 +80,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
     if (this.loadedSubscription) {
       this.loadedSubscription.unsubscribe();
+    }
+    if (this.authSubscription) {
+      this.authSubscription.unsubscribe();
     }
   }
 }

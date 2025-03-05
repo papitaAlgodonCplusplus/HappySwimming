@@ -7,6 +7,10 @@
     <div class="register-content">
         <h1 class="title">{{ clientType === 'client' ? '1.- Registro (Cliente)' : '1.- Registro (Profesional)' }}</h1>
 
+        <div *ngIf="errorMessage" class="error-message">
+            {{ errorMessage }}
+        </div>
+
         <div class="client-type-selector">
             <div class="radio-group">
                 <input type="radio" id="outsourcing" [value]="'outsourcing'" [(ngModel)]="externalOption"
@@ -22,94 +26,106 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label for="identificationNumber">CIF/D.N.I./ PASAPORTE:</label>
-                <input type="text" id="identificationNumber" [(ngModel)]="identificationNumber" class="form-control">
+                <label for="identificationNumber">CIF/D.N.I./ PASAPORTE:<span class="required">*</span></label>
+                <input type="text" id="identificationNumber" [(ngModel)]="identificationNumber" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group wide">
                 <label for="companyName">Razón social:</label>
-                <input type="text" id="companyName" [(ngModel)]="companyName" class="form-control">
+                <input type="text" id="companyName" [(ngModel)]="companyName" class="form-control" [disabled]="isLoading">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="firstName">Nombre:</label>
-                <input type="text" id="firstName" [(ngModel)]="firstName" class="form-control">
+                <label for="firstName">Nombre:<span class="required">*</span></label>
+                <input type="text" id="firstName" [(ngModel)]="firstName" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
-                <label for="lastName1">Apellido 1:</label>
-                <input type="text" id="lastName1" [(ngModel)]="lastName1" class="form-control">
+                <label for="lastName1">Apellido 1:<span class="required">*</span></label>
+                <input type="text" id="lastName1" [(ngModel)]="lastName1" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
                 <label for="lastName2">Apellido 2:</label>
-                <input type="text" id="lastName2" [(ngModel)]="lastName2" class="form-control">
+                <input type="text" id="lastName2" [(ngModel)]="lastName2" class="form-control" [disabled]="isLoading">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group wide">
-                <label for="address">Dirección:</label>
-                <input type="text" id="address" [(ngModel)]="address" class="form-control">
+                <label for="address">Dirección:<span class="required">*</span></label>
+                <input type="text" id="address" [(ngModel)]="address" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
-                <label for="postalCode">Código Postal:</label>
-                <input type="text" id="postalCode" [(ngModel)]="postalCode" class="form-control">
+                <label for="postalCode">Código Postal:<span class="required">*</span></label>
+                <input type="text" id="postalCode" [(ngModel)]="postalCode" class="form-control" [disabled]="isLoading">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="city">Ciudad:</label>
-                <input type="text" id="city" [(ngModel)]="city" class="form-control">
+                <label for="city">Ciudad:<span class="required">*</span></label>
+                <input type="text" id="city" [(ngModel)]="city" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
-                <label for="country">País:</label>
-                <input type="text" id="country" [(ngModel)]="country" class="form-control">
+                <label for="country">País:<span class="required">*</span></label>
+                <input type="text" id="country" [(ngModel)]="country" class="form-control" [disabled]="isLoading">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
                 <label for="phoneFixed">Tfno Fijo (no obligatorio):</label>
-                <input type="tel" id="phoneFixed" [(ngModel)]="phoneFixed" class="form-control">
+                <input type="tel" id="phoneFixed" [(ngModel)]="phoneFixed" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
-                <label for="phoneMobile">Tfno Móvil:</label>
-                <input type="tel" id="phoneMobile" [(ngModel)]="phoneMobile" class="form-control">
+                <label for="phoneMobile">Tfno Móvil:<span class="required">*</span></label>
+                <input type="tel" id="phoneMobile" [(ngModel)]="phoneMobile" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
-                <label for="email">E-mail:</label>
-                <input type="email" id="email" [(ngModel)]="email" class="form-control">
+                <label for="email">E-mail:<span class="required">*</span></label>
+                <input type="email" id="email" [(ngModel)]="email" class="form-control" [disabled]="isLoading">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="password">Contraseña:<span class="required">*</span></label>
+                <input type="password" id="password" [(ngModel)]="password" class="form-control" [disabled]="isLoading">
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirmar Contraseña:<span class="required">*</span></label>
+                <input type="password" id="confirmPassword" [(ngModel)]="confirmPassword" class="form-control" [disabled]="isLoading">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group wide">
                 <label for="website">Web (no obligatorio):</label>
-                <input type="url" id="website" [(ngModel)]="website" class="form-control">
+                <input type="url" id="website" [(ngModel)]="website" class="form-control" [disabled]="isLoading">
             </div>
-            <div class="form-group">
+            <div class="form-group" *ngIf="clientType === 'client'">
                 <label for="plCode">Codigo PL (no obligatorio):</label>
-                <select id="plCode" [(ngModel)]="plCode" class="form-control">
-                    <option value="" selected>Desplegable con nombres de PL</option>
-                    <option value="pl1">PL Option 1</option>
-                    <option value="pl2">PL Option 2</option>
-                    <option value="pl3">PL Option 3</option>
+                <select id="plCode" [(ngModel)]="plCode" class="form-control" [disabled]="isLoading">
+                    <option value="" selected>Seleccione un código PL</option>
+                    <option *ngFor="let pl of plCodes" [value]="pl.code">{{ pl.code }} - {{ pl.description }}</option>
                 </select>
             </div>
         </div>
 
         <div class="terms-container">
             <div class="terms-checkbox">
-                <input type="checkbox" id="acceptTerms" [(ngModel)]="acceptTerms">
+                <input type="checkbox" id="acceptTerms" [(ngModel)]="acceptTerms" [disabled]="isLoading">
                 <label for="acceptTerms">Acepto las Condiciones <span class="lopd-text">Texto LOPD (por
                         hacer)</span></label>
             </div>
         </div>
 
         <div class="button-container">
-            <button class="btn btn-cancel" (click)="cancel()">Cancelar</button>
-            <button class="btn btn-register" (click)="onSubmit()">Registrarse</button>
+            <button class="btn btn-cancel" (click)="cancel()" [disabled]="isLoading">Cancelar</button>
+            <button class="btn btn-register" (click)="onSubmit()" [disabled]="isLoading">
+                <span *ngIf="!isLoading">Registrarse</span>
+                <span *ngIf="isLoading">Procesando...</span>
+            </button>
         </div>
     </div>
 </div>

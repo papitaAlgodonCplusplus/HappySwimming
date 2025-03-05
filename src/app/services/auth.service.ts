@@ -1,0 +1,139 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { tap } from 'rxjs/operators';
+
+interface AuthResponse {
+  token: string;
+  user: {
+    id: number;
+    email: string;
+    role: string;
+    name: string;
+    [key: string]: any;
+  };
+}
+
+interface RegisterClientData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName1: string;
+  lastName2?: string;
+  companyName?: string;
+  identificationNumber: string;
+  address: string;
+  postalCode: string;
+  city: string;
+  country: string;
+  phoneFixed?: string;
+  phoneMobile: string;
+  website?: string;
+  plCode?: string;
+  isOutsourcing: boolean;
+}
+
+interface RegisterProfessionalData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName1: string;
+  lastName2?: string;
+  companyName?: string;
+  identificationNumber: string;
+  address: string;
+  postalCode: string;
+  city: string;
+  country: string;
+  phoneFixed?: string;
+  phoneMobile: string;
+  website?: string;
+  isInsourcing: boolean;
+  specialties?: number[];
+}
+
+@Injectable({
+  providedIn: 'root' // This makes the service available application-wide
+})
+export class AuthService {
+  private apiUrl = 'http://localhost:3000/api';
+  private currentUserSubject = new BehaviorSubject<any>(null);
+  
+  constructor(private http: HttpClient) { 
+    this.loadStoredUser();
+  }
+
+  private loadStoredUser(): void {
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    
+    if (storedToken && storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        this.currentUserSubject.next(user);
+      } catch (error) {
+        console.error('Error parsing stored user:', error);
+        this.logout();
+      }
+    }
+  }
+
+  getCurrentUser(): Observable<any> {
+    return this.currentUserSubject.asObservable();
+  }
+
+  login(email: string, password: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, { email, password })
+      .pipe(
+        tap(response => {
+          localStorage.setItem('token', response.token);
+          localStorage.setItem('user', JSON.stringify(response.user));
+          this.currentUserSubject.next(response.user);
+        })
+      );
+  }
+  
+  // Add a method for checking if the server is running
+  checkServer(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/pl-codes`);
+  }
+
+  registerClient(data: RegisterClientData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/register/client`, data);
+  }
+
+  registerProfessional(data: RegisterProfessionalData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/register/professional`, data);
+  }
+
+  logout(): void {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    this.currentUserSubject.next(null);
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem('token');
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.getToken();
+  }
+
+  getUserRole(): string | null {
+    const user = this.currentUserSubject.value;
+    return user ? user.role : null;
+  }
+
+  getPlCodes(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/pl-codes`);
+  }
+
+  getSpecialties(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/specialties`);
+  }
+
+  getUserProfile(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/profile`);
+  }
+}

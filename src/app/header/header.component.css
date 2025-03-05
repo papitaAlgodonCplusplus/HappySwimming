@@ -67,4 +67,25 @@
   .logo {
     height: 60px;
   }
+
+  .auth-link {
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+  }
+  
+  .auth-link:hover {
+    background-color: rgba(255, 255, 255, 0.4);
+  }
+  
+  .logout-link {
+    cursor: pointer;
+    color: #ffdddd;
+  }
+  
+  .logout-link:hover {
+    color: white;
+    background-color: rgba(204, 0, 0, 0.2);
+  }
 }
