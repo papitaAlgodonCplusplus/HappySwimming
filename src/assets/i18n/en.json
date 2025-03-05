@@ -117,5 +117,13 @@
         "cancel": "Cancel",
         "register": "Register",
         "processing": "Processing..."
-    }
+    },
+    "welcome": "Welcome,",
+    "servicesManager": "SERVICES MANAGER",
+    "servicesManagerDesc": "Manage your services, schedules and clients",
+    "editProfile": "EDIT PROFILE",
+    "editProfileDesc": "Update your personal and contact information",
+    "comingSoon": "Coming soon...",
+    "home": "Home",
+    "backToHomepage": "Back to homepage"
 }

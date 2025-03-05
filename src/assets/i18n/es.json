@@ -116,5 +116,13 @@
         "duration": "Duración",
         "price": "Precio",
         "minPeople": "Mínimo 10 personas"
-    }
+    },
+    "welcome": "¡Bienvenido,",
+    "servicesManager": "GESTOR DE SERVICIOS",
+    "servicesManagerDesc": "Administra tus servicios, horarios y clientes",
+    "editProfile": "EDITAR PERFIL",
+    "editProfileDesc": "Actualiza tu información personal y de contacto",
+    "comingSoon": "Próximamente disponible...",
+    "backToHomepage": "Volver al inicio",
+    "home": "Inicio"
 }

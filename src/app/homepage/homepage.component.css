@@ -1,0 +1,116 @@
+.homepage-container {
+    width: 100%;
+    min-height: 100vh;
+    padding-top: 120px;
+    font-family: 'Lexend Peta', sans-serif;
+    background-color: #a7e0ff;
+  }
+  
+  .homepage-content {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  
+  .welcome-title {
+    color: #204376;
+    font-size: 2.5rem;
+    margin-bottom: 3rem;
+    text-align: center;
+  }
+  
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    justify-content: center;
+    margin-top: 3rem;
+  }
+  
+  .grid-item {
+    height: 280px;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .grid-item:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+  }
+  
+  .services-manager {
+    background-color: #cc3333; /* Red box as requested */
+  }
+  
+  .profile-editor {
+    background-color: #33cccc; /* Cyan box as requested */
+  }
+  
+  .item-content {
+    padding: 2rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: white;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .item-title {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+  
+  .item-description {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+    opacity: 0.9;
+  }
+  
+  .icon-container {
+    display: flex;
+    justify-content: center;
+    margin-top: auto;
+  }
+  
+  .icon-container svg {
+    width: 50px;
+    height: 50px;
+    stroke: white;
+  }
+  
+  @media (max-width: 768px) {
+    .homepage-container {
+      padding-top: 100px;
+    }
+    
+    .welcome-title {
+      font-size: 2rem;
+      margin-bottom: 2rem;
+    }
+    
+    .grid-container {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+    
+    .grid-item {
+      height: 220px;
+    }
+    
+    .item-title {
+      font-size: 1.5rem;
+    }
+    
+    .item-description {
+      font-size: 1rem;
+    }
+  }

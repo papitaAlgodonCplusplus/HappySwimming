@@ -54,6 +54,7 @@
   transform: scale(1.1);
 }
 
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .navigation {

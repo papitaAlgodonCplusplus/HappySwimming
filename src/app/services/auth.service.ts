@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
@@ -58,8 +59,7 @@ interface RegisterProfessionalData {
 export class AuthService {
   private apiUrl = 'http://localhost:3000/api';
   private currentUserSubject = new BehaviorSubject<any>(null);
-
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private router: Router) {
     this.loadStoredUser();
   }
 
@@ -89,6 +89,8 @@ export class AuthService {
           localStorage.setItem('token', response.token);
           localStorage.setItem('user', JSON.stringify(response.user));
           this.currentUserSubject.next(response.user);
+          console.log('Login successful', response);
+          this.router.navigate(['/homepage']);
         })
       );
   }
