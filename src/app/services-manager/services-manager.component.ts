@@ -125,14 +125,12 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Subscribe to language changes
     this.langSubscription = this.translationService.getCurrentLang().subscribe(() => {
-      console.log('ServicesManager component detected language change');
       this.cdr.detectChanges();
     });
 
     // Subscribe to translations loaded event
     this.loadedSubscription = this.translationService.isTranslationsLoaded().subscribe(loaded => {
       if (loaded) {
-        console.log('ServicesManager component detected translations loaded');
         this.cdr.detectChanges();
       }
     });
@@ -166,7 +164,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Error loading enrollments:', error);
-        this.errorMessage = 'No enrollments found';
+        this.errorMessage = this.translationService.translate('servicesManager.errorGeneric');
         this.isLoading = false;
         this.cdr.detectChanges();
       }
@@ -182,7 +180,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Error loading professionals:', error);
-        this.errorMessage = 'Failed to load available professionals. Please try again.';
+        this.errorMessage = this.translationService.translate('servicesManager.errorLoadProfessionals');
         this.isLoading = false;
         this.cdr.detectChanges();
       }
@@ -207,18 +205,18 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     
     if (!this.selectedCourse) {
-      this.errorMessage = 'Please select a course.';
+      this.errorMessage = this.translationService.translate('servicesManager.errorRequiredCourse');
       return false;
     }
     
     // If client, validate professional selection
     if (this.userRole === 'client' && !this.selectedProfessional) {
-      this.errorMessage = 'Please select a professional.';
+      this.errorMessage = this.translationService.translate('servicesManager.errorRequiredProfessional');
       return false;
     }
     
     if (!this.startDate) {
-      this.errorMessage = 'Please select a start date.';
+      this.errorMessage = this.translationService.translate('servicesManager.errorRequiredDate');
       return false;
     }
     
@@ -226,7 +224,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     const selectedDate = new Date(this.startDate);
     const today = new Date();
     if (selectedDate <= today) {
-      this.errorMessage = 'Start date must be in the future.';
+      this.errorMessage = this.translationService.translate('servicesManager.errorFutureDate');
       return false;
     }
     
@@ -253,7 +251,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.servicesManagerService.createEnrollment(enrollmentData).subscribe({
       next: (response) => {
         console.log('Enrollment successful', response);
-        this.successMessage = 'Enrollment successful! Your request has been submitted.';
+        this.successMessage = this.translationService.translate('servicesManager.successEnrollment');
         this.errorMessage = '';
         this.isLoading = false;
         
@@ -268,7 +266,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Enrollment failed', error);
-        this.errorMessage = error.error?.error || 'Enrollment failed. Please try again.';
+        this.errorMessage = error.error?.message || this.translationService.translate('servicesManager.errorGeneric');
         this.successMessage = '';
         this.isLoading = false;
         this.cdr.detectChanges();
@@ -278,7 +276,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   
   getProfessionalName(professionalId: number): string {
     const professional = this.availableProfessionals.find(p => p.id === professionalId);
-    return professional ? professional.name : 'Unknown';
+    return professional ? professional.name : this.translationService.translate('servicesManager.notAssigned');
   }
   
   getStatusClass(status: string): string {
@@ -291,20 +289,25 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     }
   }
   
+  getLocalizedStatus(status: string): string {
+    return this.translationService.translate(`servicesManager.${status}`);
+  }
+  
   cancelEnrollment(enrollmentId: number) {
-    if (confirm('Are you sure you want to cancel this enrollment?')) {
+    const confirmMessage = this.translationService.translate('servicesManager.confirmCancel');
+    if (confirm(confirmMessage)) {
       this.isLoading = true;
       this.cdr.detectChanges();
       
       this.servicesManagerService.cancelEnrollment(enrollmentId).subscribe({
         next: () => {
-          this.successMessage = 'Enrollment cancelled successfully.';
+          this.successMessage = this.translationService.translate('servicesManager.successCancel');
           this.errorMessage = '';
           this.loadInitialData();
         },
         error: (error) => {
           console.error('Error cancelling enrollment:', error);
-          this.errorMessage = 'Failed to cancel enrollment. Please try again.';
+          this.errorMessage = this.translationService.translate('servicesManager.errorCancelEnrollment');
           this.successMessage = '';
           this.isLoading = false;
           this.cdr.detectChanges();

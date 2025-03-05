@@ -104,10 +104,6 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/register/client`, data);
   }
 
-  registerProfessional(data: RegisterProfessionalData): Observable<any> {
-    return this.http.post(`${this.apiUrl}/register/professional`, data);
-  }
-
   logout(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -140,6 +136,6 @@ export class AuthService {
   }
 
   registerFreeProfessional(formData: FormData): Observable<any> {
-    return this.http.post(`${this.apiUrl}/register/free-professional`, formData);
+    return this.http.post(`${this.apiUrl}/register/professional`, formData);
   }
 }

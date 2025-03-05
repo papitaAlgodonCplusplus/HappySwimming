@@ -17,7 +17,7 @@ import { Subscription } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RegisterComponent implements OnInit, OnDestroy {
-  // Form data - Note: clientType is removed as this component only registers clients
+  // Registration type
   externalOption: 'outsourcing' | 'insourcing' = 'outsourcing';
 
   // Form fields
@@ -38,9 +38,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
   website: string = '';
   plCode: string = '';
 
-  // Form title
-  registrationTitle: string = '';
-
   // Terms and conditions
   acceptTerms: boolean = false;
 
@@ -60,20 +57,17 @@ export class RegisterComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
 
   ngOnInit() {
-    // Determine client registration type from route parameter
+    // Determine registration type from route parameter
     this.route.params.subscribe(params => {
       if (params['type'] === 'client') {
         this.externalOption = 'outsourcing';
-        this.registrationTitle = '1.- Registro (Cliente - Outsourcing)';
       } else if (params['type'] === 'professional') {
         this.externalOption = 'insourcing';
-        this.registrationTitle = '1.- Registro (Cliente - Insourcing)';
       } else {
         // If invalid type, redirect to register selector
         this.router.navigate(['/register']);
         return;
       }
-      console.log('External option set to:', this.externalOption);
       this.cdr.detectChanges();
     });
 
@@ -90,14 +84,12 @@ export class RegisterComponent implements OnInit, OnDestroy {
 
     // Subscribe to language changes to update view
     this.langSubscription = this.translationService.getCurrentLang().subscribe(() => {
-      console.log('Register component detected language change');
       this.cdr.detectChanges();
     });
 
     // Subscribe to translations loaded event
     this.loadedSubscription = this.translationService.isTranslationsLoaded().subscribe(loaded => {
       if (loaded) {
-        console.log('Register component detected translations loaded');
         this.cdr.detectChanges();
       }
     });
@@ -111,32 +103,32 @@ export class RegisterComponent implements OnInit, OnDestroy {
     if (!this.firstName || !this.lastName1 || !this.identificationNumber ||
       !this.address || !this.postalCode || !this.city || !this.country ||
       !this.phoneMobile || !this.email || !this.password || !this.confirmPassword) {
-      this.errorMessage = 'Please fill in all required fields.';
+      this.errorMessage = this.translationService.translate('registration.errorRequiredFields');
       return false;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(this.email)) {
-      this.errorMessage = 'Please enter a valid email address.';
+      this.errorMessage = this.translationService.translate('registration.errorInvalidEmail');
       return false;
     }
 
     // Check if passwords match
     if (this.password !== this.confirmPassword) {
-      this.errorMessage = 'Passwords do not match.';
+      this.errorMessage = this.translationService.translate('registration.errorPasswordsMatch');
       return false;
     }
 
     // Check password strength (at least 8 characters)
     if (this.password.length < 8) {
-      this.errorMessage = 'Password must be at least 8 characters long.';
+      this.errorMessage = this.translationService.translate('registration.errorPasswordLength');
       return false;
     }
 
     // Validate terms acceptance
     if (!this.acceptTerms) {
-      this.errorMessage = 'You must accept the terms and conditions.';
+      this.errorMessage = this.translationService.translate('registration.errorTerms');
       return false;
     }
 
@@ -171,8 +163,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
       isOutsourcing: this.externalOption === 'outsourcing'
     };
     
-    console.log('Registering client with data:', clientData);
-    
     this.authService.registerClient(clientData).subscribe({
       next: (response) => {
         console.log('Client registration successful', response);
@@ -182,7 +172,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('Client registration failed', error);
         this.isLoading = false;
-        this.errorMessage = error.error?.error || 'Registration failed. Please try again.';
+        this.errorMessage = error.error?.message || this.translationService.translate('registration.errorGeneric');
         this.cdr.detectChanges();
       }
     });
