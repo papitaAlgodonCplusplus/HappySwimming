@@ -17,26 +17,24 @@
             {{ errorMessage }}
         </div>
   
-        <!-- Professional Verifications Section (only for professionals) -->
-        <div *ngIf="userRole === 'professional' && professionalVerifications.length > 0" class="professional-verifications-section">
-            <h2 class="section-title">{{ 'servicesManager.myCertifications' | translate }}</h2>
+        <!-- Professional Services Section (only for professionals) -->
+        <div *ngIf="userRole === 'professional' && professionalServices.length > 0" class="professional-services-section">
+            <h2 class="section-title">{{ 'servicesManager.myServices' | translate }}</h2>
             
             <div class="enrollments-table-container">
                 <table class="enrollments-table">
                     <thead>
                         <tr>
-                            <th>{{ 'servicesManager.course' | translate }}</th>
-                            <th>{{ 'servicesManager.certification' | translate }}</th>
+                            <th>{{ 'servicesManager.service' | translate }}</th>
+                            <th>{{ 'servicesManager.pricePerHour' | translate }}</th>
+                            <th>{{ 'servicesManager.notes' | translate }}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let course of professionalCourses">
-                            <td>{{ course.name }}</td>
-                            <td>
-                                <span class="status-badge" [ngClass]="isCourseCertified(course.id) ? 'status-approved' : 'status-pending'">
-                                    {{ isCourseCertified(course.id) ? ('servicesManager.certified' | translate) : ('servicesManager.notCertified' | translate) }}
-                                </span>
-                            </td>
+                        <tr *ngFor="let service of professionalServices">
+                            <td>{{ getServiceName(service.service_id) }}</td>
+                            <td>€{{ service.price_per_hour }}</td>
+                            <td>{{ service.notes || '-' }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -110,7 +108,7 @@
         </div>
       
         <!-- My Enrollments Section -->
-        <div class="my-enrollments-section">
+        <div *ngIf="userRole !== 'professional'" class="my-enrollments-section">
             <h2 class="section-title">{{ 'servicesManager.myEnrollments' | translate }}</h2>
         
             <div *ngIf="myEnrollments.length === 0" class="no-enrollments-message">
@@ -149,60 +147,6 @@
                                 <span *ngIf="enrollment.status !== 'pending'">-</span>
                             </td>
                         </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <!-- Combined View (for professionals) - Shows both enrollments and certifications in a combined table -->
-        <div *ngIf="userRole === 'professional' && (myEnrollments.length > 0 || professionalVerifications.length > 0)" class="combined-view-section">
-            <h2 class="section-title">{{ 'servicesManager.combinedView' | translate }}</h2>
-            
-            <div class="enrollments-table-container">
-                <table class="enrollments-table">
-                    <thead>
-                        <tr>
-                            <th>{{ 'servicesManager.course' | translate }}</th>
-                            <th>{{ 'servicesManager.type' | translate }}</th>
-                            <th>{{ 'servicesManager.status' | translate }}</th>
-                            <th>{{ 'servicesManager.details' | translate }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Show certified courses -->
-                        <ng-container *ngFor="let courseId of professionalVerifications">
-                            <tr *ngIf="getProfessionalCourseById(courseId) as course">
-                                <td>{{ course.name }}</td>
-                                <td>{{ 'servicesManager.certification' | translate }}</td>
-                                <td>
-                                    <span class="status-badge status-approved">
-                                        {{ 'servicesManager.active' | translate }}
-                                    </span>
-                                </td>
-                                <td>{{ 'servicesManager.canTeach' | translate }}</td>
-                            </tr>
-                        </ng-container>
-                        
-                        <!-- Show enrollments -->
-                        <ng-container *ngFor="let enrollment of myEnrollments">
-                            <tr>
-                                <td>{{ enrollment.courseName }}</td>
-                                <td>{{ 'servicesManager.enrollment' | translate }}</td>
-                                <td>
-                                    <span class="status-badge" [ngClass]="getStatusClass(enrollment.status)">
-                                        {{ getLocalizedStatus(enrollment.status) }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span *ngIf="enrollment.startDate">
-                                        {{ 'servicesManager.startingOn' | translate }}: {{ enrollment.startDate | date:'shortDate' }}
-                                    </span>
-                                    <span *ngIf="!enrollment.startDate">
-                                        {{ 'servicesManager.pending' | translate }}
-                                    </span>
-                                </td>
-                            </tr>
-                        </ng-container>
                     </tbody>
                 </table>
             </div>

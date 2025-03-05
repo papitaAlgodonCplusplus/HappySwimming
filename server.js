@@ -764,6 +764,39 @@ app.get('/api/professionals/verifications', authenticateToken, async (req, res) 
   }
 });
 
+// GET: Professional services (services offered by the professional)
+app.get('/api/professionals/services', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Check if the user is a professional
+    const userCheck = await pool.query(
+      'SELECT id FROM professionals WHERE user_id = $1',
+      [userId]
+    );
+    
+    if (userCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Unauthorized access' });
+    }
+    
+    const professionalId = userCheck.rows[0].id;
+    
+    // Get professional services directly from the database with the exact column names
+    const query = `
+      SELECT professional_id, service_id, price_per_hour, notes
+      FROM professional_services
+      WHERE professional_id = $1
+    `;
+    
+    const result = await pool.query(query, [professionalId]);
+    
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching professional services:', error);
+    res.status(500).json({ error: 'Failed to fetch professional services' });
+  }
+});
+
 module.exports = router;
 
 // Start the server

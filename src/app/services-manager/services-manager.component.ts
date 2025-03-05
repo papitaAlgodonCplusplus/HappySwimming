@@ -41,6 +41,14 @@ interface Enrollment {
   price: number;
 }
 
+interface ProfessionalService {
+  professional_id: number;
+  service_id: string;
+  price_per_hour: number;
+  notes?: string;
+  // The service name will be looked up from the courses array
+}
+
 @Component({
   selector: 'app-services-manager',
   standalone: true,
@@ -102,8 +110,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   // User enrollments
   myEnrollments: Enrollment[] = [];
   
-  // Professional verified courses (courses they're certified to teach)
-  professionalVerifications: string[] = [];
+  // Professional services (for professionals)
+  professionalServices: ProfessionalService[] = [];
   
   // Form data
   selectedCourse: string = '';
@@ -160,7 +168,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     if (this.userRole === 'client') {
       pendingRequests++; // Add 1 for professionals if user is client
     } else if (this.userRole === 'professional') {
-      pendingRequests++; // Add 1 for verifications if user is professional
+      pendingRequests++; // Add 1 for professional services if user is professional
     }
     
     const checkAllRequestsComplete = () => {
@@ -177,6 +185,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         catchError(error => {
           console.error('Error loading enrollments:', error);
           this.errorMessage = this.translationService.translate('servicesManager.errorGeneric');
+          checkAllRequestsComplete();
           return of([]);
         }),
         finalize(() => checkAllRequestsComplete())
@@ -186,48 +195,47 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         
         // If user is a client, load available professionals
         if (this.userRole === 'client') {
-          this.loadAvailableProfessionals(checkAllRequestsComplete);
-        }
-        
-        // If user is a professional, load their verifications
-        if (this.userRole === 'professional') {
-          this.loadProfessionalVerifications(checkAllRequestsComplete);
+          this.loadAvailableProfessionals();
         }
       });
+    
+    // If user is a professional, load their professional services
+    if (this.userRole === 'professional') {
+      this.loadProfessionalServices();
+    }
   }
   
-  loadAvailableProfessionals(completeCallback: () => void) {
+  loadAvailableProfessionals() {
     this.servicesManagerService.getAvailableProfessionals()
       .pipe(
         catchError(error => {
           console.error('Error loading professionals:', error);
           this.errorMessage = this.translationService.translate('servicesManager.errorLoadProfessionals');
+          this.isLoading = false;
+          this.cdr.detectChanges();
           return of([]);
-        }),
-        finalize(() => completeCallback())
+        })
       )
       .subscribe(professionals => {
         this.availableProfessionals = professionals;
+        this.isLoading = false;
         this.cdr.detectChanges();
       });
   }
   
-  getProfessionalCourseById(courseId: string): Course | undefined {
-    return this.professionalCourses.find(course => course.id === courseId);
-  }
-  
-  loadProfessionalVerifications(completeCallback: () => void) {
-    this.servicesManagerService.getProfessionalVerifications()
+  loadProfessionalServices() {
+    this.servicesManagerService.getProfessionalServices()
       .pipe(
         catchError(error => {
-          console.error('Error loading professional verifications:', error);
+          console.error('Error loading professional services:', error);
           this.errorMessage = this.translationService.translate('servicesManager.errorGeneric');
+          this.isLoading = false;
+          this.cdr.detectChanges();
           return of([]);
-        }),
-        finalize(() => completeCallback())
+        })
       )
-      .subscribe(verifications => {
-        this.professionalVerifications = verifications;
+      .subscribe(services => {
+        this.professionalServices = services;
         this.cdr.detectChanges();
       });
   }
@@ -240,8 +248,22 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     }
   }
   
-  isCourseCertified(courseId: string): boolean {
-    return this.professionalVerifications.includes(courseId);
+  isServiceOffered(serviceId: string): boolean {
+    return this.professionalServices.some(service => service.service_id === serviceId);
+  }
+  
+  // Helper method to get the service name from the course arrays
+  getServiceName(serviceId: string): string {
+    // First check professional courses
+    const professionalCourse = this.professionalCourses.find(course => course.id === serviceId);
+    if (professionalCourse) return professionalCourse.name;
+    
+    // Then check client courses
+    const clientCourse = this.clientCourses.find(course => course.id === serviceId);
+    if (clientCourse) return clientCourse.name;
+    
+    // If not found
+    return `Service ${serviceId}`;
   }
   
   onCourseSelect() {
@@ -306,10 +328,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           this.isLoading = false;
           this.cdr.detectChanges();
           return of(null);
-        }),
-        finalize(() => {
-          this.isLoading = false;
-          this.cdr.detectChanges();
         })
       )
       .subscribe(response => {
@@ -317,6 +335,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           console.log('Enrollment successful', response);
           this.successMessage = this.translationService.translate('servicesManager.successEnrollment');
           this.errorMessage = '';
+          this.isLoading = false;
           
           // Reset form
           this.selectedCourse = '';
@@ -364,10 +383,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
             this.isLoading = false;
             this.cdr.detectChanges();
             return of(null);
-          }),
-          finalize(() => {
-            this.isLoading = false;
-            this.cdr.detectChanges();
           })
         )
         .subscribe(response => {

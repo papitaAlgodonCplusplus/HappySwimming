@@ -32,6 +32,13 @@ interface EnrollmentRequest {
   preferredTime?: string;
 }
 
+interface ProfessionalService {
+  professional_id: number;
+  service_id: string;
+  price_per_hour: number;
+  notes?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -81,9 +88,9 @@ export class ServicesManagerService {
     });
   }
 
-  // Get professional teaching verifications
-  getProfessionalVerifications(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.apiUrl}/professionals/verifications`, { 
+  // Get professional services directly from professional_services table
+  getProfessionalServices(): Observable<ProfessionalService[]> {
+    return this.http.get<ProfessionalService[]>(`${this.apiUrl}/professionals/services`, { 
       headers: this.getHeaders() 
     });
   }
