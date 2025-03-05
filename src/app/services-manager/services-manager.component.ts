@@ -138,12 +138,14 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Subscribe to language changes
     this.langSubscription = this.translationService.getCurrentLang().subscribe(() => {
+      console.log('Language changed');
       this.cdr.detectChanges();
     });
 
     // Subscribe to translations loaded event
     this.loadedSubscription = this.translationService.isTranslationsLoaded().subscribe(loaded => {
       if (loaded) {
+        console.log('Translations loaded');
         this.cdr.detectChanges();
       }
     });
@@ -151,6 +153,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     // Subscribe to auth state to get user role
     this.authSubscription = this.authService.getCurrentUser().subscribe(user => {
       if (user) {
+        console.log('User authenticated:', user.role);
         this.userRole = user.role;
         this.userId = user.id;
         this.loadInitialData();
@@ -160,7 +163,11 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   
   loadInitialData() {
     this.isLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
     this.cdr.detectChanges();
+    
+    console.log('Loading initial data for role:', this.userRole);
     
     // Create a counter to track when all requests are complete
     let pendingRequests = 1; // Start with 1 for enrollments
@@ -171,15 +178,20 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       pendingRequests++; // Add 1 for professional services if user is professional
     }
     
+    console.log('Initial pending requests:', pendingRequests);
+    
     const checkAllRequestsComplete = () => {
       pendingRequests--;
+      console.log('Request completed, pending requests remaining:', pendingRequests);
       if (pendingRequests <= 0) {
+        console.log('All requests completed, setting isLoading to false');
         this.isLoading = false;
         this.cdr.detectChanges();
       }
     };
     
     // Load user enrollments
+    console.log('Loading user enrollments...');
     this.servicesManagerService.getUserEnrollments()
       .pipe(
         catchError(error => {
@@ -188,10 +200,14 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           checkAllRequestsComplete();
           return of([]);
         }),
-        finalize(() => checkAllRequestsComplete())
+        finalize(() => {
+          console.log('User enrollments finalized');
+          checkAllRequestsComplete();
+        })
       )
       .subscribe(enrollments => {
-        this.myEnrollments = enrollments;
+        console.log('User enrollments loaded:', enrollments);
+        this.myEnrollments = enrollments || [];
         
         // If user is a client, load available professionals
         if (this.userRole === 'client') {
@@ -201,42 +217,73 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     
     // If user is a professional, load their professional services
     if (this.userRole === 'professional') {
+      console.log('Loading professional services...');
       this.loadProfessionalServices();
     }
   }
   
   loadAvailableProfessionals() {
+    console.log('Loading available professionals...');
     this.servicesManagerService.getAvailableProfessionals()
       .pipe(
         catchError(error => {
           console.error('Error loading professionals:', error);
           this.errorMessage = this.translationService.translate('servicesManager.errorLoadProfessionals');
-          this.isLoading = false;
-          this.cdr.detectChanges();
           return of([]);
+        }),
+        finalize(() => {
+          console.log('Professionals loading finalized');
+          // We don't call checkAllRequestsComplete here because it's already
+          // called in the subscription
         })
       )
-      .subscribe(professionals => {
-        this.availableProfessionals = professionals;
-        this.isLoading = false;
-        this.cdr.detectChanges();
+      .subscribe({
+        next: (professionals) => {
+          console.log('Available professionals loaded:', professionals);
+          this.availableProfessionals = professionals || [];
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error in professionals subscription:', error);
+        }
       });
   }
   
   loadProfessionalServices() {
+    console.log('Loading professional services...');
     this.servicesManagerService.getProfessionalServices()
       .pipe(
         catchError(error => {
           console.error('Error loading professional services:', error);
           this.errorMessage = this.translationService.translate('servicesManager.errorGeneric');
-          this.isLoading = false;
-          this.cdr.detectChanges();
           return of([]);
+        }),
+        finalize(() => {
+          console.log('Professional services finalized');
+          // We need to decrement the counter here explicitly
+          const checkAllRequestsComplete = () => {
+            console.log('Professional services request completed');
+            // We will handle the loading state in the subscription
+          };
+          checkAllRequestsComplete();
         })
       )
-      .subscribe(services => {
-        this.professionalServices = services;
-        this.cdr.detectChanges();
+      .subscribe({
+        next: (services) => {
+          console.log('Professional services loaded:', services);
+          this.professionalServices = services || [];
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error in professional services subscription:', error);
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        },
+        complete: () => {
+          console.log('Professional services subscription completed');
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        }
       });
   }
   
@@ -249,6 +296,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   }
   
   isServiceOffered(serviceId: string): boolean {
+    if (!this.professionalServices) return false;
     return this.professionalServices.some(service => service.service_id === serviceId);
   }
   
@@ -319,6 +367,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       preferredTime: this.preferredTime || undefined
     };
     
+    console.log('Submitting enrollment data:', enrollmentData);
+    
     this.servicesManagerService.createEnrollment(enrollmentData)
       .pipe(
         catchError(error => {
@@ -328,23 +378,40 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           this.isLoading = false;
           this.cdr.detectChanges();
           return of(null);
+        }),
+        finalize(() => {
+          console.log('Enrollment request finalized');
         })
       )
-      .subscribe(response => {
-        if (response) {
-          console.log('Enrollment successful', response);
-          this.successMessage = this.translationService.translate('servicesManager.successEnrollment');
-          this.errorMessage = '';
+      .subscribe({
+        next: (response) => {
+          if (response) {
+            console.log('Enrollment successful', response);
+            this.successMessage = this.translationService.translate('servicesManager.successEnrollment');
+            this.errorMessage = '';
+            this.isLoading = false;
+            
+            // Reset form
+            this.selectedCourse = '';
+            this.selectedProfessional = null;
+            this.startDate = '';
+            this.preferredTime = '';
+            
+            // Reload enrollments
+            this.loadInitialData();
+          } else {
+            // Handle case where response is null (came from catchError)
+            this.isLoading = false;
+            this.cdr.detectChanges();
+          }
+        },
+        error: (error) => {
+          console.error('Error in enrollment subscription:', error);
           this.isLoading = false;
-          
-          // Reset form
-          this.selectedCourse = '';
-          this.selectedProfessional = null;
-          this.startDate = '';
-          this.preferredTime = '';
-          
-          // Reload enrollments
-          this.loadInitialData();
+          this.cdr.detectChanges();
+        },
+        complete: () => {
+          console.log('Enrollment subscription completed');
         }
       });
   }
@@ -374,6 +441,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       this.isLoading = true;
       this.cdr.detectChanges();
       
+      console.log('Cancelling enrollment:', enrollmentId);
+      
       this.servicesManagerService.cancelEnrollment(enrollmentId)
         .pipe(
           catchError(error => {
@@ -383,19 +452,35 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
             this.isLoading = false;
             this.cdr.detectChanges();
             return of(null);
+          }),
+          finalize(() => {
+            console.log('Cancel enrollment request finalized');
           })
         )
-        .subscribe(response => {
-          if (response) {
-            this.successMessage = this.translationService.translate('servicesManager.successCancel');
-            this.errorMessage = '';
-            this.loadInitialData();
+        .subscribe({
+          next: (response) => {
+            if (response) {
+              console.log('Enrollment cancelled successfully');
+              this.successMessage = this.translationService.translate('servicesManager.successCancel');
+              this.errorMessage = '';
+              this.loadInitialData();
+            } else {
+              // Handle case where response is null (came from catchError)
+              this.isLoading = false;
+              this.cdr.detectChanges();
+            }
+          },
+          error: (error) => {
+            console.error('Error in cancel enrollment subscription:', error);
+            this.isLoading = false;
+            this.cdr.detectChanges();
           }
         });
     }
   }
 
   ngOnDestroy(): void {
+    console.log('ServicesManagerComponent being destroyed');
     // Clean up subscriptions
     if (this.langSubscription) {
       this.langSubscription.unsubscribe();

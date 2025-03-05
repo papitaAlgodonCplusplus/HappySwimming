@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
 interface Professional {
@@ -61,37 +62,43 @@ export class ServicesManagerService {
 
   // Get available professionals for client courses
   getAvailableProfessionals(): Observable<Professional[]> {
-    return this.http.get<Professional[]>(`${this.apiUrl}/professionals/available`, { 
-      headers: this.getHeaders() 
+    return this.http.get<Professional[]>(`${this.apiUrl}/professionals/available`, {
+      headers: this.getHeaders()
     });
   }
 
   // Get user enrollments
   getUserEnrollments(): Observable<Enrollment[]> {
-    return this.http.get<Enrollment[]>(`${this.apiUrl}/enrollments/user`, { 
-      headers: this.getHeaders() 
+    return this.http.get<Enrollment[]>(`${this.apiUrl}/enrollments/user`, {
+      headers: this.getHeaders()
     });
   }
 
   // Create new enrollment
   createEnrollment(enrollmentData: EnrollmentRequest): Observable<any> {
     console.log('Enrollment data:', enrollmentData);
-    return this.http.post(`${this.apiUrl}/enrollments`, enrollmentData, { 
-      headers: this.getHeaders() 
+    return this.http.post(`${this.apiUrl}/enrollments`, enrollmentData, {
+      headers: this.getHeaders()
     });
   }
 
   // Cancel enrollment
   cancelEnrollment(enrollmentId: number): Observable<any> {
-    return this.http.put(`${this.apiUrl}/enrollments/${enrollmentId}/cancel`, {}, { 
-      headers: this.getHeaders() 
+    return this.http.put(`${this.apiUrl}/enrollments/${enrollmentId}/cancel`, {}, {
+      headers: this.getHeaders()
     });
   }
 
   // Get professional services directly from professional_services table
   getProfessionalServices(): Observable<ProfessionalService[]> {
-    return this.http.get<ProfessionalService[]>(`${this.apiUrl}/professionals/services`, { 
-      headers: this.getHeaders() 
-    });
+    return this.http.get<ProfessionalService[]>(`${this.apiUrl}/professionals/services`, {
+      headers: this.getHeaders()
+    }).pipe(
+      catchError(error => {
+        console.error('Error in getProfessionalServices:', error);
+        // Return empty array instead of throwing error
+        return of([]);
+      })
+    );
   }
 }
