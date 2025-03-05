@@ -1,0 +1,36 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+</style>
+
+<app-header></app-header>
+<div class="register-selector-container">
+  <div class="selector-content">
+    <h1 class="title">{{ 'registerSelector' | translate }}</h1>
+    
+    <div class="options-container">
+      <div class="option-column">
+        <div class="option-image" (click)="navigateToClient()">
+          <img src="assets/outwards.png" alt="Externalizacion Outsourcing">
+        </div>
+        <div class="option-titles">
+          <h2 class="option-title">{{ 'externalization' | translate }}</h2>
+          <h3 class="option-subtitle">{{ 'outsourcing' | translate }}</h3>
+        </div>
+      </div>
+      
+      <div class="option-column">
+        <div class="option-image" (click)="navigateToProfessional()">
+          <img src="assets/inwards.png" alt="Escuela Cliente Insourcing">
+        </div>
+        <div class="option-titles">
+          <h2 class="option-title">{{ 'escuelaCliente' | translate }}</h2>
+          <h3 class="option-subtitle">{{ 'insourcing' | translate }}</h3>
+        </div>
+      </div>
+    </div>
+    
+    <div class="back-link">
+      <a routerLink="/auth">{{ 'backToLogin' | translate }}</a>
+    </div>
+  </div>
+</div>

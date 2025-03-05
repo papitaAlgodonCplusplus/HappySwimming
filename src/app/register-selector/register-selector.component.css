@@ -1,0 +1,163 @@
+.register-selector-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  background-image: url("/assets/swimming-bg-3.jpg");
+  font-family: 'Lexend Peta', sans-serif;
+  padding-top: 120px; /* Account for header */
+  background-color: white;
+  position: relative;
+}
+
+.selector-content {
+  position: relative;
+  z-index: 1;
+  width: 90%;
+  max-width: 1200px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.title {
+  text-align: center;
+  font-size: 3rem;
+  color: #204376;
+  margin-bottom: 4rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.options-container {
+  display: flex;
+  justify-content: center;
+  gap: 6rem;
+  margin-bottom: 3rem;
+}
+
+.option-image {
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.option-image:hover {
+  transform: scale(1.05);
+}
+
+.option-image img {
+  max-width: 60%;
+  height: auto;
+  border-radius: 10px;
+}
+
+.back-link {
+  text-align: center;
+  margin-top: 3rem;
+}
+
+.back-link a {
+  color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  padding: 0.75rem 2rem;
+  border-radius: 30px;
+}
+
+.back-link a:hover {
+  color: white;
+  background-color: rgb(255, 255, 255);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .options-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 3rem;
+  }
+  
+  .title {
+    font-size: 2rem;
+  }
+  
+  .option-image {
+    max-width: 80%;
+  }
+}
+
+.option-title {
+  font-size: 1.5rem;
+  color: #204376;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.option-subtitle {
+  font-size: 1.2rem;
+  color: #204376;
+  margin-bottom: 2rem;
+  font-weight: 400;
+  letter-spacing: 1px;
+}
+
+.option-button {
+  padding: 0.75rem 2rem;
+  background-color: #0088cc;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.option-button:hover {
+  background-color: #006699;
+  transform: scale(1.05);
+}
+
+.back-link {
+  text-align: center;
+  margin-top: 3rem;
+}
+
+.back-link a {
+  color: #0088cc;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.back-link a:hover {
+  color: #006699;
+  text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .options-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 4rem;
+  }
+  
+  .title {
+    font-size: 2rem;
+  }
+  
+  .circle-option {
+    width: 160px;
+    height: 160px;
+  }
+  
+  .swimmer-icon {
+    width: 60px;
+    height: 60px;
+  }
+}

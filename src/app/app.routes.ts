@@ -10,6 +10,10 @@ export const routes: Routes = [
     loadComponent: () => import('./aboutus/aboutus.component').then(c => c.AboutUsComponent)
   },
   {
+    path: 'register',
+    loadComponent: () => import('./register-selector/register-selector.component').then(c => c.RegisterSelectorComponent)
+  },
+  {
     path: '',
     redirectTo: 'auth',
     pathMatch: 'full'

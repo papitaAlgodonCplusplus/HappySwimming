@@ -19,5 +19,14 @@
     
     "aboutPhilosophy": "Our philosophy is based on the enjoyment of the children from day one and fear can often be an obstacle at early ages, and it is for this reason that being aware of children's psychology is essential to make learners feel confident and happy in the water.",
     
-    "aboutAdults": "We apply the same philosophy to adults and we adapt to their motor skills for a quicker progress."
+    "aboutAdults": "We apply the same philosophy to adults and we adapt to their motor skills for a quicker progress.",
+    
+    "registerSelector": "CLIENTS",
+    "externalization": "EXTERNALIZATION", 
+    "outsourcing": "OUTSOURCING",
+    "escuelaCliente": "CLIENT SCHOOL",
+    "insourcing": "INSOURCING",
+    "selectClient": "Select Outsourcing",
+    "selectProfessional": "Select Insourcing",
+    "backToLogin": "Back to Login"
 }

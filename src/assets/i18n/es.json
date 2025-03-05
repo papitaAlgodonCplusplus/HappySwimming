@@ -19,5 +19,14 @@
     
     "aboutPhilosophy": "Nuestra filosofía se basa en el disfrute de los niños desde el primer día, y el miedo puede ser a menudo un obstáculo en edades tempranas, por eso ser conscientes de la psicología infantil es esencial para que los alumnos se sientan seguros y felices en el agua.",
     
-    "aboutAdults": "Aplicamos la misma filosofía a los adultos y nos adaptamos a sus habilidades motoras para un progreso más rápido."
+    "aboutAdults": "Aplicamos la misma filosofía a los adultos y nos adaptamos a sus habilidades motoras para un progreso más rápido.",
+    
+    "registerSelector": "CLIENTES",
+    "externalization": "EXTERNALIZACIÓN",
+    "outsourcing": "OUTSOURCING",
+    "escuelaCliente": "ESCUELA CLIENTE",
+    "insourcing": "INSOURCING",
+    "selectClient": "Seleccionar Outsourcing",
+    "selectProfessional": "Seleccionar Insourcing",
+    "backToLogin": "Volver al Login"
 }
