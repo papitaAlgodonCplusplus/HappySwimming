@@ -60,7 +60,7 @@ export class AuthService {
   // DEV: Use the following URL for development
   // private apiUrl = 'http://localhost:3000/api';
   // PROD: Use the following URL for production
-  private apiUrl = 'https://happyswimming.onrender.com:3000/api';
+  private apiUrl = 'https://happyswimming.onrender.com/api';
   private currentUserSubject = new BehaviorSubject<any>(null);
   constructor(private http: HttpClient, private router: Router) {
     this.loadStoredUser();

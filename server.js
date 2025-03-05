@@ -807,9 +807,14 @@ app.get('/api/professionals/services', authenticateToken, async (req, res) => {
   }
 });
 
+// Add this to your server.js or main file
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 module.exports = router;
 
 // Start the server
-app.listen(PORT, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 });
