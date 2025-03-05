@@ -47,5 +47,75 @@
         "lopd": "LOPD Text (to be added)",
         "cancel": "Cancel",
         "register": "Register"
+    },
+    "clientServices": {
+        "title": "OUR CLASSES FOR CLIENTS",
+        "subtitle": "SWIMMING LESSONS FOR ALL AGE GROUPS AND ABILITIES",
+        "children36": {
+            "title": "CHILDREN AGED 3 TO 6",
+            "hours": "HOURS"
+        },
+        "children612": {
+            "title": "CHILDREN AGED 6 to 12",
+            "hours": "HOURS"
+        },
+        "anyAge": {
+            "title": "ANY AGE AND ABILITY",
+            "hours": "HOURS"
+        },
+        "price": "PRICE"
+    },
+    "professionalServices": {
+        "title": "OUR COURSES FOR PROFESSIONALS",
+        "swimmingStoryTrainer": {
+            "title": "\"Swimming a story\" Course for Teacher Trainer/Technical Director (includes pedagogical material)"
+        },
+        "swimmingStoryTeacher": {
+            "title": "\"Swimming a story\" Teacher course"
+        },
+        "frontCrawl": {
+            "title": "Front-crawl spinning methodology teacher course"
+        },
+        "aquagym": {
+            "title": "Aquagym instructor course"
+        },
+        "online": "Online",
+        "inPerson": "In person",
+        "duration": "Duration",
+        "price": "Price",
+        "minPeople": "Minimum 10 people"
+    },
+    "registerFreeProfessional": {
+        "title": "Free Professional Registration Form",
+        "identification": "ID/Passport",
+        "jobArea": "Work Area",
+        "selectJobArea": "Select an area",
+        "firstName": "First Name",
+        "lastName1": "Last Name 1",
+        "lastName2": "Last Name 2",
+        "address": "Address",
+        "postalCode": "Postal Code",
+        "city": "City",
+        "country": "Country",
+        "phoneFixed": "Phone",
+        "phoneMobile": "Mobile Phone",
+        "email": "Email",
+        "website": "Website",
+        "bankAccount": "Bank Account/Payment Method",
+        "course": "HS Courses",
+        "selectCourse": "Select a course",
+        "courseDelivery": "Delivery Type",
+        "online": "Online",
+        "inPerson": "In Person",
+        "requiredDocuments": "Required Documents",
+        "idDocument": "ID (Attached File)",
+        "curriculumVitae": "Curriculum Vitae (Attached File)",
+        "insurance": "RC Insurance (Attached File)",
+        "acceptTerms": "I Accept the Terms and Conditions",
+        "termsText": "Professional Membership Agreement Text",
+        "optional": "optional",
+        "cancel": "Cancel",
+        "register": "Register",
+        "processing": "Processing..."
     }
 }

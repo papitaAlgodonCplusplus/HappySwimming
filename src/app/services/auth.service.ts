@@ -58,15 +58,15 @@ interface RegisterProfessionalData {
 export class AuthService {
   private apiUrl = 'http://localhost:3000/api';
   private currentUserSubject = new BehaviorSubject<any>(null);
-  
-  constructor(private http: HttpClient) { 
+
+  constructor(private http: HttpClient) {
     this.loadStoredUser();
   }
 
   private loadStoredUser(): void {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
-    
+
     if (storedToken && storedUser) {
       try {
         const user = JSON.parse(storedUser);
@@ -92,7 +92,7 @@ export class AuthService {
         })
       );
   }
-  
+
   // Add a method for checking if the server is running
   checkServer(): Observable<any> {
     return this.http.get(`${this.apiUrl}/pl-codes`);
@@ -135,5 +135,9 @@ export class AuthService {
 
   getUserProfile(): Observable<any> {
     return this.http.get(`${this.apiUrl}/profile`);
+  }
+
+  registerFreeProfessional(formData: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/register/free-professional`, formData);
   }
 }

@@ -47,5 +47,74 @@
         "lopd": "Texto LOPD (por hacer)",
         "cancel": "Cancelar",
         "register": "Registrarse"
+    },
+    "registerFreeProfessional": {
+        "title": "Formulario Registro (Profesional Libre)",
+        "identification": "CIF/D.N.I/PASAPORTE",
+        "jobArea": "Área de Trabajo",
+        "selectJobArea": "Seleccione un área",
+        "firstName": "Nombre",
+        "lastName1": "Apellido 1",
+        "lastName2": "Apellido 2",
+        "address": "Dirección",
+        "postalCode": "Código Postal",
+        "city": "Ciudad/País",
+        "country": "País",
+        "phoneFixed": "Tfno Fijo",
+        "phoneMobile": "Tfno Móvil",
+        "email": "E-mail",
+        "website": "Web",
+        "bankAccount": "Cuenta Corriente/medio de Pago",
+        "course": "Cursos HS",
+        "selectCourse": "Seleccione un curso",
+        "courseDelivery": "Tipo de entrega",
+        "online": "On-line",
+        "inPerson": "Presencial",
+        "requiredDocuments": "Documentación Adjunta",
+        "idDocument": "ID (Archivo Adjunto)",
+        "curriculumVitae": "Curriculum Vitae (Archivo adjunto)",
+        "insurance": "Seguro RC (Archivo adjunto)",
+        "acceptTerms": "Acepto las Condiciones",
+        "termsText": "Texto Convenio de Adhesion Profesional Libre",
+        "optional": "no obligatorio",
+        "cancel": "Cancelar",
+        "processing": "Procesando..."
+    },
+    "clientServices": {
+        "title": "NUESTRAS CLASES PARA CLIENTES",
+        "subtitle": "LECCIONES DE NATACIÓN PARA TODOS LOS GRUPOS DE EDAD Y HABILIDADES",
+        "children36": {
+            "title": "NIÑOS DE 3 A 6 AÑOS",
+            "hours": "HORAS"
+        },
+        "children612": {
+            "title": "NIÑOS DE 6 A 12 AÑOS",
+            "hours": "HORAS"
+        },
+        "anyAge": {
+            "title": "CUALQUIER EDAD Y HABILIDAD",
+            "hours": "HORAS"
+        },
+        "price": "PRECIO"
+    },
+    "professionalServices": {
+        "title": "NUESTROS CURSOS PARA PROFESIONALES",
+        "swimmingStoryTrainer": {
+            "title": "Curso \"Nada un cuento\" para Formador de Profesores/Director Técnico (incluye material pedagógico)"
+        },
+        "swimmingStoryTeacher": {
+            "title": "Curso para Profesor \"Nada un cuento\""
+        },
+        "frontCrawl": {
+            "title": "Metodología de enseñanza de crol con giro"
+        },
+        "aquagym": {
+            "title": "Curso de instructor de aquagym"
+        },
+        "online": "En línea",
+        "inPerson": "Presencial",
+        "duration": "Duración",
+        "price": "Precio",
+        "minPeople": "Mínimo 10 personas"
     }
 }

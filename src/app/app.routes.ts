@@ -11,12 +11,20 @@ export const routes: Routes = [
     loadComponent: () => import('./aboutus/aboutus.component').then(c => c.AboutUsComponent)
   },
   {
+    path: 'services',
+    loadComponent: () => import('./services-offer/services.component').then(c => c.ServicesComponent)
+  },
+  {
     path: 'register',
     loadComponent: () => import('./register-selector/register-selector.component').then(c => c.RegisterSelectorComponent)
   },
   {
     path: 'register/:type',
     loadComponent: () => import('./register/register.component').then(c => c.RegisterComponent)
+  },
+  {
+    path: 'register-free-professional',
+    loadComponent: () => import('./register-free-professional/register-free-professional.component').then(c => c.RegisterFreeProfessionalComponent)
   },
   {
     path: 'dashboard',

@@ -1,0 +1,126 @@
+.services-container {
+  width: 100%;
+  font-family: 'Lexend Peta', sans-serif;
+  padding-top: 12vh; /* Account for header */
+}
+
+.services-content {
+  background-color: #3ba2ce;
+  color: white;
+  padding: 2rem 1rem;
+  min-height: calc(100vh - 12vh);
+}
+
+.services-columns {
+  display: flex;
+  max-width: 1400px;
+  margin: 0 auto;
+  gap: 2rem;
+}
+
+.services-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.column-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  color: white;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.column-subtitle {
+  font-size: 1.2rem;
+  text-align: center;
+  color: white;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  font-weight: normal;
+}
+
+.service-box {
+  background-color: #a1e3ff;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Make left column boxes shorter */
+.services-column:first-child .service-box {
+  min-height: 20vh;
+  flex-grow: 0;
+}
+
+/* Right column boxes can grow to fill space */
+.services-column:last-child .service-box {
+  flex-grow: 1;
+}
+
+.box-content {
+  padding: 1.5rem;
+  color: #204376;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.box-title {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  font-weight: bold;
+  color: #204376;
+}
+
+.box-detail {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: normal;
+  color: #204376;
+}
+
+.indent {
+  padding-left: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .services-columns {
+    flex-direction: column;
+  }
+  
+  .services-column {
+    width: 100%;
+  }
+  
+  .column-title {
+    font-size: 1.6rem;
+    margin-top: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .column-title {
+    font-size: 1.4rem;
+  }
+  
+  .column-subtitle {
+    font-size: 1rem;
+  }
+  
+  .box-title {
+    font-size: 1.1rem;
+  }
+  
+  .box-detail {
+    font-size: 0.9rem;
+  }
+  
+  .service-box {
+    padding: 1rem;
+  }
+}
