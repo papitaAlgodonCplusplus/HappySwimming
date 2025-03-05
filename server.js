@@ -29,14 +29,24 @@ const upload = multer({
 app.use(cors());
 app.use(express.json());
 
-// Database connection
+// Database connection DEV
+// const pool = new Pool({
+//   user: process.env.DB_USER || 'postgres',
+//   host: process.env.DB_HOST || 'localhost',
+//   database: process.env.DB_NAME || 'happyswimming',
+//   password: process.env.DB_PASSWORD || 'postgres',
+//   port: process.env.DB_PORT || 5432,
+//   schema: 'happyswimming'
+// });
+
+// Database connection PROD
 const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'happyswimming',
-  password: process.env.DB_PASSWORD || 'postgres',
-  port: process.env.DB_PORT || 5432,
-  schema: 'happyswimming'
+  host: 'db.qdmjndowptwvurlowwwk.supabase.co',
+  port: 5432,
+  database: 'postgres',
+  user: 'postgres',
+  password: 'PwT.398!',
+  ssl: { rejectUnauthorized: false }
 });
 
 // Test database connection
