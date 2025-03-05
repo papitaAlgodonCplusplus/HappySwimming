@@ -264,6 +264,9 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
     formData.append('courseId', this.selectedCourse);
     formData.append('courseDelivery', this.selectedCourseDelivery);
     
+    // Add the isInsourcing flag - required by the API
+    formData.append('isInsourcing', 'true');
+    
     // Explicitly set role to professional
     formData.append('role', 'professional');
     
@@ -273,6 +276,11 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
     if (this.insuranceDocument) formData.append('insuranceDocument', this.insuranceDocument);
     
     console.log('Registering professional with form data');
+    
+    // Log form data keys being sent (for debugging)
+    for (const key of formData.keys()) {
+      console.log(`Form contains key: ${key}`);
+    }
     
     // Call API service to register free professional
     this.authService.registerFreeProfessional(formData).subscribe({

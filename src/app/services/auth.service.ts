@@ -104,6 +104,10 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/register/client`, data);
   }
 
+  registerProfessional(data: RegisterProfessionalData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/register/professional`, data);
+  }
+
   logout(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -135,7 +139,24 @@ export class AuthService {
     return this.http.get(`${this.apiUrl}/profile`);
   }
 
-  registerFreeProfessional(formData: FormData): Observable<any> {
+  registerFreeProfessional(formData: any): Observable<any> {
+    console.log('Form data being sent to server:');
+    for (const pair of formData.entries()) {
+      console.log(`${pair[0]}: ${pair[1]}`);
+    }
+    
+    // Ensure critical fields needed by the backend are present
+    if (!formData.has('password')) {
+      console.error('Password is missing from form data!');
+      // You could add it here if it's available elsewhere
+    }
+    
+    if (!formData.has('isInsourcing')) {
+      console.log('Adding isInsourcing field as it was missing');
+      formData.append('isInsourcing', 'true');
+    }
+    
+    console.log('Registering professional with form data : ', formData);
     return this.http.post(`${this.apiUrl}/register/professional`, formData);
   }
 }
