@@ -41,7 +41,7 @@ app.use(express.json());
 
 // Database connection PROD
 const pool = new Pool({
-  host: 'happyswimming.cxqii6e0qkzu.us-east-1.rds.amazonaws.com',
+  host: 'database-1.cxqii6e0qkzu.us-east-1.rds.amazonaws.com',
   port: 5432,
   database: 'happyswimming',
   user: 'postgres',
@@ -117,7 +117,7 @@ app.post('/api/register/client', async (req, res) => {
 
     // Insert user
     const userResult = await client.query(
-      'INSERT INTO happyswimming.users (email, password_hash, first_name, last_name1, last_name2, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+      'INSERT INTO users (email, password_hash, first_name, last_name1, last_name2, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
       [email, passwordHash, firstName, lastName1, lastName2 || null, 'client']
     );
 
@@ -125,7 +125,7 @@ app.post('/api/register/client', async (req, res) => {
 
     // Insert client
     await client.query(
-      `INSERT INTO happyswimming.clients 
+      `INSERT INTO clients 
        (user_id, company_name, identification_number, address, postal_code, city, country, phone_fixed, phone_mobile, website, pl_code, is_outsourcing) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [userId, companyName || null, identificationNumber, address, postalCode, city, country, phoneFixed || null, phoneMobile, website || null, plCode || null, isOutsourcing]
@@ -194,7 +194,7 @@ app.post('/api/register/professional',
 
       // Insert user
       const userResult = await client.query(
-        'INSERT INTO happyswimming.users (email, password_hash, first_name, last_name1, last_name2, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+        'INSERT INTO users (email, password_hash, first_name, last_name1, last_name2, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
         [email, passwordHash, firstName, lastName1, lastName2 || null, 'professional']
       );
 
@@ -202,7 +202,7 @@ app.post('/api/register/professional',
 
       // Insert professional
       const professionalResult = await client.query(
-        `INSERT INTO happyswimming.professionals (user_id, company_name, identification_number, address, postal_code, city, country, phone_fixed, phone_mobile, website, is_insourcing) 
+        `INSERT INTO professionals (user_id, company_name, identification_number, address, postal_code, city, country, phone_fixed, phone_mobile, website, is_insourcing) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
         [
           userId,
@@ -234,25 +234,25 @@ app.post('/api/register/professional',
         // Example of checking if documents table exists before trying to insert
         try {
           const tableCheck = await client.query(
-            "SELECT EXISTS (SELECT FROM happyswimming.information_schema.tables WHERE table_name = 'documents')"
+            "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'documents')"
           );
           
           if (tableCheck.rows[0].exists) {
             // Documents table exists, we can insert mock records
             await client.query(
-              `INSERT INTO happyswimming.documents (professional_id, type, file_name, mime_type) 
+              `INSERT INTO documents (professional_id, type, file_name, mime_type) 
               VALUES ($1, 'id', 'mock-id-document.pdf', 'application/pdf')`,
               [professionalId]
             );
             
             await client.query(
-              `INSERT INTO happyswimming.documents (professional_id, type, file_name, mime_type) 
+              `INSERT INTO documents (professional_id, type, file_name, mime_type) 
               VALUES ($1, 'cv', 'mock-cv.pdf', 'application/pdf')`,
               [professionalId]
             );
             
             await client.query(
-              `INSERT INTO happyswimming.documents (professional_id, type, file_name, mime_type) 
+              `INSERT INTO documents (professional_id, type, file_name, mime_type) 
               VALUES ($1, 'insurance', 'mock-insurance.pdf', 'application/pdf')`,
               [professionalId]
             );
@@ -274,7 +274,7 @@ app.post('/api/register/professional',
           
           const specialtyParams = [professionalId, ...specialties];
           await client.query(
-            `INSERT INTO happyswimming.professional_specialties (professional_id, specialty_id) VALUES ${specialtyValues}`,
+            `INSERT INTO professional_specialties (professional_id, specialty_id) VALUES ${specialtyValues}`,
             specialtyParams
           );
         } catch (error) {
@@ -307,7 +307,7 @@ app.post('/api/login', async (req, res) => {
 
     // Get user by email
     const userResult = await pool.query(
-      'SELECT id, email, password_hash, role, first_name, last_name1 FROM happyswimming.users WHERE email = $1 AND is_active = true',
+      'SELECT id, email, password_hash, role, first_name, last_name1 FROM users WHERE email = $1 AND is_active = true',
       [email]
     );
 
@@ -336,7 +336,7 @@ app.post('/api/login', async (req, res) => {
 
     if (user.role === 'client') {
       const clientResult = await pool.query(
-        'SELECT id, company_name, is_outsourcing FROM happyswimming.clients WHERE user_id = $1',
+        'SELECT id, company_name, is_outsourcing FROM clients WHERE user_id = $1',
         [user.id]
       );
       if (clientResult.rows.length > 0) {
@@ -344,7 +344,7 @@ app.post('/api/login', async (req, res) => {
       }
     } else if (user.role === 'professional') {
       const professionalResult = await pool.query(
-        'SELECT id, company_name, is_insourcing FROM happyswimming.professionals WHERE user_id = $1',
+        'SELECT id, company_name, is_insourcing FROM professionals WHERE user_id = $1',
         [user.id]
       );
       if (professionalResult.rows.length > 0) {
@@ -372,7 +372,7 @@ app.post('/api/login', async (req, res) => {
 app.get('/api/pl-codes', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, code, description FROM happyswimming.pl_codes WHERE is_active = true ORDER BY code'
+      'SELECT id, code, description FROM pl_codes WHERE is_active = true ORDER BY code'
     );
 
     res.json(result.rows);
@@ -386,7 +386,7 @@ app.get('/api/pl-codes', async (req, res) => {
 app.get('/api/specialties', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, name, description FROM happyswimming.specialties ORDER BY name'
+      'SELECT id, name, description FROM specialties ORDER BY name'
     );
 
     res.json(result.rows);
@@ -403,7 +403,7 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
 
     // Get user data
     const userResult = await pool.query(
-      'SELECT id, email, first_name, last_name1, last_name2, role FROM happyswimming.users WHERE id = $1',
+      'SELECT id, email, first_name, last_name1, last_name2, role FROM users WHERE id = $1',
       [id]
     );
 
@@ -419,8 +419,8 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
     if (role === 'client') {
       const clientResult = await pool.query(
         `SELECT c.*, p.code as pl_code_name, p.description as pl_description 
-         FROM happyswimming.clients c 
-         LEFT JOIN happyswimming.pl_codes p ON c.pl_code = p.code 
+         FROM clients c 
+         LEFT JOIN pl_codes p ON c.pl_code = p.code 
          WHERE c.user_id = $1`,
         [id]
       );
@@ -429,7 +429,7 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
       }
     } else if (role === 'professional') {
       const professionalResult = await pool.query(
-        'SELECT * FROM happyswimming.professionals WHERE user_id = $1',
+        'SELECT * FROM professionals WHERE user_id = $1',
         [id]
       );
       if (professionalResult.rows.length > 0) {
@@ -439,8 +439,8 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
         // Get specialties
         const specialtiesResult = await pool.query(
           `SELECT s.id, s.name, s.description 
-           FROM happyswimming.specialties s
-           JOIN happyswimming.professional_specialties ps ON s.id = ps.specialty_id
+           FROM specialties s
+           JOIN professional_specialties ps ON s.id = ps.specialty_id
            WHERE ps.professional_id = $1
            ORDER BY s.name`,
           [professional.id]
@@ -495,11 +495,11 @@ app.get('/api/enrollments/user', authenticateToken, async (req, res) => {
           cs.professional_id, 
           CONCAT(u.first_name, ' ', u.last_name1) as professional_name,
           cs.price
-        FROM happyswimming.client_services cs
-        JOIN happyswimming.services s ON cs.service_id = s.id
-        JOIN happyswimming.clients c ON cs.client_id = c.id
-        LEFT JOIN happyswimming.professionals p ON cs.professional_id = p.id
-        LEFT JOIN happyswimming.users u ON p.user_id = u.id
+        FROM client_services cs
+        JOIN services s ON cs.service_id = s.id
+        JOIN clients c ON cs.client_id = c.id
+        LEFT JOIN professionals p ON cs.professional_id = p.id
+        LEFT JOIN users u ON p.user_id = u.id
         WHERE c.user_id = $1
         ORDER BY cs.created_at DESC
       `;
@@ -511,11 +511,11 @@ app.get('/api/enrollments/user', authenticateToken, async (req, res) => {
           cs.professional_id, 
           CONCAT(cu.first_name, ' ', cu.last_name1) as client_name,
           cs.price
-        FROM happyswimming.client_services cs
-        JOIN happyswimming.services s ON cs.service_id = s.id
-        JOIN happyswimming.professionals p ON cs.professional_id = p.id
-        JOIN happyswimming.clients c ON cs.client_id = c.id
-        JOIN happyswimming.users cu ON c.user_id = cu.id
+        FROM client_services cs
+        JOIN services s ON cs.service_id = s.id
+        JOIN professionals p ON cs.professional_id = p.id
+        JOIN clients c ON cs.client_id = c.id
+        JOIN users cu ON c.user_id = cu.id
         WHERE p.user_id = $1
         ORDER BY cs.created_at DESC
       `;
@@ -567,9 +567,9 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
     let query;
     
     if (userRole === 'client') {
-      query = 'SELECT id FROM happyswimming.clients WHERE user_id = $1';
+      query = 'SELECT id FROM clients WHERE user_id = $1';
     } else if (userRole === 'professional') {
-      query = 'SELECT id FROM happyswimming.professionals WHERE user_id = $1';
+      query = 'SELECT id FROM professionals WHERE user_id = $1';
     } else {
       return res.status(403).json({ error: 'Unauthorized role' });
     }
@@ -583,7 +583,7 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
     
     // Get course/service details
     const serviceResult = await client.query(
-      'SELECT id, price FROM happyswimming.services WHERE id = $1',
+      'SELECT id, price FROM services WHERE id = $1',
       [courseId]
     );
     
@@ -599,7 +599,7 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
     
     if (userRole === 'client') {
       enrollmentQuery = `
-        INSERT INTO happyswimming.client_services 
+        INSERT INTO client_services 
         (client_id, service_id, professional_id, start_date, price, status, notes)
         VALUES ($1, $2, $3, $4, $5, 'pending', $6)
         RETURNING id
@@ -615,7 +615,7 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
     } else if (userRole === 'professional') {
       // For professionals enrolling in training courses
       enrollmentQuery = `
-        INSERT INTO happyswimming.professional_services
+        INSERT INTO professional_services
         (professional_id, service_id, price_per_hour, notes)
         VALUES ($1, $2, $3, $4)
         RETURNING professional_id, service_id
@@ -662,15 +662,15 @@ app.put('/api/enrollments/:id/cancel', authenticateToken, async (req, res) => {
     if (userRole === 'client') {
       checkQuery = `
         SELECT cs.id 
-        FROM happyswimming.client_services cs
-        JOIN happyswimming.clients c ON cs.client_id = c.id
+        FROM client_services cs
+        JOIN clients c ON cs.client_id = c.id
         WHERE cs.id = $1 AND c.user_id = $2 AND cs.status = 'pending'
       `;
     } else if (userRole === 'professional') {
       checkQuery = `
         SELECT cs.id 
-        FROM happyswimming.client_services cs
-        JOIN happyswimming.professionals p ON cs.professional_id = p.id
+        FROM client_services cs
+        JOIN professionals p ON cs.professional_id = p.id
         WHERE cs.id = $1 AND p.user_id = $2 AND cs.status = 'pending'
       `;
     } else {
@@ -685,9 +685,9 @@ app.put('/api/enrollments/:id/cancel', authenticateToken, async (req, res) => {
       });
     }
     
-    // UPDATE happyswimming.the enrollment status to cancelled
+    // UPDATE the enrollment status to cancelled
     await client.query(
-      'UPDATE happyswimming.client_services SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      'UPDATE client_services SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       ['cancelled', enrollmentId]
     );
     
@@ -710,10 +710,10 @@ app.get('/api/professionals/available', authenticateToken, async (req, res) => {
       SELECT p.id, CONCAT(u.first_name, ' ', u.last_name1) as name,
         array_agg(s.name) as specialties, 
         p.is_insourcing as available
-      FROM happyswimming.professionals p
-      JOIN happyswimming.users u ON p.user_id = u.id
-      LEFT JOIN happyswimming.professional_specialties ps ON p.id = ps.professional_id
-      LEFT JOIN happyswimming.specialties s ON ps.specialty_id = s.id
+      FROM professionals p
+      JOIN users u ON p.user_id = u.id
+      LEFT JOIN professional_specialties ps ON p.id = ps.professional_id
+      LEFT JOIN specialties s ON ps.specialty_id = s.id
       WHERE u.is_active = true
       GROUP BY p.id, u.first_name, u.last_name1, p.is_insourcing
       ORDER BY name
@@ -743,7 +743,7 @@ app.get('/api/professionals/verifications', authenticateToken, async (req, res) 
     
     // Check if the user is a professional
     const userCheck = await pool.query(
-      'SELECT id FROM happyswimming.professionals WHERE user_id = $1',
+      'SELECT id FROM professionals WHERE user_id = $1',
       [userId]
     );
     
@@ -756,8 +756,8 @@ app.get('/api/professionals/verifications', authenticateToken, async (req, res) 
     // Get service IDs the professional is verified for
     const query = `
       SELECT s.id as service_id
-      FROM happyswimming.professional_services ps
-      JOIN happyswimming.services s ON ps.service_id = s.id
+      FROM professional_services ps
+      JOIN services s ON ps.service_id = s.id
       WHERE ps.professional_id = $1
     `;
     
@@ -781,7 +781,7 @@ app.get('/api/professionals/services', authenticateToken, async (req, res) => {
     
     // Check if the user is a professional
     const userCheck = await pool.query(
-      'SELECT id FROM happyswimming.professionals WHERE user_id = $1',
+      'SELECT id FROM professionals WHERE user_id = $1',
       [userId]
     );
     
@@ -794,7 +794,7 @@ app.get('/api/professionals/services', authenticateToken, async (req, res) => {
     // Get professional services directly from the database with the exact column names
     const query = `
       SELECT professional_id, service_id, price_per_hour, notes
-      FROM happyswimming.professional_services
+      FROM professional_services
       WHERE professional_id = $1
     `;
     
