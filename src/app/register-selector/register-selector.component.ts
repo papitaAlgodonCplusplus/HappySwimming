@@ -42,11 +42,18 @@ export class RegisterSelectorComponent implements OnInit {
 
   // Navigation methods for the image buttons
   navigateToClient() {
+    console.log('Navigating to client registration (Outsourcing)');
     this.router.navigate(['/register/client']);
   }
 
   navigateToProfessional() {
+    console.log('Navigating to client registration (Insourcing)');
     this.router.navigate(['/register/professional']);
+  }
+  
+  navigateToFreeProfessional() {
+    console.log('Navigating to free professional registration');
+    this.router.navigate(['/register-free-professional']);
   }
 
   ngOnDestroy(): void {

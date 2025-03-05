@@ -5,7 +5,7 @@
 <app-header></app-header>
 <div class="register-container">
     <div class="register-content">
-        <h1 class="title">{{ clientType === 'client' ? '1.- Registro (Cliente)' : '1.- Registro (Profesional)' }}</h1>
+        <h1 class="title">{{ registrationTitle }}</h1>
 
         <div *ngIf="errorMessage" class="error-message">
             {{ errorMessage }}
@@ -103,7 +103,7 @@
                 <label for="website">Web (no obligatorio):</label>
                 <input type="url" id="website" [(ngModel)]="website" class="form-control" [disabled]="isLoading">
             </div>
-            <div class="form-group" *ngIf="clientType === 'client'">
+            <div class="form-group">
                 <label for="plCode">Codigo PL (no obligatorio):</label>
                 <select id="plCode" [(ngModel)]="plCode" class="form-control" [disabled]="isLoading">
                     <option value="" selected>Seleccione un código PL</option>

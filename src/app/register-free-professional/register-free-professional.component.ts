@@ -264,10 +264,15 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
     formData.append('courseId', this.selectedCourse);
     formData.append('courseDelivery', this.selectedCourseDelivery);
     
+    // Explicitly set role to professional
+    formData.append('role', 'professional');
+    
     // Append files
     if (this.idDocument) formData.append('idDocument', this.idDocument);
     if (this.curriculumVitae) formData.append('curriculumVitae', this.curriculumVitae);
     if (this.insuranceDocument) formData.append('insuranceDocument', this.insuranceDocument);
+    
+    console.log('Registering professional with form data');
     
     // Call API service to register free professional
     this.authService.registerFreeProfessional(formData).subscribe({
