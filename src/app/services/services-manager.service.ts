@@ -44,7 +44,10 @@ interface ProfessionalService {
   providedIn: 'root'
 })
 export class ServicesManagerService {
-  private apiUrl = 'http://localhost:3000/api';
+  // DEV: Use the following URL for development
+  // private apiUrl = 'http://localhost:3000/api';
+  // PROD: Use the following URL for production
+  private apiUrl = 'https://happyswimming.onrender.com:3000/api';
 
   constructor(
     private http: HttpClient,
