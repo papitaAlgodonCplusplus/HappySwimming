@@ -41,9 +41,9 @@ app.use(express.json());
 
 // Database connection PROD
 const pool = new Pool({
-  host: 'db.qdmjndowptwvurlowwwk.supabase.co',
+  host: 'happyswimming.cxqii6e0qkzu.us-east-1.rds.amazonaws.com',
   port: 5432,
-  database: 'postgres',
+  database: 'happyswimming',
   user: 'postgres',
   password: 'PwT.398!',
   ssl: { rejectUnauthorized: false }
