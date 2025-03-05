@@ -1,0 +1,230 @@
+.services-manager-container {
+    width: 100%;
+    min-height: 100vh;
+    background-color: #a7e0ff;
+    font-family: 'Lexend Peta', sans-serif;
+    padding-top: 120px; /* Account for header */
+    padding-bottom: 40px;
+    color: #204376;
+  }
+  
+  .services-manager-content {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #a7e0ff;
+    padding: 2rem;
+    border-radius: 10px;
+  }
+  
+  .title {
+    text-align: left;
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    font-weight: 700;
+    color: #204376;
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    color: #204376;
+    border-bottom: 2px solid #004aad;
+    padding-bottom: 0.5rem;
+  }
+  
+  .enrollment-form-section, .my-enrollments-section {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  label {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #204376;
+  }
+  
+  .form-control {
+    width: 100%;
+    padding: 0.7rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    background-color: #ffffff;
+    font-family: 'Lexend Peta', sans-serif;
+  }
+  
+  .required {
+    color: #cc0000;
+    margin-left: 4px;
+  }
+  
+  .button-container {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 1rem;
+  }
+  
+  .btn {
+    padding: 0.75rem 2rem;
+    border: none;
+    border-radius: 30px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Lexend Peta', sans-serif;
+    font-weight: 500;
+  }
+  
+  .btn-submit {
+    background-color: #004aad;
+    color: white;
+  }
+  
+  .btn-cancel {
+    background-color: #cc0000;
+    color: white;
+    padding: 0.4rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .btn:hover {
+    transform: scale(1.05);
+  }
+  
+  .btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  .error-message {
+    background-color: rgba(255, 0, 0, 0.1);
+    color: #cc0000;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    border-left: 4px solid #cc0000;
+  }
+  
+  .success-message {
+    background-color: rgba(0, 128, 0, 0.1);
+    color: #006600;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    border-left: 4px solid #006600;
+  }
+  
+  .course-description {
+    font-size: 0.9rem;
+    font-style: italic;
+    color: #555;
+    margin-top: -1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .enrollments-table-container {
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  .enrollments-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  
+  .enrollments-table th, .enrollments-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .enrollments-table th {
+    background-color: #004aad;
+    color: white;
+    font-weight: 600;
+  }
+  
+  .enrollments-table tr:nth-child(even) {
+    background-color: rgba(0, 74, 173, 0.05);
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+  
+  .status-approved {
+    background-color: rgba(0, 128, 0, 0.2);
+    color: #006600;
+  }
+  
+  .status-pending {
+    background-color: rgba(255, 153, 0, 0.2);
+    color: #cc7a00;
+  }
+  
+  .status-completed {
+    background-color: rgba(0, 102, 204, 0.2);
+    color: #004a99;
+  }
+  
+  .status-cancelled {
+    background-color: rgba(204, 0, 0, 0.2);
+    color: #990000;
+  }
+  
+  .no-enrollments-message {
+    text-align: center;
+    padding: 2rem;
+    color: #555;
+    font-style: italic;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .services-manager-content {
+      width: 95%;
+      padding: 1.5rem;
+    }
+  
+    .title {
+      font-size: 1.5rem;
+    }
+  
+    .section-title {
+      font-size: 1.3rem;
+    }
+  
+    .enrollment-form-section, .my-enrollments-section {
+      padding: 1.5rem;
+    }
+  
+    .btn {
+      width: 100%;
+    }
+  }

@@ -26,16 +26,11 @@ export const routes: Routes = [
     path: 'register-free-professional',
     loadComponent: () => import('./register-free-professional/register-free-professional.component').then(c => c.RegisterFreeProfessionalComponent)
   },
-    // {
-  //   path: 'services-manager',
-  //   loadComponent: () => import('./services-manager/services-manager.component').then(c => c.ServicesManagerComponent),
-  //   canActivate: [authGuard]
-  // },
-  // {
-  //   path: 'profile',
-  //   loadComponent: () => import('./profile/profile.component').then(c => c.ProfileComponent),
-  //   canActivate: [authGuard]
-  // },
+  {
+    path: 'services-manager',
+    loadComponent: () => import('./services-manager/services-manager.component').then(c => c.ServicesManagerComponent),
+    canActivate: [authGuard]
+  },
   {
     path: 'homepage',
     loadComponent: () => import('./homepage/homepage.component').then(c => c.HomepageComponent),

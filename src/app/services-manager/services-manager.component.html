@@ -1,0 +1,124 @@
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+  </style>
+  
+  <app-header></app-header>
+  <div class="services-manager-container">
+    <div class="services-manager-content">
+      <h1 class="title">{{ userRole === 'client' ? 'Client Services Manager' : 'Professional Services Manager' }}</h1>
+  
+      <!-- Alert Messages -->
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+      
+      <div *ngIf="successMessage" class="success-message">
+        {{ successMessage }}
+      </div>
+  
+      <!-- Enrollment Form Section -->
+      <div class="enrollment-form-section">
+        <h2 class="section-title">New Enrollment</h2>
+        
+        <div class="form-container">
+          <!-- Course Selection -->
+          <div class="form-group">
+            <label for="courseSelect">Select Course<span class="required">*</span></label>
+            <select id="courseSelect" [(ngModel)]="selectedCourse" (change)="onCourseSelect()" class="form-control" [disabled]="isLoading">
+              <option value="" disabled selected>-- Select a course --</option>
+              <ng-container *ngIf="userRole === 'client'">
+                <option *ngFor="let course of clientCourses" [value]="course.id">
+                  {{ course.name }} - {{ course.duration }} hours (€{{ course.price }})
+                </option>
+              </ng-container>
+              <ng-container *ngIf="userRole === 'professional'">
+                <option *ngFor="let course of professionalCourses" [value]="course.id">
+                  {{ course.name }} - {{ course.duration }} hours (€{{ course.price }})
+                </option>
+              </ng-container>
+            </select>
+          </div>
+          
+          <!-- Course Description (if selected) -->
+          <div *ngIf="getSelectedCourseDetails()?.description" class="course-description">
+            {{ getSelectedCourseDetails()?.description }}
+          </div>
+          
+          <!-- Professional Selection (Client only) -->
+          <div *ngIf="userRole === 'client'" class="form-group">
+            <label for="professionalSelect">Select Professional<span class="required">*</span></label>
+            <select id="professionalSelect" [(ngModel)]="selectedProfessional" class="form-control" [disabled]="!selectedCourse || isLoading">
+              <option value="" disabled selected>-- Select a professional --</option>
+              <option *ngFor="let prof of availableProfessionals" [value]="prof.id" [disabled]="!prof.available">
+                {{ prof.name }} {{ !prof.available ? '(Not Available)' : '' }}
+              </option>
+            </select>
+          </div>
+          
+          <!-- Start Date -->
+          <div class="form-group">
+            <label for="startDate">Preferred Start Date<span class="required">*</span></label>
+            <input type="date" id="startDate" [(ngModel)]="startDate" class="form-control" [disabled]="isLoading">
+          </div>
+          
+          <!-- Preferred Time -->
+          <div class="form-group">
+            <label for="preferredTime">Preferred Time (Optional)</label>
+            <select id="preferredTime" [(ngModel)]="preferredTime" class="form-control" [disabled]="isLoading">
+              <option value="" selected>No preference</option>
+              <option value="morning">Morning (9:00 - 12:00)</option>
+              <option value="afternoon">Afternoon (13:00 - 17:00)</option>
+              <option value="evening">Evening (18:00 - 21:00)</option>
+            </select>
+          </div>
+          
+          <!-- Submit Button -->
+          <div class="button-container">
+            <button class="btn btn-submit" (click)="onSubmit()" [disabled]="isLoading">
+              <span *ngIf="!isLoading">Submit Enrollment</span>
+              <span *ngIf="isLoading">Processing...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- My Enrollments Section -->
+      <div class="my-enrollments-section">
+        <h2 class="section-title">My Enrollments</h2>
+        
+        <div *ngIf="myEnrollments.length === 0" class="no-enrollments-message">
+          You don't have any enrollments yet.
+        </div>
+        
+        <div *ngIf="myEnrollments.length > 0" class="enrollments-table-container">
+          <table class="enrollments-table">
+            <thead>
+              <tr>
+                <th>Course</th>
+                <th>Status</th>
+                <th>Enrollment Date</th>
+                <th>Start Date</th>
+                <th *ngIf="userRole === 'client'">Professional</th>
+                <th>Price</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let enrollment of myEnrollments">
+                <td>{{ enrollment.courseName }}</td>
+                <td><span class="status-badge" [ngClass]="getStatusClass(enrollment.status)">{{ enrollment.status }}</span></td>
+                <td>{{ enrollment.enrollmentDate | date:'shortDate' }}</td>
+                <td>{{ enrollment.startDate ? (enrollment.startDate | date:'shortDate') : 'Pending' }}</td>
+                <td *ngIf="userRole === 'client'">{{ enrollment.professionalName || 'Not assigned' }}</td>
+                <td>€{{ enrollment.price }}</td>
+                <td>
+                  <button *ngIf="enrollment.status === 'pending'" class="btn btn-cancel" (click)="cancelEnrollment(enrollment.id)">Cancel</button>
+                  <span *ngIf="enrollment.status !== 'pending'">-</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
