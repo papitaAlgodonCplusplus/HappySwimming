@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -12,11 +12,13 @@ import { Subscription } from 'rxjs';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, HeaderComponent, TranslatePipe],
   templateUrl: './auth.component.html',
-  styleUrls: ['./auth.component.css']
+  styleUrls: ['./auth.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AuthComponent implements OnInit, OnDestroy {
   email: string = '';
   password: string = '';
+  private langSubscription: Subscription | null = null;
   private loadedSubscription: Subscription | null = null;
 
   constructor(
@@ -25,18 +27,17 @@ export class AuthComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    // Check for preferred language in localStorage, otherwise use default
-    const storedLang = localStorage.getItem('preferredLanguage');
-    if (storedLang) {
-      this.translationService.setLanguage(storedLang);
-    } else {
-      this.translationService.setLanguage('es');
-    }
+    // Subscribe to language changes to update view
+    this.langSubscription = this.translationService.getCurrentLang().subscribe(() => {
+      console.log('Auth component detected language change');
+      this.cdr.detectChanges(); // Force immediate change detection
+    });
 
     // Subscribe to translations loaded event
     this.loadedSubscription = this.translationService.isTranslationsLoaded().subscribe(loaded => {
       if (loaded) {
-        this.cdr.markForCheck(); // Force change detection when translations are loaded
+        console.log('Auth component detected translations loaded');
+        this.cdr.detectChanges(); // Force immediate change detection
       }
     });
   }
@@ -47,6 +48,9 @@ export class AuthComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     // Clean up subscriptions
+    if (this.langSubscription) {
+      this.langSubscription.unsubscribe();
+    }
     if (this.loadedSubscription) {
       this.loadedSubscription.unsubscribe();
     }

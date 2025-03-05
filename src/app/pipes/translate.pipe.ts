@@ -1,4 +1,4 @@
-import { Pipe, PipeTransform, OnDestroy } from '@angular/core';
+import { Pipe, PipeTransform, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { TranslationService } from '../services/translation.service';
 import { Subscription } from 'rxjs';
 
@@ -12,21 +12,23 @@ export class TranslatePipe implements PipeTransform, OnDestroy {
   private lastKey: string = '';
   private lastResult: string = '';
   
-  constructor(private translationService: TranslationService) {
+  constructor(
+    private translationService: TranslationService,
+    private cdr: ChangeDetectorRef
+  ) {
     // Subscribe to language changes to trigger pipe re-evaluation
     this.langChangeSubscription = this.translationService.getCurrentLang().subscribe(() => {
-      // The pipe will be re-evaluated on next change detection cycle
+      // Force change detection when language changes
+      this.lastKey = '';
+      this.lastResult = '';
+      this.cdr.markForCheck();
     });
   }
 
   transform(key: string): string {
-    // If the key is the same and we already have a result, return it
-    if (key === this.lastKey && this.lastResult) {
-      return this.lastResult;
-    }
-    
-    this.lastKey = key;
+    // Always get fresh translation when language changes
     this.lastResult = this.translationService.translate(key);
+    this.lastKey = key;
     return this.lastResult;
   }
 

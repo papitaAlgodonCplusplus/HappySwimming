@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { tap, catchError, finalize } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -33,29 +33,26 @@ export class TranslationService {
     if (lang === this.currentLang.value) return;
     
     this.loadTranslations(lang);
-    this.currentLang.next(lang);
-    localStorage.setItem('preferredLanguage', lang);
   }
 
   private loadTranslations(lang: string, isInitial: boolean = false): void {
     // Set loaded to false while we're loading
-    if (!isInitial) {
-      this.translationsLoaded.next(false);
-    }
+    this.translationsLoaded.next(false);
 
     this.http.get(`assets/i18n/${lang}.json`)
       .pipe(
         tap((data: any) => {
           this.translations[lang] = data;
-          this.translationsLoaded.next(true);
-          if (isInitial) {
-            this.currentLang.next(lang);
-          }
+          // Only after translations are loaded, update the current language
+          this.currentLang.next(lang);
+          localStorage.setItem('preferredLanguage', lang);
         }),
         catchError(error => {
           console.error(`Could not load translations for ${lang}`, error);
-          this.translationsLoaded.next(true); // Mark as loaded even on error to avoid blocking UI
           return of(null);
+        }),
+        finalize(() => {
+          this.translationsLoaded.next(true);
         })
       )
       .subscribe();
