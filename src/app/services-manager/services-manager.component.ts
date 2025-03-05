@@ -166,7 +166,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Error loading enrollments:', error);
-        this.errorMessage = 'Failed to load your enrollments. Please try again.';
+        this.errorMessage = 'No enrollments found';
         this.isLoading = false;
         this.cdr.detectChanges();
       }
