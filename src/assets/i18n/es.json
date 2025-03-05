@@ -12,15 +12,10 @@
     "professionals": "Profesionales",
     "title": "HAPPYSWIMMING",
     "subtitle": "servicios de natación",
-    
     "aboutIntro": "Ofrecemos clases de natación para todos los niveles con el objetivo de presentar las numerosas oportunidades que ofrece el agua. Para nosotros, la natación es mucho más que adquirir una habilidad para toda la vida. Utilizamos la natación como una herramienta para mejorar el desarrollo infantil y construir la personalidad del niño.",
-    
     "aboutMethodology": "Los niños pequeños aprenden a través de nuestra innovadora metodología 'nada un cuento' que ofrece un enfoque interdisciplinario para aprender a nadar.",
-    
     "aboutPhilosophy": "Nuestra filosofía se basa en el disfrute de los niños desde el primer día, y el miedo puede ser a menudo un obstáculo en edades tempranas, por eso ser conscientes de la psicología infantil es esencial para que los alumnos se sientan seguros y felices en el agua.",
-    
     "aboutAdults": "Aplicamos la misma filosofía a los adultos y nos adaptamos a sus habilidades motoras para un progreso más rápido.",
-    
     "registerSelector": "CLIENTES",
     "externalization": "EXTERNALIZACIÓN",
     "outsourcing": "OUTSOURCING",
@@ -28,5 +23,29 @@
     "insourcing": "INSOURCING",
     "selectClient": "Seleccionar Outsourcing",
     "selectProfessional": "Seleccionar Insourcing",
-    "backToLogin": "Volver al Login"
+    "backToLogin": "Volver al Login",
+    "registration": {
+        "title": "Registro",
+        "clientTitle": "Registro de Cliente",
+        "professionalTitle": "Registro de Profesional",
+        "identification": "CIF/D.N.I./Pasaporte",
+        "companyName": "Razón social",
+        "firstName": "Nombre",
+        "lastName1": "Apellido 1",
+        "lastName2": "Apellido 2",
+        "address": "Dirección",
+        "postalCode": "Código Postal",
+        "city": "Ciudad",
+        "country": "País",
+        "phoneFixed": "Tfno Fijo (no obligatorio)",
+        "phoneMobile": "Tfno Móvil",
+        "email": "E-mail",
+        "website": "Web (no obligatorio)",
+        "plCode": "Codigo PL (no obligatorio)",
+        "plCodeSelect": "Desplegable con nombres de PL",
+        "acceptTerms": "Acepto las Condiciones",
+        "lopd": "Texto LOPD (por hacer)",
+        "cancel": "Cancelar",
+        "register": "Registrarse"
+    }
 }

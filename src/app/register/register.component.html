@@ -1,0 +1,115 @@
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+</style>
+
+<app-header></app-header>
+<div class="register-container">
+    <div class="register-content">
+        <h1 class="title">{{ clientType === 'client' ? '1.- Registro (Cliente)' : '1.- Registro (Profesional)' }}</h1>
+
+        <div class="client-type-selector">
+            <div class="radio-group">
+                <input type="radio" id="outsourcing" [value]="'outsourcing'" [(ngModel)]="externalOption"
+                    [disabled]="true">
+                <label for="outsourcing">{{ 'externalization' | translate }} {{ 'outsourcing' | translate }}</label>
+            </div>
+            <div class="radio-group">
+                <input type="radio" id="insourcing" [value]="'insourcing'" [(ngModel)]="externalOption"
+                    [disabled]="true">
+                <label for="insourcing">{{ 'escuelaCliente' | translate }} {{ 'insourcing' | translate }}</label>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="identificationNumber">CIF/D.N.I./ PASAPORTE:</label>
+                <input type="text" id="identificationNumber" [(ngModel)]="identificationNumber" class="form-control">
+            </div>
+            <div class="form-group wide">
+                <label for="companyName">Razón social:</label>
+                <input type="text" id="companyName" [(ngModel)]="companyName" class="form-control">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="firstName">Nombre:</label>
+                <input type="text" id="firstName" [(ngModel)]="firstName" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="lastName1">Apellido 1:</label>
+                <input type="text" id="lastName1" [(ngModel)]="lastName1" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="lastName2">Apellido 2:</label>
+                <input type="text" id="lastName2" [(ngModel)]="lastName2" class="form-control">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group wide">
+                <label for="address">Dirección:</label>
+                <input type="text" id="address" [(ngModel)]="address" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="postalCode">Código Postal:</label>
+                <input type="text" id="postalCode" [(ngModel)]="postalCode" class="form-control">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="city">Ciudad:</label>
+                <input type="text" id="city" [(ngModel)]="city" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="country">País:</label>
+                <input type="text" id="country" [(ngModel)]="country" class="form-control">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="phoneFixed">Tfno Fijo (no obligatorio):</label>
+                <input type="tel" id="phoneFixed" [(ngModel)]="phoneFixed" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="phoneMobile">Tfno Móvil:</label>
+                <input type="tel" id="phoneMobile" [(ngModel)]="phoneMobile" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="email">E-mail:</label>
+                <input type="email" id="email" [(ngModel)]="email" class="form-control">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group wide">
+                <label for="website">Web (no obligatorio):</label>
+                <input type="url" id="website" [(ngModel)]="website" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="plCode">Codigo PL (no obligatorio):</label>
+                <select id="plCode" [(ngModel)]="plCode" class="form-control">
+                    <option value="" selected>Desplegable con nombres de PL</option>
+                    <option value="pl1">PL Option 1</option>
+                    <option value="pl2">PL Option 2</option>
+                    <option value="pl3">PL Option 3</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="terms-container">
+            <div class="terms-checkbox">
+                <input type="checkbox" id="acceptTerms" [(ngModel)]="acceptTerms">
+                <label for="acceptTerms">Acepto las Condiciones <span class="lopd-text">Texto LOPD (por
+                        hacer)</span></label>
+            </div>
+        </div>
+
+        <div class="button-container">
+            <button class="btn btn-cancel" (click)="cancel()">Cancelar</button>
+            <button class="btn btn-register" (click)="onSubmit()">Registrarse</button>
+        </div>
+    </div>
+</div>

@@ -12,21 +12,40 @@
     "professionals": "Professionals",
     "title": "HAPPYSWIMMING",
     "subtitle": "providing swimming services",
-    
     "aboutIntro": "We provide swimming lessons to all levels with the aim of introducing the numerous opportunities that water offers. For us, swimming is much more than achieving a skill for life. We use swimming as a tool to enhance child development and build a child's personality.",
-    
     "aboutMethodology": "Young children learn through our cross innovative 'swim a story' methodology that offers an interdisciplinary approach to learning to swim.",
-    
     "aboutPhilosophy": "Our philosophy is based on the enjoyment of the children from day one and fear can often be an obstacle at early ages, and it is for this reason that being aware of children's psychology is essential to make learners feel confident and happy in the water.",
-    
     "aboutAdults": "We apply the same philosophy to adults and we adapt to their motor skills for a quicker progress.",
-    
     "registerSelector": "CLIENTS",
-    "externalization": "EXTERNALIZATION", 
+    "externalization": "EXTERNALIZATION",
     "outsourcing": "OUTSOURCING",
     "escuelaCliente": "CLIENT SCHOOL",
     "insourcing": "INSOURCING",
     "selectClient": "Select Outsourcing",
     "selectProfessional": "Select Insourcing",
-    "backToLogin": "Back to Login"
+    "backToLogin": "Back to Login",
+    "registration": {
+        "title": "Registration",
+        "clientTitle": "Client Registration",
+        "professionalTitle": "Professional Registration",
+        "identification": "ID/Passport",
+        "companyName": "Company Name",
+        "firstName": "First Name",
+        "lastName1": "Last Name 1",
+        "lastName2": "Last Name 2",
+        "address": "Address",
+        "postalCode": "Postal Code",
+        "city": "City",
+        "country": "Country",
+        "phoneFixed": "Phone (optional)",
+        "phoneMobile": "Mobile Phone",
+        "email": "Email",
+        "website": "Website (optional)",
+        "plCode": "PL Code (optional)",
+        "plCodeSelect": "Select PL Code",
+        "acceptTerms": "I accept the Terms and Conditions",
+        "lopd": "LOPD Text (to be added)",
+        "cancel": "Cancel",
+        "register": "Register"
+    }
 }
