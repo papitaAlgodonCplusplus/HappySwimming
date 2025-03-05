@@ -43,6 +43,8 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
   phoneFixed: string = '';
   phoneMobile: string = '';
   email: string = '';
+  password: string = '';
+  confirmPassword: string = '';
   website: string = '';
   bankAccount: string = '';
   
@@ -193,7 +195,8 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
     if (!this.firstName || !this.lastName1 || !this.identificationNumber || 
         !this.address || !this.postalCode || !this.city || !this.country || 
         !this.phoneMobile || !this.email || !this.selectedJobArea ||
-        !this.selectedCourse || !this.bankAccount) {
+        !this.selectedCourse || !this.bankAccount ||
+        !this.password || !this.confirmPassword) {
       this.errorMessage = 'Please fill in all required fields.';
       return false;
     }
@@ -202,6 +205,18 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(this.email)) {
       this.errorMessage = 'Please enter a valid email address.';
+      return false;
+    }
+    
+    // Check if passwords match
+    if (this.password !== this.confirmPassword) {
+      this.errorMessage = 'Passwords do not match.';
+      return false;
+    }
+    
+    // Check password strength (at least 8 characters)
+    if (this.password.length < 8) {
+      this.errorMessage = 'Password must be at least 8 characters long.';
       return false;
     }
     
@@ -234,6 +249,8 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
     formData.append('identificationNumber', this.identificationNumber);
     formData.append('firstName', this.firstName);
     formData.append('lastName1', this.lastName1);
+    formData.append('password', this.password);
+    formData.append('email', this.email);
     if (this.lastName2) formData.append('lastName2', this.lastName2);
     formData.append('address', this.address);
     formData.append('postalCode', this.postalCode);
@@ -241,7 +258,6 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
     formData.append('country', this.country);
     if (this.phoneFixed) formData.append('phoneFixed', this.phoneFixed);
     formData.append('phoneMobile', this.phoneMobile);
-    formData.append('email', this.email);
     if (this.website) formData.append('website', this.website);
     formData.append('bankAccount', this.bankAccount);
     formData.append('jobArea', this.selectedJobArea);
@@ -256,12 +272,12 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
     // Call API service to register free professional
     this.authService.registerFreeProfessional(formData).subscribe({
       next: (response) => {
-        console.log('Free professional registration successful', response);
+        console.log('Professional registration successful', response);
         this.isLoading = false;
         this.router.navigate(['/auth'], { queryParams: { registered: 'success' } });
       },
       error: (error) => {
-        console.error('Free professional registration failed', error);
+        console.error('Professional registration failed', error);
         this.isLoading = false;
         this.errorMessage = error.error?.error || 'Registration failed. Please try again.';
         this.cdr.detectChanges();
