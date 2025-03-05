@@ -177,7 +177,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         catchError(error => {
           console.error('Error loading enrollments:', error);
           this.errorMessage = this.translationService.translate('servicesManager.errorGeneric');
-          checkAllRequestsComplete();
           return of([]);
         }),
         finalize(() => checkAllRequestsComplete())
@@ -187,30 +186,28 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         
         // If user is a client, load available professionals
         if (this.userRole === 'client') {
-          this.loadAvailableProfessionals();
+          this.loadAvailableProfessionals(checkAllRequestsComplete);
+        }
+        
+        // If user is a professional, load their verifications
+        if (this.userRole === 'professional') {
+          this.loadProfessionalVerifications(checkAllRequestsComplete);
         }
       });
-    
-    // If user is a professional, load their verifications
-    if (this.userRole === 'professional') {
-      this.loadProfessionalVerifications();
-    }
   }
   
-  loadAvailableProfessionals() {
+  loadAvailableProfessionals(completeCallback: () => void) {
     this.servicesManagerService.getAvailableProfessionals()
       .pipe(
         catchError(error => {
           console.error('Error loading professionals:', error);
           this.errorMessage = this.translationService.translate('servicesManager.errorLoadProfessionals');
-          this.isLoading = false;
-          this.cdr.detectChanges();
           return of([]);
-        })
+        }),
+        finalize(() => completeCallback())
       )
       .subscribe(professionals => {
         this.availableProfessionals = professionals;
-        this.isLoading = false;
         this.cdr.detectChanges();
       });
   }
@@ -219,16 +216,15 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return this.professionalCourses.find(course => course.id === courseId);
   }
   
-  loadProfessionalVerifications() {
+  loadProfessionalVerifications(completeCallback: () => void) {
     this.servicesManagerService.getProfessionalVerifications()
       .pipe(
         catchError(error => {
           console.error('Error loading professional verifications:', error);
           this.errorMessage = this.translationService.translate('servicesManager.errorGeneric');
-          this.isLoading = false;
-          this.cdr.detectChanges();
           return of([]);
-        })
+        }),
+        finalize(() => completeCallback())
       )
       .subscribe(verifications => {
         this.professionalVerifications = verifications;
@@ -310,6 +306,10 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           this.isLoading = false;
           this.cdr.detectChanges();
           return of(null);
+        }),
+        finalize(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
         })
       )
       .subscribe(response => {
@@ -317,7 +317,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           console.log('Enrollment successful', response);
           this.successMessage = this.translationService.translate('servicesManager.successEnrollment');
           this.errorMessage = '';
-          this.isLoading = false;
           
           // Reset form
           this.selectedCourse = '';
@@ -365,6 +364,10 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
             this.isLoading = false;
             this.cdr.detectChanges();
             return of(null);
+          }),
+          finalize(() => {
+            this.isLoading = false;
+            this.cdr.detectChanges();
           })
         )
         .subscribe(response => {
