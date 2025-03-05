@@ -100,6 +100,7 @@ CREATE TABLE services (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
+    price DECIMAL(10, 2),
     type_id INTEGER NOT NULL REFERENCES service_types(id),
     duration_minutes INTEGER NOT NULL,
     max_participants INTEGER,

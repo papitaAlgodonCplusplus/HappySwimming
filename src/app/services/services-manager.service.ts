@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { AuthService } from './auth.service';
 
 interface Professional {
   id: number;
@@ -37,30 +38,53 @@ interface EnrollmentRequest {
 export class ServicesManagerService {
   private apiUrl = 'http://localhost:3000/api';
 
-  constructor(private http: HttpClient) { }
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) { }
+
+  // Helper method to set auth headers
+  private getHeaders(): HttpHeaders {
+    const token = this.authService.getToken();
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+  }
 
   // Get available professionals for client courses
   getAvailableProfessionals(): Observable<Professional[]> {
-    return this.http.get<Professional[]>(`${this.apiUrl}/professionals/available`);
+    return this.http.get<Professional[]>(`${this.apiUrl}/professionals/available`, { 
+      headers: this.getHeaders() 
+    });
   }
 
   // Get user enrollments
   getUserEnrollments(): Observable<Enrollment[]> {
-    return this.http.get<Enrollment[]>(`${this.apiUrl}/enrollments/user`);
+    return this.http.get<Enrollment[]>(`${this.apiUrl}/enrollments/user`, { 
+      headers: this.getHeaders() 
+    });
   }
 
   // Create new enrollment
   createEnrollment(enrollmentData: EnrollmentRequest): Observable<any> {
-    return this.http.post(`${this.apiUrl}/enrollments`, enrollmentData);
+    console.log('Enrollment data:', enrollmentData);
+    return this.http.post(`${this.apiUrl}/enrollments`, enrollmentData, { 
+      headers: this.getHeaders() 
+    });
   }
 
   // Cancel enrollment
   cancelEnrollment(enrollmentId: number): Observable<any> {
-    return this.http.put(`${this.apiUrl}/enrollments/${enrollmentId}/cancel`, {});
+    return this.http.put(`${this.apiUrl}/enrollments/${enrollmentId}/cancel`, {}, { 
+      headers: this.getHeaders() 
+    });
   }
 
   // Get professional teaching verifications
   getProfessionalVerifications(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.apiUrl}/professionals/verifications`);
+    return this.http.get<string[]>(`${this.apiUrl}/professionals/verifications`, { 
+      headers: this.getHeaders() 
+    });
   }
 }

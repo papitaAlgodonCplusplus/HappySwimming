@@ -8,6 +8,8 @@ import { TranslatePipe } from '../pipes/translate.pipe';
 import { AuthService } from '../services/auth.service';
 import { ServicesManagerService } from '../services/services-manager.service';
 import { Subscription } from 'rxjs';
+import { catchError, finalize } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 interface Course {
   id: string;
@@ -54,14 +56,14 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   
   // Available courses based on user role
   clientCourses: Course[] = [
-    { id: 'C1', name: 'Children Aged 3-6', type: 'client', price: 75, duration: 5 },
-    { id: 'C2', name: 'Children Aged 6-12', type: 'client', price: 75, duration: 5 },
-    { id: 'C3', name: 'Any Age and Ability', type: 'client', price: 75, duration: 5 }
+    { id: '5', name: 'Children Aged 3-6', type: 'client', price: 75, duration: 5 },
+    { id: '6', name: 'Children Aged 6-12', type: 'client', price: 75, duration: 5 },
+    { id: '7', name: 'Any Age and Ability', type: 'client', price: 75, duration: 5 }
   ];
   
   professionalCourses: Course[] = [
     { 
-      id: 'P1', 
+      id: '1', 
       name: 'Swimming Story Course for Teacher Trainer', 
       type: 'professional', 
       price: 200, 
@@ -69,7 +71,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       description: 'Online course for Teacher Trainer/Technical Director (includes pedagogical material)'
     },
     { 
-      id: 'P2', 
+      id: '2', 
       name: 'Swimming Story Teacher Course', 
       type: 'professional', 
       price: 90, 
@@ -77,7 +79,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       description: 'Online course for becoming a Swimming Story Teacher'
     },
     { 
-      id: 'P3', 
+      id: '3', 
       name: 'Front-crawl Spinning Methodology', 
       type: 'professional', 
       price: 850, 
@@ -85,7 +87,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       description: 'In-person training for front-crawl spinning methodology (minimum 10 people)'
     },
     { 
-      id: 'P4', 
+      id: '4', 
       name: 'Aquagym Instructor Course', 
       type: 'professional', 
       price: 45, 
@@ -99,6 +101,9 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   
   // User enrollments
   myEnrollments: Enrollment[] = [];
+  
+  // Professional verified courses (courses they're certified to teach)
+  professionalVerifications: string[] = [];
   
   // Form data
   selectedCourse: string = '';
@@ -149,42 +154,86 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.cdr.detectChanges();
     
+    // Create a counter to track when all requests are complete
+    let pendingRequests = 1; // Start with 1 for enrollments
+    
+    if (this.userRole === 'client') {
+      pendingRequests++; // Add 1 for professionals if user is client
+    } else if (this.userRole === 'professional') {
+      pendingRequests++; // Add 1 for verifications if user is professional
+    }
+    
+    const checkAllRequestsComplete = () => {
+      pendingRequests--;
+      if (pendingRequests <= 0) {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
+    };
+    
     // Load user enrollments
-    this.servicesManagerService.getUserEnrollments().subscribe({
-      next: (enrollments) => {
+    this.servicesManagerService.getUserEnrollments()
+      .pipe(
+        catchError(error => {
+          console.error('Error loading enrollments:', error);
+          this.errorMessage = this.translationService.translate('servicesManager.errorGeneric');
+          checkAllRequestsComplete();
+          return of([]);
+        }),
+        finalize(() => checkAllRequestsComplete())
+      )
+      .subscribe(enrollments => {
         this.myEnrollments = enrollments;
         
         // If user is a client, load available professionals
         if (this.userRole === 'client') {
           this.loadAvailableProfessionals();
-        } else {
-          this.isLoading = false;
-          this.cdr.detectChanges();
         }
-      },
-      error: (error) => {
-        console.error('Error loading enrollments:', error);
-        this.errorMessage = this.translationService.translate('servicesManager.errorGeneric');
-        this.isLoading = false;
-        this.cdr.detectChanges();
-      }
-    });
+      });
+    
+    // If user is a professional, load their verifications
+    if (this.userRole === 'professional') {
+      this.loadProfessionalVerifications();
+    }
   }
   
   loadAvailableProfessionals() {
-    this.servicesManagerService.getAvailableProfessionals().subscribe({
-      next: (professionals) => {
+    this.servicesManagerService.getAvailableProfessionals()
+      .pipe(
+        catchError(error => {
+          console.error('Error loading professionals:', error);
+          this.errorMessage = this.translationService.translate('servicesManager.errorLoadProfessionals');
+          this.isLoading = false;
+          this.cdr.detectChanges();
+          return of([]);
+        })
+      )
+      .subscribe(professionals => {
         this.availableProfessionals = professionals;
         this.isLoading = false;
         this.cdr.detectChanges();
-      },
-      error: (error) => {
-        console.error('Error loading professionals:', error);
-        this.errorMessage = this.translationService.translate('servicesManager.errorLoadProfessionals');
-        this.isLoading = false;
+      });
+  }
+  
+  getProfessionalCourseById(courseId: string): Course | undefined {
+    return this.professionalCourses.find(course => course.id === courseId);
+  }
+  
+  loadProfessionalVerifications() {
+    this.servicesManagerService.getProfessionalVerifications()
+      .pipe(
+        catchError(error => {
+          console.error('Error loading professional verifications:', error);
+          this.errorMessage = this.translationService.translate('servicesManager.errorGeneric');
+          this.isLoading = false;
+          this.cdr.detectChanges();
+          return of([]);
+        })
+      )
+      .subscribe(verifications => {
+        this.professionalVerifications = verifications;
         this.cdr.detectChanges();
-      }
-    });
+      });
   }
   
   getSelectedCourseDetails(): Course | undefined {
@@ -193,6 +242,10 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     } else {
       return this.professionalCourses.find(course => course.id === this.selectedCourse);
     }
+  }
+  
+  isCourseCertified(courseId: string): boolean {
+    return this.professionalVerifications.includes(courseId);
   }
   
   onCourseSelect() {
@@ -248,30 +301,34 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       preferredTime: this.preferredTime || undefined
     };
     
-    this.servicesManagerService.createEnrollment(enrollmentData).subscribe({
-      next: (response) => {
-        console.log('Enrollment successful', response);
-        this.successMessage = this.translationService.translate('servicesManager.successEnrollment');
-        this.errorMessage = '';
-        this.isLoading = false;
-        
-        // Reset form
-        this.selectedCourse = '';
-        this.selectedProfessional = null;
-        this.startDate = '';
-        this.preferredTime = '';
-        
-        // Reload enrollments
-        this.loadInitialData();
-      },
-      error: (error) => {
-        console.error('Enrollment failed', error);
-        this.errorMessage = error.error?.message || this.translationService.translate('servicesManager.errorGeneric');
-        this.successMessage = '';
-        this.isLoading = false;
-        this.cdr.detectChanges();
-      }
-    });
+    this.servicesManagerService.createEnrollment(enrollmentData)
+      .pipe(
+        catchError(error => {
+          console.error('Enrollment failed', error);
+          this.errorMessage = error.error?.error || this.translationService.translate('servicesManager.errorGeneric');
+          this.successMessage = '';
+          this.isLoading = false;
+          this.cdr.detectChanges();
+          return of(null);
+        })
+      )
+      .subscribe(response => {
+        if (response) {
+          console.log('Enrollment successful', response);
+          this.successMessage = this.translationService.translate('servicesManager.successEnrollment');
+          this.errorMessage = '';
+          this.isLoading = false;
+          
+          // Reset form
+          this.selectedCourse = '';
+          this.selectedProfessional = null;
+          this.startDate = '';
+          this.preferredTime = '';
+          
+          // Reload enrollments
+          this.loadInitialData();
+        }
+      });
   }
   
   getProfessionalName(professionalId: number): string {
@@ -299,20 +356,24 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       this.isLoading = true;
       this.cdr.detectChanges();
       
-      this.servicesManagerService.cancelEnrollment(enrollmentId).subscribe({
-        next: () => {
-          this.successMessage = this.translationService.translate('servicesManager.successCancel');
-          this.errorMessage = '';
-          this.loadInitialData();
-        },
-        error: (error) => {
-          console.error('Error cancelling enrollment:', error);
-          this.errorMessage = this.translationService.translate('servicesManager.errorCancelEnrollment');
-          this.successMessage = '';
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        }
-      });
+      this.servicesManagerService.cancelEnrollment(enrollmentId)
+        .pipe(
+          catchError(error => {
+            console.error('Error cancelling enrollment:', error);
+            this.errorMessage = this.translationService.translate('servicesManager.errorCancelEnrollment');
+            this.successMessage = '';
+            this.isLoading = false;
+            this.cdr.detectChanges();
+            return of(null);
+          })
+        )
+        .subscribe(response => {
+          if (response) {
+            this.successMessage = this.translationService.translate('servicesManager.successCancel');
+            this.errorMessage = '';
+            this.loadInitialData();
+          }
+        });
     }
   }
 
