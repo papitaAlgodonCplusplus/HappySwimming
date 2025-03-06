@@ -61,74 +61,75 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   // User information
   userRole: string | null = null;
   userId: number | null = null;
-  
+
   // Available courses based on user role
   clientCourses: Course[] = [
     { id: '5', name: 'Children Aged 3-6', type: 'client', price: 75, duration: 5 },
     { id: '6', name: 'Children Aged 6-12', type: 'client', price: 75, duration: 5 },
     { id: '7', name: 'Any Age and Ability', type: 'client', price: 75, duration: 5 }
   ];
-  
+
   professionalCourses: Course[] = [
-    { 
-      id: '1', 
-      name: 'Swimming Story Course for Teacher Trainer', 
-      type: 'professional', 
-      price: 200, 
+    {
+      id: '1',
+      name: 'Swimming Story Course for Teacher Trainer',
+      type: 'professional',
+      price: 200,
       duration: 10,
       description: 'Online course for Teacher Trainer/Technical Director (includes pedagogical material)'
     },
-    { 
-      id: '2', 
-      name: 'Swimming Story Teacher Course', 
-      type: 'professional', 
-      price: 90, 
+    {
+      id: '2',
+      name: 'Swimming Story Teacher Course',
+      type: 'professional',
+      price: 90,
       duration: 8,
       description: 'Online course for becoming a Swimming Story Teacher'
     },
-    { 
-      id: '3', 
-      name: 'Front-crawl Spinning Methodology', 
-      type: 'professional', 
-      price: 850, 
+    {
+      id: '3',
+      name: 'Front-crawl Spinning Methodology',
+      type: 'professional',
+      price: 850,
       duration: 4,
       description: 'In-person training for front-crawl spinning methodology (minimum 10 people)'
     },
-    { 
-      id: '4', 
-      name: 'Aquagym Instructor Course', 
-      type: 'professional', 
-      price: 45, 
+    {
+      id: '4',
+      name: 'Aquagym Instructor Course',
+      type: 'professional',
+      price: 45,
       duration: 4,
       description: 'Online course for becoming an Aquagym instructor'
     }
   ];
-  
+
   // Available professionals for client courses
   availableProfessionals: Professional[] = [];
-  
+
   // User enrollments
   myEnrollments: Enrollment[] = [];
-  
+
   // Professional services (for professionals)
   professionalServices: ProfessionalService[] = [];
-  
+
   // Form data
   selectedCourse: string = '';
   selectedProfessional: number | null = null;
   startDate: string = '';
   preferredTime: string = '';
-  
+
   // UI state
   isLoading: boolean = false;
   errorMessage: string = '';
   successMessage: string = '';
-  
+  private pendingRequests: number = 0;
+
   // Subscriptions
   private langSubscription: Subscription | null = null;
   private loadedSubscription: Subscription | null = null;
   private authSubscription: Subscription | null = null;
-  
+
   // Services
   private translationService = inject(TranslationService);
   private authService = inject(AuthService);
@@ -149,14 +150,14 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
-    
+
     // Subscribe to auth state to get user role
     this.authSubscription = this.authService.getCurrentUser().subscribe(user => {
       if (user) {
         console.log('User authenticated:', user.role);
         this.userRole = user.role;
         this.userId = user.id;
-        
+
         // Only load data if we have a valid user ID
         if (this.userId) {
           this.loadInitialData();
@@ -170,36 +171,26 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       }
     });
   }
-  
+
   loadInitialData() {
     this.isLoading = true;
     this.errorMessage = '';
     this.successMessage = '';
     this.cdr.detectChanges();
-    
+
     console.log('Loading initial data for role:', this.userRole);
-    
-    // Create a counter to track when all requests are complete
-    let pendingRequests = 1; // Start with 1 for enrollments
-    
+
+    // Initialize the counter
+    this.pendingRequests = 1; // Start with 1 for enrollments
+
     if (this.userRole === 'client') {
-      pendingRequests++; // Add 1 for professionals if user is client
+      this.pendingRequests++; // Add 1 for professionals if user is client
     } else if (this.userRole === 'professional') {
-      pendingRequests++; // Add 1 for professional services if user is professional
+      this.pendingRequests++; // Add 1 for professional services if user is professional
     }
-    
-    console.log('Initial pending requests:', pendingRequests);
-    
-    const checkAllRequestsComplete = () => {
-      pendingRequests--;
-      console.log('Request completed, pending requests remaining:', pendingRequests);
-      if (pendingRequests <= 0) {
-        console.log('All requests completed, setting isLoading to false');
-        this.isLoading = false;
-        this.cdr.detectChanges();
-      }
-    };
-    
+
+    console.log('Initial pending requests:', this.pendingRequests);
+
     // Load user enrollments
     console.log('Loading user enrollments...');
     this.servicesManagerService.getUserEnrollments()
@@ -207,32 +198,42 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         catchError(error => {
           console.error('Error loading enrollments:', error);
           this.errorMessage = this.translationService.translate('servicesManager.errorGeneric');
-          checkAllRequestsComplete();
+          this.checkAllRequestsComplete();
           return of([]);
         }),
         finalize(() => {
           console.log('User enrollments finalized');
-          checkAllRequestsComplete();
+          this.checkAllRequestsComplete();
         })
       )
       .subscribe(enrollments => {
         console.log('User enrollments loaded:', enrollments);
         this.myEnrollments = enrollments || [];
         this.cdr.detectChanges();
-        
+
         // If user is a client, load available professionals
         if (this.userRole === 'client') {
           this.loadAvailableProfessionals();
         }
       });
-    
+
     // If user is a professional, load their professional services
     if (this.userRole === 'professional') {
       console.log('Loading professional services...');
       this.loadProfessionalServices();
     }
   }
-  
+
+  private checkAllRequestsComplete() {
+    this.pendingRequests--;
+    console.log('Request completed, pending requests remaining:', this.pendingRequests);
+    if (this.pendingRequests <= 0) {
+      console.log('All requests completed, setting isLoading to false');
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    }
+  }
+
   loadAvailableProfessionals() {
     console.log('Loading available professionals...');
     this.servicesManagerService.getAvailableProfessionals()
@@ -244,8 +245,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         }),
         finalize(() => {
           console.log('Professionals loading finalized');
-          // We don't call checkAllRequestsComplete here because it's already
-          // called in the subscription
+          this.checkAllRequestsComplete();
         })
       )
       .subscribe({
@@ -259,7 +259,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         }
       });
   }
-  
+
   loadProfessionalServices() {
     console.log('Loading professional services...');
     this.servicesManagerService.getProfessionalServices()
@@ -297,7 +297,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         }
       });
   }
-  
+
   getSelectedCourseDetails(): Course | undefined {
     if (this.userRole === 'client') {
       return this.clientCourses.find(course => course.id === this.selectedCourse);
@@ -305,51 +305,51 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       return this.professionalCourses.find(course => course.id === this.selectedCourse);
     }
   }
-  
+
   isServiceOffered(serviceId: string): boolean {
     if (!this.professionalServices) return false;
     return this.professionalServices.some(service => service.service_id === serviceId);
   }
-  
+
   // Helper method to get the service name from the course arrays
   getServiceName(serviceId: string): string {
     // First check professional courses
     const professionalCourse = this.professionalCourses.find(course => course.id === serviceId);
     if (professionalCourse) return professionalCourse.name;
-    
+
     // Then check client courses
     const clientCourse = this.clientCourses.find(course => course.id === serviceId);
     if (clientCourse) return clientCourse.name;
-    
+
     // If not found
     return `Service ${serviceId}`;
   }
-  
+
   onCourseSelect() {
     // Reset professional selection when course changes (for clients)
     this.selectedProfessional = null;
     this.cdr.detectChanges();
   }
-  
+
   validateForm(): boolean {
     this.errorMessage = '';
-    
+
     if (!this.selectedCourse) {
       this.errorMessage = this.translationService.translate('servicesManager.errorRequiredCourse');
       return false;
     }
-    
+
     // If client, validate professional selection
     if (this.userRole === 'client' && !this.selectedProfessional) {
       this.errorMessage = this.translationService.translate('servicesManager.errorRequiredProfessional');
       return false;
     }
-    
+
     if (!this.startDate) {
       this.errorMessage = this.translationService.translate('servicesManager.errorRequiredDate');
       return false;
     }
-    
+
     // Validate that start date is in the future
     const selectedDate = new Date(this.startDate);
     const today = new Date();
@@ -358,19 +358,19 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       this.errorMessage = this.translationService.translate('servicesManager.errorFutureDate');
       return false;
     }
-    
+
     return true;
   }
-  
+
   onSubmit() {
     if (!this.validateForm()) {
       this.cdr.detectChanges();
       return;
     }
-    
+
     this.isLoading = true;
     this.cdr.detectChanges();
-    
+
     const enrollmentData = {
       courseId: this.selectedCourse,
       userId: this.userId,
@@ -378,9 +378,9 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       startDate: this.startDate,
       preferredTime: this.preferredTime || undefined
     };
-    
+
     console.log('Submitting enrollment data:', enrollmentData);
-    
+
     this.servicesManagerService.createEnrollment(enrollmentData)
       .pipe(
         catchError(error => {
@@ -402,13 +402,13 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
             this.successMessage = this.translationService.translate('servicesManager.successEnrollment');
             this.errorMessage = '';
             this.isLoading = false;
-            
+
             // Reset form
             this.selectedCourse = '';
             this.selectedProfessional = null;
             this.startDate = '';
             this.preferredTime = '';
-            
+
             // Reload enrollments
             this.loadInitialData();
           } else {
@@ -427,12 +427,12 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         }
       });
   }
-  
+
   getProfessionalName(professionalId: number): string {
     const professional = this.availableProfessionals.find(p => p.id === professionalId);
     return professional ? professional.name : this.translationService.translate('servicesManager.notAssigned');
   }
-  
+
   getStatusClass(status: string): string {
     switch (status) {
       case 'approved': return 'status-approved';
@@ -442,19 +442,19 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       default: return '';
     }
   }
-  
+
   getLocalizedStatus(status: string): string {
     return this.translationService.translate(`servicesManager.${status}`);
   }
-  
+
   cancelEnrollment(enrollmentId: number) {
     const confirmMessage = this.translationService.translate('servicesManager.confirmCancel');
     if (confirm(confirmMessage)) {
       this.isLoading = true;
       this.cdr.detectChanges();
-      
+
       console.log('Cancelling enrollment:', enrollmentId);
-      
+
       this.servicesManagerService.cancelEnrollment(enrollmentId)
         .pipe(
           catchError(error => {

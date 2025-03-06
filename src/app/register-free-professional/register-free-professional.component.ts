@@ -299,7 +299,7 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
   }
   
   cancel() {
-    this.router.navigate(['/register']);
+    this.router.navigate(['/auth']);
   }
 
   ngOnDestroy(): void {

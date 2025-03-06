@@ -76,21 +76,21 @@ const authenticateToken = (req, res, next) => {
   // Get the authorization header
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN format
-  
+
   if (!token) {
     console.log('No token provided');
     return res.status(401).json({ error: 'Authentication required' });
   }
-  
+
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
       console.log('Token verification failed:', err.message);
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
-    
+
     // Log successful token verification
     console.log('Token verified successfully for user:', user);
-    
+
     // Set the user information on the request object
     req.user = user;
     next();
@@ -241,13 +241,13 @@ app.post('/api/register/professional',
 
         // We're not actually saving the files to disk, just acknowledging their presence
         // You could store metadata about the files in your database if needed
-        
+
         // Example of checking if documents table exists before trying to insert
         try {
           const tableCheck = await client.query(
             "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'documents')"
           );
-          
+
           if (tableCheck.rows[0].exists) {
             // Documents table exists, we can insert mock records
             await client.query(
@@ -255,13 +255,13 @@ app.post('/api/register/professional',
               VALUES ($1, 'id', 'mock-id-document.pdf', 'application/pdf')`,
               [professionalId]
             );
-            
+
             await client.query(
               `INSERT INTO documents (professional_id, type, file_name, mime_type) 
               VALUES ($1, 'cv', 'mock-cv.pdf', 'application/pdf')`,
               [professionalId]
             );
-            
+
             await client.query(
               `INSERT INTO documents (professional_id, type, file_name, mime_type) 
               VALUES ($1, 'insurance', 'mock-insurance.pdf', 'application/pdf')`,
@@ -282,7 +282,7 @@ app.post('/api/register/professional',
           const specialtyValues = specialties.map((specialtyId, index) => {
             return `($1, $${index + 2})`;
           }).join(', ');
-          
+
           const specialtyParams = [professionalId, ...specialties];
           await client.query(
             `INSERT INTO professional_specialties (professional_id, specialty_id) VALUES ${specialtyValues}`,
@@ -477,10 +477,10 @@ app.get('/api/enrollments/user', authenticateToken, async (req, res) => {
     console.log('Fetching enrollments for user:', req.user);
     const userId = req.user.id;
     const userRole = req.user.role;
-    
+
     let query;
     let queryParams = [userId];
-    
+
     if (userRole === 'client') {
       // Get enrollments for clients
       query = `
@@ -516,7 +516,7 @@ app.get('/api/enrollments/user', authenticateToken, async (req, res) => {
     } else {
       return res.status(403).json({ error: 'Unauthorized role' });
     }
-    
+
     const result = await pool.query(query, queryParams);
     const enrollments = result.rows.map(row => ({
       id: row.id,
@@ -530,7 +530,7 @@ app.get('/api/enrollments/user', authenticateToken, async (req, res) => {
       professionalName: row.professional_name || row.client_name,
       price: parseFloat(row.price)
     }));
-    
+
     res.json(enrollments);
   } catch (error) {
     console.error('Error fetching enrollments:', error);
@@ -541,25 +541,25 @@ app.get('/api/enrollments/user', authenticateToken, async (req, res) => {
 // POST: Create new enrollment
 app.post('/api/enrollments', authenticateToken, async (req, res) => {
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
     console.log('Creating enrollment:', req.body);
-    
+
     const { courseId, professionalId, startDate, preferredTime } = req.body;
     const userId = req.user.id;
     const userRole = req.user.role;
-    
+
     // Validate required fields
     if (!courseId || !startDate) {
       console.log('Missing required fields:', req.body);
       return res.status(400).json({ error: 'Course ID and start date are required' });
     }
-    
+
     // Get the user's client/professional ID based on role
     let userTypeId;
     let query;
-    
+
     if (userRole === 'client') {
       query = 'SELECT id FROM clients WHERE user_id = $1';
     } else if (userRole === 'professional') {
@@ -567,44 +567,52 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
     } else {
       return res.status(403).json({ error: 'Unauthorized role' });
     }
-    
+
     const userResult = await client.query(query, [userId]);
     if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User profile not found' });
     }
-    
+
     userTypeId = userResult.rows[0].id;
-    
+
     // Get course/service details
     const serviceResult = await client.query(
       'SELECT id, price FROM services WHERE id = $1',
       [courseId]
     );
-    
+
     if (serviceResult.rows.length === 0) {
       return res.status(404).json({ error: 'Service not found' });
     }
-    
+
     const servicePrice = serviceResult.rows[0].price;
-    
+
     // Create the enrollment
     let enrollmentQuery;
     let enrollmentParams;
-    
+
     if (userRole === 'client') {
+      // For clients
       enrollmentQuery = `
-        INSERT INTO client_services 
-        (client_id, service_id, professional_id, start_date, price, status, notes)
-        VALUES ($1, $2, $3, $4, $5, 'pending', $6)
-        RETURNING id
+      INSERT INTO client_services 
+      (client_id, service_id, professional_id, start_date, price, status, notes, start_time, end_time)
+      VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8)
+      RETURNING id
       `;
+
+      // You can set default times if not provided
+      const defaultStartTime = '09:00:00'; // 9 AM
+      const defaultEndTime = '10:00:00';   // 10 AM (or calculate based on service duration)
+
       enrollmentParams = [
         userTypeId,
         courseId,
         professionalId || null,
         startDate,
         servicePrice,
-        preferredTime ? `Preferred time: ${preferredTime}` : null
+        preferredTime ? `Preferred time: ${preferredTime}` : null,
+        defaultStartTime,
+        defaultEndTime
       ];
     } else if (userRole === 'professional') {
       // For professionals enrolling in training courses
@@ -621,11 +629,11 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
         preferredTime ? `Preferred time: ${preferredTime}` : null
       ];
     }
-    
+
     const enrollmentResult = await client.query(enrollmentQuery, enrollmentParams);
-    
+
     await client.query('COMMIT');
-    
+
     res.status(201).json({
       message: 'Enrollment created successfully',
       enrollmentId: enrollmentResult.rows[0].id || null
@@ -642,17 +650,17 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
 // PUT: Cancel enrollment
 app.put('/api/enrollments/:id/cancel', authenticateToken, async (req, res) => {
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
-    
+
     const enrollmentId = req.params.id;
     const userId = req.user.id;
     const userRole = req.user.role;
-    
+
     // Verify the enrollment exists and belongs to the user
     let checkQuery;
-    
+
     if (userRole === 'client') {
       checkQuery = `
         SELECT cs.id 
@@ -670,23 +678,23 @@ app.put('/api/enrollments/:id/cancel', authenticateToken, async (req, res) => {
     } else {
       return res.status(403).json({ error: 'Unauthorized role' });
     }
-    
+
     const checkResult = await client.query(checkQuery, [enrollmentId, userId]);
-    
+
     if (checkResult.rows.length === 0) {
-      return res.status(404).json({ 
-        error: 'Enrollment not found or not in pending status' 
+      return res.status(404).json({
+        error: 'Enrollment not found or not in pending status'
       });
     }
-    
+
     // UPDATE the enrollment status to cancelled
     await client.query(
       'UPDATE client_services SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       ['cancelled', enrollmentId]
     );
-    
+
     await client.query('COMMIT');
-    
+
     res.json({ message: 'Enrollment cancelled successfully' });
   } catch (error) {
     await client.query('ROLLBACK');
@@ -712,9 +720,9 @@ app.get('/api/professionals/available', authenticateToken, async (req, res) => {
       GROUP BY p.id, u.first_name, u.last_name1, p.is_insourcing
       ORDER BY name
     `;
-    
+
     const result = await pool.query(query);
-    
+
     const professionals = result.rows.map(row => ({
       id: row.id,
       name: row.name,
@@ -722,7 +730,7 @@ app.get('/api/professionals/available', authenticateToken, async (req, res) => {
       verified: true, // Assuming all professionals in the system are verified
       available: row.available
     }));
-    
+
     res.json(professionals);
   } catch (error) {
     console.error('Error fetching available professionals:', error);
@@ -734,19 +742,19 @@ app.get('/api/professionals/available', authenticateToken, async (req, res) => {
 app.get('/api/professionals/verifications', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    
+
     // Check if the user is a professional
     const userCheck = await pool.query(
       'SELECT id FROM professionals WHERE user_id = $1',
       [userId]
     );
-    
+
     if (userCheck.rows.length === 0) {
       return res.status(403).json({ error: 'Unauthorized access' });
     }
-    
+
     const professionalId = userCheck.rows[0].id;
-    
+
     // Get service IDs the professional is verified for
     const query = `
       SELECT s.id as service_id
@@ -754,13 +762,13 @@ app.get('/api/professionals/verifications', authenticateToken, async (req, res) 
       JOIN services s ON ps.service_id = s.id
       WHERE ps.professional_id = $1
     `;
-    
+
     const result = await pool.query(query, [professionalId]);
     console.log('Professional verifications:', result.rows);
 
     const verifications = result.rows.map(row => row.service_id);
     console.log('Professional verifications:', verifications);
-    
+
     res.json(verifications);
   } catch (error) {
     console.error('Error fetching professional verifications:', error);
@@ -772,28 +780,28 @@ app.get('/api/professionals/verifications', authenticateToken, async (req, res) 
 app.get('/api/professionals/services', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    
+
     // Check if the user is a professional
     const userCheck = await pool.query(
       'SELECT id FROM professionals WHERE user_id = $1',
       [userId]
     );
-    
+
     if (userCheck.rows.length === 0) {
       return res.status(403).json({ error: 'Unauthorized access' });
     }
-    
+
     const professionalId = userCheck.rows[0].id;
-    
+
     // Get professional services directly from the database with the exact column names
     const query = `
       SELECT professional_id, service_id, price_per_hour, notes
       FROM professional_services
       WHERE professional_id = $1
     `;
-    
+
     const result = await pool.query(query, [professionalId]);
-    
+
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching professional services:', error);
