@@ -816,5 +816,5 @@ module.exports = router;
 
 // Start the server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Server is running on port ${PORT}`);
 });
