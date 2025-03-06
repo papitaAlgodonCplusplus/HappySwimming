@@ -38,8 +38,7 @@ export class TranslationService {
   private loadTranslations(lang: string, isInitial: boolean = false): void {
     // Set loaded to false while we're loading
     this.translationsLoaded.next(false);
-
-    this.http.get(`assets/i18n/${lang}.json`)
+    this.http.get(`/assets/i18n/${lang}.json`)
       .pipe(
         tap((data: any) => {
           this.translations[lang] = data;

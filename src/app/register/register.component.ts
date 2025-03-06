@@ -74,7 +74,22 @@ export class RegisterComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
+
+  // Add this method to register.component.ts
+  switchLanguage(lang: string): void {
+    console.log('Directly switching language to:', lang);
+    this.translationService.setLanguage(lang);
+    this.cdr.detectChanges(); // Force immediate update
+  }
+
   ngOnInit() {
+    console.log('RegisterComponent initialized');
+
+    // Check current language on init
+    this.translationService.getCurrentLang().subscribe(lang => {
+      console.log('Current language in register component:', lang);
+    });
+
     // Determine registration type from route parameter
     this.route.params.subscribe(params => {
       if (params['type'] === 'client') {
@@ -100,9 +115,14 @@ export class RegisterComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Subscribe to language changes to update view
-    this.langSubscription = this.translationService.getCurrentLang().subscribe(() => {
-      this.cdr.detectChanges();
+    // Fix the nested subscription
+    this.langSubscription = this.translationService.getCurrentLang().subscribe(lang => {
+      console.log('Register component language changed to:', lang);
+      this.cdr.markForCheck();
+
+      // If you're not seeing changes being applied after markForCheck(),
+      // you might need to try detectChanges() instead
+      // this.cdr.detectChanges();
     });
 
     // Subscribe to translations loaded event
@@ -198,7 +218,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
       isOutsourcing: this.externalOption === 'outsourcing',
       abilities: abilities || undefined // Add the abilities string to the client data
     };
-    
+
     this.authService.registerClient(clientData).subscribe({
       next: (response) => {
         console.log('Client registration successful', response);

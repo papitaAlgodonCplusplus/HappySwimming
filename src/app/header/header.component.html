@@ -1,6 +1,6 @@
 <div class="header">
   <a [routerLink]="['/']">
-    <img src="assets/happy-swimming-logo.png" alt="Happy Swimming Logo" class="logo">
+    <img src="/assets/happy-swimming-logo.png" alt="Happy Swimming Logo" class="logo">
   </a>
   <div class="navigation">
     <a [routerLink]="['/about']" class="nav-item">{{ 'aboutUs' | translate }}</a>
@@ -15,10 +15,10 @@
     
     <div class="language-selector">
       <a href="javascript:void(0)" class="lang-flag" (click)="switchLanguage('es')">
-        <img src="assets/es-flag.png" alt="Spanish" [class.active]="currentLang === 'es'">
+        <img src="/assets/es-flag.png" alt="Spanish" [class.active]="currentLang === 'es'">
       </a>
       <a href="javascript:void(0)" class="lang-flag" (click)="switchLanguage('en')">
-        <img src="assets/en-flag.png" alt="English" [class.active]="currentLang === 'en'">
+        <img src="/assets/en-flag.png" alt="English" [class.active]="currentLang === 'en'">
       </a>
     </div>
   </div>
