@@ -8,6 +8,11 @@ import { TranslatePipe } from '../pipes/translate.pipe';
 import { AuthService } from '../services/auth.service';
 import { Subscription } from 'rxjs';
 
+interface SwimmingAbility {
+  description: string;
+  selected: boolean;
+}
+
 @Component({
   selector: 'app-register',
   standalone: true,
@@ -37,6 +42,19 @@ export class RegisterComponent implements OnInit, OnDestroy {
   confirmPassword: string = '';
   website: string = '';
   plCode: string = '';
+
+  // Swimming abilities
+  swimmingAbilities: SwimmingAbility[] = [
+    { description: 'no puedo poner la cabeza debajo del agua, ni controlar la respiración', selected: false },
+    { description: 'puedo poner la cabeza debajo del agua y soplar burbujas por naziz o boca', selected: false },
+    { description: 'puedo poner la cabeza debajo del agua y soplar burbujas flotando por naziz y boca de frente y de espalda', selected: false },
+    { description: 'puedo desplazarse en el agua de frente y de espalda con movimientos de brazos y piernas sin control de la respiración', selected: false },
+    { description: 'puedo dar un giro de 360 grados en mi eje longitudinal', selected: false },
+    { description: 'puedo dar una voltereta en el agua', selected: false },
+    { description: 'necesito mejorar la técnica en el estilo de crol', selected: false },
+    { description: 'quiero mejora la técnica en todos los estilos con virajes', selected: false },
+    { description: 'tengo miedo al agua', selected: false }
+  ];
 
   // Terms and conditions
   acceptTerms: boolean = false;
@@ -95,6 +113,20 @@ export class RegisterComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Toggle swimming ability selection
+  toggleAbility(index: number): void {
+    this.swimmingAbilities[index].selected = !this.swimmingAbilities[index].selected;
+    this.cdr.detectChanges();
+  }
+
+  // Get concatenated string of selected abilities
+  getSelectedAbilities(): string {
+    return this.swimmingAbilities
+      .filter(ability => ability.selected)
+      .map(ability => ability.description)
+      .join(' + ');
+  }
+
   validateForm(): boolean {
     // Reset error message
     this.errorMessage = '';
@@ -144,6 +176,9 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.cdr.detectChanges();
 
+    // Get concatenated string of selected swimming abilities
+    const abilities = this.getSelectedAbilities();
+
     const clientData = {
       email: this.email,
       password: this.password,
@@ -160,7 +195,8 @@ export class RegisterComponent implements OnInit, OnDestroy {
       phoneMobile: this.phoneMobile,
       website: this.website || undefined,
       plCode: this.plCode || undefined,
-      isOutsourcing: this.externalOption === 'outsourcing'
+      isOutsourcing: this.externalOption === 'outsourcing',
+      abilities: abilities || undefined // Add the abilities string to the client data
     };
     
     this.authService.registerClient(clientData).subscribe({

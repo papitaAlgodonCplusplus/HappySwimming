@@ -32,6 +32,7 @@ interface RegisterClientData {
   website?: string;
   plCode?: string;
   isOutsourcing: boolean;
+  abilities?: string; // New field for swimming abilities
 }
 
 interface RegisterProfessionalData {

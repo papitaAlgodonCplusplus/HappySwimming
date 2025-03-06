@@ -119,7 +119,8 @@ app.post('/api/register/client', async (req, res) => {
       phoneMobile,
       website,
       plCode,
-      isOutsourcing
+      isOutsourcing,
+      abilities  // New field for swimming abilities
     } = req.body;
 
     // Hash password
@@ -134,12 +135,12 @@ app.post('/api/register/client', async (req, res) => {
 
     const userId = userResult.rows[0].id;
 
-    // Insert client
+    // Insert client with abilities field
     await client.query(
       `INSERT INTO happyswimming.clients 
-       (user_id, company_name, identification_number, address, postal_code, city, country, phone_fixed, phone_mobile, website, pl_code, is_outsourcing) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-      [userId, companyName || null, identificationNumber, address, postalCode, city, country, phoneFixed || null, phoneMobile, website || null, plCode || null, isOutsourcing]
+       (user_id, company_name, identification_number, address, postal_code, city, country, phone_fixed, phone_mobile, website, pl_code, is_outsourcing, habilities) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+      [userId, companyName || null, identificationNumber, address, postalCode, city, country, phoneFixed || null, phoneMobile, website || null, plCode || null, isOutsourcing, abilities || null]
     );
 
     await client.query('COMMIT');
