@@ -38,7 +38,9 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD || 'postgres',
   port: process.env.DB_PORT || 5432,
   schema: 'happyswimming'
-}); */
+});
+ */
+
 
 
     // Database connection PROD
@@ -50,7 +52,7 @@ const pool = new Pool({
   password: 'PwT.398!',
   ssl: { rejectUnauthorized: false }
 });
-    */
+   
 
 
 
