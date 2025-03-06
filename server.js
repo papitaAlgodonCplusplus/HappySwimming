@@ -815,6 +815,6 @@ app.get('/health', (req, res) => {
 module.exports = router;
 
 // Start the server
-app.listen(port, () => {
+app.listen(PORT, () => {
   console.log(`Server is running on port ${port}`);
 });
