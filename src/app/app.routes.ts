@@ -32,13 +32,18 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
-    path: 'homepage',
-    loadComponent: () => import('./homepage/homepage.component').then(c => c.HomepageComponent),
+    path: 'economic-manager',
+    loadComponent: () => import('./economic-manager/economic-manager.component').then(c => c.EconomicManagerComponent),
     canActivate: [authGuard]
   },
   {
     path: 'edit-profile',
     loadComponent: () => import('./edit-info/edit-info.component').then(c => c.EditInfoComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'homepage',
+    loadComponent: () => import('./homepage/homepage.component').then(c => c.HomepageComponent),
     canActivate: [authGuard]
   },
   {

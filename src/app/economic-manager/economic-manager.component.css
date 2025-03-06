@@ -1,0 +1,209 @@
+.economic-manager-container {
+    width: 100%;
+    min-height: 100vh;
+    background-color: #a7e0ff;
+    font-family: 'Lexend Peta', sans-serif;
+    padding-top: 120px; /* Account for header */
+    padding-bottom: 40px;
+    color: #204376;
+  }
+  
+  .economic-manager-content {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #a7e0ff;
+    padding: 2rem;
+    border-radius: 10px;
+  }
+  
+  .title {
+    text-align: left;
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    font-weight: 700;
+    color: #204376;
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    color: #204376;
+    border-bottom: 2px solid #004aad;
+    padding-bottom: 0.5rem;
+  }
+  
+  .expenses-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .expenses-section {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .total-amount {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: #eef6fb;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .total-amount .label {
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+  
+  .total-amount .value {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #004aad;
+  }
+  
+  .expenses-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .expense-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .expense-label {
+    width: 40%;
+    font-size: 0.9rem;
+  }
+  
+  .expense-bar {
+    flex-grow: 1;
+    height: 20px;
+    background-color: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  
+  .expense-progress {
+    height: 100%;
+    border-radius: 10px;
+  }
+  
+  .pool-rental {
+    background-color: #004aad;
+  }
+  
+  .swimming-teacher {
+    background-color: #0088cc;
+  }
+  
+  .technical-management {
+    background-color: #00aaff;
+  }
+  
+  .expense-value {
+    width: 15%;
+    text-align: right;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  
+  .enrollments-section {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .enrollments-table-container {
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  .enrollments-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  
+  .enrollments-table th, .enrollments-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .enrollments-table th {
+    background-color: #004aad;
+    color: white;
+    font-weight: 600;
+  }
+  
+  .enrollments-table tr:nth-child(even) {
+    background-color: rgba(0, 74, 173, 0.05);
+  }
+  
+  .no-data-message {
+    text-align: center;
+    padding: 2rem;
+    color: #555;
+    font-style: italic;
+  }
+  
+  .error-message {
+    background-color: rgba(255, 0, 0, 0.1);
+    color: #cc0000;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    border-left: 4px solid #cc0000;
+  }
+  
+  .loading-indicator {
+    text-align: center;
+    padding: 2rem;
+    color: #004aad;
+    font-size: 1.1rem;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .economic-manager-content {
+      width: 95%;
+      padding: 1.5rem;
+    }
+  
+    .title {
+      font-size: 1.5rem;
+    }
+  
+    .section-title {
+      font-size: 1.3rem;
+    }
+  
+    .expense-label {
+      width: 30%;
+      font-size: 0.8rem;
+    }
+  
+    .expense-value {
+      width: 20%;
+      font-size: 0.8rem;
+    }
+    
+    .enrollments-table th, .enrollments-table td {
+      padding: 0.5rem;
+      font-size: 0.8rem;
+    }
+  }

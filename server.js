@@ -471,6 +471,61 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// GET: Get enrollments where the user is the professional
+app.get('/api/enrollments/professional', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Verify the user is a professional
+    const professionalCheck = await pool.query(
+      'SELECT id FROM happyswimming.professionals WHERE user_id = $1',
+      [userId]
+    );
+    
+    if (professionalCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Unauthorized access: User is not a professional' });
+    }
+    
+    const professionalId = professionalCheck.rows[0].id;
+    
+    // Get enrollments where this professional is assigned, including client name
+    const query = `
+      SELECT cs.id, cs.service_id, s.name as service_name, cs.status,
+        cs.created_at as enrollment_date, cs.start_date, cs.end_date,
+        c.id as client_id, c.user_id as client_user_id,
+        CONCAT(u.first_name, ' ', u.last_name1) as client_name,
+        cs.price
+      FROM happyswimming.client_services cs
+      JOIN happyswimming.services s ON cs.service_id = s.id
+      JOIN happyswimming.clients c ON cs.client_id = c.id
+      JOIN happyswimming.users u ON c.user_id = u.id
+      WHERE cs.professional_id = $1
+      ORDER BY cs.created_at DESC
+    `;
+    
+    const result = await pool.query(query, [professionalId]);
+    
+    const enrollments = result.rows.map(row => ({
+      id: row.id,
+      courseId: row.service_id,
+      courseName: row.service_name,
+      status: row.status,
+      enrollmentDate: row.enrollment_date,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      professionalId: professionalId,
+      userId: row.client_user_id,
+      clientName: row.client_name, // Add client name to the response
+      price: parseFloat(row.price)
+    }));
+    
+    res.json(enrollments);
+  } catch (error) {
+    console.error('Error fetching professional enrollments:', error);
+    res.status(500).json({ error: 'Failed to fetch professional enrollments' });
+  }
+});
+
 // GET: Get user enrollments
 app.get('/api/enrollments/user', authenticateToken, async (req, res) => {
   try {

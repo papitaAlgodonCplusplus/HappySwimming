@@ -211,5 +211,22 @@
     "passwordStrength": "New password must be at least 8 characters long",
     "emailInUse": "Email is already in use",
     "currentPasswordIncorrect": "Current password is incorrect",
-    "backToHome": "Back to Home"
+    "backToHome": "Back to Home",
+    "economicManagerTitle": "Economic Manager",
+    "economicManagerDesc": "Manage income and expense distribution",
+    "economicManager": {
+        "title": "Economic Manager",
+        "insourcingService": "INSOURCING SERVICE",
+        "outsourcingService": "OUTSOURCING SERVICE",
+        "totalAmount": "Total Amount",
+        "poolRental": "Pool Rental",
+        "swimmingTeacher": "Swimming Teacher",
+        "technicalManagement": "Technical Management (HS)",
+        "enrollmentDetails": "Enrollment Details",
+        "serviceType": "Service Type",
+        "client": "Client",
+        "noEnrollments": "You don't have any enrollments yet",
+        "noProfessionalEnrollments": "You don't have any enrolled clients yet",
+        "loading": "Loading data..."
+    }
 }

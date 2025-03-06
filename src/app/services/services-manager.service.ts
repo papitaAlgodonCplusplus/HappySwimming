@@ -24,6 +24,7 @@ interface Enrollment {
   professionalId?: number;
   professionalName?: string;
   price: number;
+  userId: number;
 }
 
 interface EnrollmentRequest {
@@ -130,6 +131,22 @@ export class ServicesManagerService {
       }),
       tap(enrollments => {
         console.log('Enrollments data received:', enrollments);
+      })
+    );
+  }
+  
+  // New method: Get enrollments where current user is the professional
+  getProfessionalEnrollments(): Observable<Enrollment[]> {
+    return this.http.get<Enrollment[]>(`${this.apiUrl}/enrollments/professional`, {
+      headers: this.getHeaders()
+    }).pipe(
+      retry(1),
+      catchError(error => {
+        console.error('Error in getProfessionalEnrollments:', error);
+        return this.handleError(error);
+      }),
+      tap(enrollments => {
+        console.log('Professional enrollments data received:', enrollments);
       })
     );
   }
