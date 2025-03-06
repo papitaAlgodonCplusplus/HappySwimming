@@ -15,8 +15,8 @@ const filesConfig = [
     path: 'server.js',
     type: 'code',
     sections: {
-      dev: [33, 41],   // Development section: [startLine, endLine]
-      prod: [43, 51]   // Production section: [startLine, endLine]
+      dev: [33, 42],   // Development section: [startLine, endLine]
+      prod: [45, 55]   // Production section: [startLine, endLine]
     }
   }
 ];
@@ -51,20 +51,20 @@ function toggleCodeSections(filePath, sectionToUncomment, sectionToComment) {
   const fileContent = fs.readFileSync(filePath, 'utf8');
   const lines = fileContent.split('\n');
 
-  // Uncomment section (remove /* and */ markers to make the section active)
-  const [uncommentStart, uncommentEnd] = sectionToUncomment;
-  for (let i = uncommentStart - 1; i < uncommentEnd; i++) {
-    lines[i] = lines[i].replace(/\/\*/, '').replace(/\*\//, '');
+  // Uncomment section (remove lines)
+  for (let i = sectionToUncomment[0] - 1; i < sectionToUncomment[1]; i++) {
+    lines[i] = lines[i].replace('*', '').replace(/\/\s*$/, '').trim();
   }
 
-  // Comment section (add /* and */ markers to make the section inactive)
-  const [commentStart, commentEnd] = sectionToComment;
-  lines[commentStart - 1] = `/* ${lines[commentStart - 1]}`;
-  lines[commentEnd - 1] = `${lines[commentEnd - 1]} */`;
+  // Comment section (add /* and */ markers)
+  for (let i = sectionToComment[0] - 1; i < sectionToComment[1]; i++) {
+    lines[i] = `/* ${lines[i]} */`;
+  }
 
   fs.writeFileSync(filePath, lines.join('\n'), 'utf8');
   console.log(`Processed code file: ${filePath}`);
 }
+
 
 // Main execution
 const targetEnv = process.argv[2] || 'dev'; // 'dev' or 'prod'

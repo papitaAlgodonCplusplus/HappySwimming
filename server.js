@@ -29,32 +29,30 @@ const upload = multer({
 app.use(cors());
 app.use(express.json());
 
-
-/* // Database connection DEV
+// Database connection DEV
+/* 
 const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'happyswimming',
-  password: process.env.DB_PASSWORD || 'postgres',
-  port: process.env.DB_PORT || 5432,
-  schema: 'happyswimming'
+user: process.env.DB_USER || 'postgres',
+host: process.env.DB_HOST || 'localhost',
+database: process.env.DB_NAME || 'happyswimming',
+password: process.env.DB_PASSWORD || 'postgres',
+port: process.env.DB_PORT || 5432,
+schema: 'happyswimming'
 });
  */
 
 
+// Database connection PROD
 
-    // Database connection PROD
 const pool = new Pool({
-  host: 'database-1.cxqii6e0qkzu.us-east-1.rds.amazonaws.com',
-  port: 5432,
-  database: 'happyswimming',
-  user: 'postgres',
-  password: 'PwT.398!',
-  ssl: { rejectUnauthorized: false }
+host: 'database-1.cxqii6e0qkzu.us-east-1.rds.amazonaws.com',
+port: 5432,
+database: 'happyswimming',
+user: 'postgres',
+password: 'PwT.398!',
+
+ssl: { rejectUnauthorized: false }
 });
-   
-
-
 
 // Test database connection
 pool.connect((err, client, done) => {
