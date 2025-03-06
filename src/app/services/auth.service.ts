@@ -57,14 +57,20 @@ interface RegisterProfessionalData {
   providedIn: 'root' // This makes the service available application-wide
 })
 export class AuthService {
-  // DEV: Use the following URL for development
-  // private apiUrl = 'http://localhost:10000/api';
-  // PROD: Use the following URL for production
-  private apiUrl = 'https://happyswimming.onrender.com/api';
+  // DEVELOPMENT mode is determined by the current host
+  private isDevelopment = window.location.hostname === 'localhost';
+  
+  // API URL is dynamically set based on environment
+  private apiUrl = this.isDevelopment 
+    ? 'http://localhost:10000/api'     // Development URL
+    : 'https://happyswimming.onrender.com/api';   // Production URL
+    
   private currentUserSubject = new BehaviorSubject<any>(null);
   private tokenExpirationTimer: any;
   
   constructor(private http: HttpClient, private router: Router) {
+    console.log(`Running in ${this.isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'} mode`);
+    console.log(`API URL: ${this.apiUrl}`);
     this.loadStoredUser();
   }
 
@@ -134,20 +140,21 @@ export class AuthService {
     if (error.error instanceof ErrorEvent) {
       // Client-side error
       errorMessage = `Error: ${error.error.message}`;
+    } else if (error.status === 0) {
+      // Network error
+      errorMessage = 'Cannot connect to the server. Please check if the backend server is running.';
     } else {
       // Server-side error
       if (error.status === 401) {
         errorMessage = 'Invalid credentials. Please check your email and password.';
       } else if (error.status === 403) {
         errorMessage = 'You do not have permission to access this resource.';
-      } else if (error.status === 0) {
-        errorMessage = 'Cannot connect to the server. Please check your internet connection.';
       } else if (error.error && error.error.error) {
         errorMessage = error.error.error;
       }
     }
     
-    console.error('Auth error:', errorMessage);
+    console.error('Auth error:', errorMessage, error);
     return throwError(() => new Error(errorMessage));
   }
 
@@ -155,7 +162,14 @@ export class AuthService {
   checkServer(): Observable<any> {
     return this.http.get(`${this.apiUrl}/pl-codes`).pipe(
       catchError(error => {
-        console.error('Server check failed:', error);
+        if (error.status === 0) {
+          console.error('Server check failed: Backend server is not running or not accessible.');
+          if (this.isDevelopment) {
+            console.error('Please make sure your backend server is running at', this.apiUrl);
+          }
+        } else {
+          console.error('Server check failed:', error);
+        }
         return throwError(() => new Error('Cannot connect to server'));
       })
     );

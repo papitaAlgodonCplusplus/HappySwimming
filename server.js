@@ -71,11 +71,31 @@ app.use(async (req, res, next) => {
 });
 
 // Authentication middleware
+// Authentication middleware
 const authenticateToken = (req, res, next) => {
-  next();
+  // Get the authorization header
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN format
+  
+  if (!token) {
+    console.log('No token provided');
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      console.log('Token verification failed:', err.message);
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+    
+    // Log successful token verification
+    console.log('Token verified successfully for user:', user);
+    
+    // Set the user information on the request object
+    req.user = user;
+    next();
+  });
 };
-
-// Routes
 
 // Register a new client
 app.post('/api/register/client', async (req, res) => {
@@ -343,8 +363,6 @@ app.post('/api/login', async (req, res) => {
       }
     }
 
-
-    console.log('Login successful:', user.email);
     res.json({
       token,
       user: {
@@ -453,27 +471,10 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
   }
 });
 
-function formatEnrollmentData(row) {
-  return {
-    id: row.id,
-    courseId: row.service_id,
-    courseName: row.service_name,
-    status: row.status,
-    enrollmentDate: row.enrollment_date,
-    startDate: row.start_date,
-    endDate: row.end_date,
-    professionalId: row.professional_id,
-    professionalName: row.professional_name,
-    price: parseFloat(row.price)
-  };
-}
-
-// Enrollments API endpoints to be integrated into your server.js file
-// Uses the existing authenticateToken middleware instead of auth
-
 // GET: Get user enrollments
 app.get('/api/enrollments/user', authenticateToken, async (req, res) => {
   try {
+    console.log('Fetching enrollments for user:', req.user);
     const userId = req.user.id;
     const userRole = req.user.role;
     

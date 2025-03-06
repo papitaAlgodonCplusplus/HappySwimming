@@ -45,16 +45,22 @@ interface ProfessionalService {
   providedIn: 'root'
 })
 export class ServicesManagerService {
-  // DEV: Use the following URL for development
-  // private apiUrl = 'http://localhost:10000/api';
-  // PROD: Use the following URL for production
-  private apiUrl = 'https://happyswimming.onrender.com/api';
+  // DEVELOPMENT mode is determined by the current host
+  private isDevelopment = window.location.hostname === 'localhost';
+  
+  // API URL is dynamically set based on environment
+  private apiUrl = this.isDevelopment 
+    ? 'http://localhost:10000/api'     // Development URL
+    : 'https://happyswimming.onrender.com/api';   // Production URL
 
   constructor(
     private http: HttpClient,
     private authService: AuthService,
     private router: Router
-  ) { }
+  ) {
+    console.log(`ServicesManagerService running in ${this.isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'} mode`);
+    console.log(`API URL: ${this.apiUrl}`);
+  }
 
   // Helper method to set auth headers
   private getHeaders(): HttpHeaders {
@@ -71,6 +77,15 @@ export class ServicesManagerService {
 
   // Global error handler for HTTP requests
   private handleError(error: HttpErrorResponse) {
+    if (error.status === 0) {
+      // Connection error
+      console.error('Cannot connect to the server:', error);
+      if (this.isDevelopment) {
+        console.error('Please ensure your backend server is running at', this.apiUrl);
+      }
+      return throwError(() => new Error('Cannot connect to the server. Please ensure the backend is running.'));
+    }
+    
     if (error.status === 401) {
       // Unauthorized - token might be expired
       console.error('Authentication error:', error);
