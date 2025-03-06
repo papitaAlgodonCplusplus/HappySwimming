@@ -37,6 +37,11 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'edit-profile',
+    loadComponent: () => import('./edit-info/edit-info.component').then(c => c.EditInfoComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: '',
     redirectTo: 'homepage',
     pathMatch: 'full'

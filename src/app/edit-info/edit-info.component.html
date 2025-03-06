@@ -1,0 +1,223 @@
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+</style>
+
+<app-header></app-header>
+<div class="edit-info-container">
+    <div class="edit-info-content">
+        <h1 class="title">{{ 'editProfile' | translate }}</h1>
+
+        <div *ngIf="errorMessage" class="error-message">
+            {{ errorMessage }}
+        </div>
+
+        <div *ngIf="successMessage" class="success-message">
+            {{ successMessage }}
+        </div>
+
+        <div class="loading-indicator" *ngIf="isLoading">
+            <div class="spinner"></div>
+            <p>{{ 'loading' | translate }}...</p>
+        </div>
+
+        <div class="profile-section" *ngIf="userProfile && !isLoading">
+            <div class="profile-header">
+                <h2>{{ 'personalInformation' | translate }}</h2>
+                <div class="role-badge" [ngClass]="userProfile.role">{{ userProfile.role }}</div>
+            </div>
+
+            <div class="profile-content">
+                <!-- Two column layout -->
+                <div class="profile-columns">
+                    <!-- Left column - Current info (read-only) -->
+                    <div class="profile-column current-info">
+                        <h3>{{ 'currentInformation' | translate }}</h3>
+
+                        <div class="info-group">
+                            <label>{{ 'email' | translate }}</label>
+                            <div class="info-value">{{ userProfile.email }}</div>
+                        </div>
+
+                        <div class="info-group">
+                            <label>{{ 'password' | translate }}</label>
+                            <div class="info-value">{{ getMaskedPassword() }}</div>
+                        </div>
+
+                        <div class="info-group">
+                            <label>{{ 'registration.firstName' | translate }}</label>
+                            <div class="info-value">{{ userProfile.firstName }}</div>
+                        </div>
+
+                        <div class="info-group">
+                            <label>{{ 'registration.lastName1' | translate }}</label>
+                            <div class="info-value">{{ userProfile.lastName1 }}</div>
+                        </div>
+
+                        <div class="info-group">
+                            <label>{{ 'registration.lastName2' | translate }}</label>
+                            <div class="info-value">{{ userProfile.lastName2 || '-' }}</div>
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.companyName !== undefined">
+                            <label>{{ 'registration.companyName' | translate }}</label>
+                            <div class="info-value">{{ userProfile.companyName || '-' }}</div>
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.identificationNumber !== undefined">
+                            <label>{{ 'registration.identification' | translate }}</label>
+                            <div class="info-value">{{ userProfile.identificationNumber }}</div>
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.address !== undefined">
+                            <label>{{ 'registration.address' | translate }}</label>
+                            <div class="info-value">{{ userProfile.address }}</div>
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.postalCode !== undefined">
+                            <label>{{ 'registration.postalCode' | translate }}</label>
+                            <div class="info-value">{{ userProfile.postalCode }}</div>
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.city !== undefined">
+                            <label>{{ 'registration.city' | translate }}</label>
+                            <div class="info-value">{{ userProfile.city }}</div>
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.country !== undefined">
+                            <label>{{ 'registration.country' | translate }}</label>
+                            <div class="info-value">{{ userProfile.country }}</div>
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.phoneFixed !== undefined">
+                            <label>{{ 'registration.phoneFixed' | translate }}</label>
+                            <div class="info-value">{{ userProfile.phoneFixed || '-' }}</div>
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.phoneMobile !== undefined">
+                            <label>{{ 'registration.phoneMobile' | translate }}</label>
+                            <div class="info-value">{{ userProfile.phoneMobile }}</div>
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.website !== undefined">
+                            <label>{{ 'registration.website' | translate }}</label>
+                            <div class="info-value">{{ userProfile.website || '-' }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Right column - Update form -->
+                    <div class="profile-column update-info">
+                        <h3>{{ 'updateInformation' | translate }}</h3>
+
+                        <div class="info-group">
+                            <label for="email">{{ 'email' | translate }}</label>
+                            <input type="email" id="email" [(ngModel)]="updatedProfile.email" class="form-control"
+                                placeholder="{{ userProfile.email }}">
+                        </div>
+
+                        <div class="info-group">
+                            <label for="password">{{ 'password' | translate }}</label>
+                            <button type="button" class="btn-toggle-password" (click)="togglePasswordSection()">
+                                {{ showPasswordSection ? 'cancelPasswordChange' : 'changePassword' | translate }}
+                            </button>
+                        </div>
+
+                        <!-- Password change section (hidden by default) -->
+                        <div class="password-change-section" *ngIf="showPasswordSection">
+                            <div class="info-group">
+                                <label for="currentPassword">{{ 'currentPassword' | translate }}</label>
+                                <input type="password" id="currentPassword" [(ngModel)]="currentPassword"
+                                    class="form-control">
+                            </div>
+
+                            <div class="info-group">
+                                <label for="newPassword">{{ 'newPassword' | translate }}</label>
+                                <input type="password" id="newPassword" [(ngModel)]="newPassword" class="form-control">
+                            </div>
+
+                            <div class="info-group">
+                                <label for="confirmPassword">{{ 'confirmPassword' | translate }}</label>
+                                <input type="password" id="confirmPassword" [(ngModel)]="confirmPassword"
+                                    class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="info-group">
+                            <label for="firstName">{{ 'registration.firstName' | translate }}</label>
+                            <input type="text" id="firstName" [(ngModel)]="updatedProfile.firstName"
+                                class="form-control" placeholder="{{ userProfile.firstName }}">
+                        </div>
+
+                        <div class="info-group">
+                            <label for="lastName1">{{ 'registration.lastName1' | translate }}</label>
+                            <input type="text" id="lastName1" [(ngModel)]="updatedProfile.lastName1"
+                                class="form-control" placeholder="{{ userProfile.lastName1 }}">
+                        </div>
+
+                        <div class="info-group">
+                            <label for="lastName2">{{ 'registration.lastName2' | translate }}</label>
+                            <input type="text" id="lastName2" [(ngModel)]="updatedProfile.lastName2"
+                                class="form-control" placeholder="{{ userProfile.lastName2 || '' }}">
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.companyName !== undefined">
+                            <label for="companyName">{{ 'registration.companyName' | translate }}</label>
+                            <input type="text" id="companyName" [(ngModel)]="updatedProfile.companyName"
+                                class="form-control" placeholder="{{ userProfile.companyName || '' }}">
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.address !== undefined">
+                            <label for="address">{{ 'registration.address' | translate }}</label>
+                            <input type="text" id="address" [(ngModel)]="updatedProfile.address" class="form-control"
+                                placeholder="{{ userProfile.address }}">
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.postalCode !== undefined">
+                            <label for="postalCode">{{ 'registration.postalCode' | translate }}</label>
+                            <input type="text" id="postalCode" [(ngModel)]="updatedProfile.postalCode"
+                                class="form-control" placeholder="{{ userProfile.postalCode }}">
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.city !== undefined">
+                            <label for="city">{{ 'registration.city' | translate }}</label>
+                            <input type="text" id="city" [(ngModel)]="updatedProfile.city" class="form-control"
+                                placeholder="{{ userProfile.city }}">
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.country !== undefined">
+                            <label for="country">{{ 'registration.country' | translate }}</label>
+                            <input type="text" id="country" [(ngModel)]="updatedProfile.country" class="form-control"
+                                placeholder="{{ userProfile.country }}">
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.phoneFixed !== undefined">
+                            <label for="phoneFixed">{{ 'registration.phoneFixed' | translate }}</label>
+                            <input type="tel" id="phoneFixed" [(ngModel)]="updatedProfile.phoneFixed"
+                                class="form-control" placeholder="{{ userProfile.phoneFixed || '' }}">
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.phoneMobile !== undefined">
+                            <label for="phoneMobile">{{ 'registration.phoneMobile' | translate }}</label>
+                            <input type="tel" id="phoneMobile" [(ngModel)]="updatedProfile.phoneMobile"
+                                class="form-control" placeholder="{{ userProfile.phoneMobile }}">
+                        </div>
+
+                        <div class="info-group" *ngIf="userProfile.website !== undefined">
+                            <label for="website">{{ 'registration.website' | translate }}</label>
+                            <input type="url" id="website" [(ngModel)]="updatedProfile.website" class="form-control"
+                                placeholder="{{ userProfile.website || '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="action-buttons">
+                <button type="button" class="btn btn-cancel" (click)="goTo('/homepage')">{{ 'cancel' | translate }}</button>
+                <button type="button" class="btn btn-save" (click)="updateProfile()" [disabled]="isLoading">
+                    <span *ngIf="!isLoading">{{ 'saveChanges' | translate }}</span>
+                    <span *ngIf="isLoading">{{ 'saving' | translate }}...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

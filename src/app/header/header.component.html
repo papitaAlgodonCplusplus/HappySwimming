@@ -9,8 +9,8 @@
     
     <!-- Show these options when authenticated -->
     <ng-container *ngIf="isAuthenticated">
-      <a [routerLink]="['/homepage']" class="nav-item auth-link">{{ 'home' | translate }}</a>
-      <a (click)="logout()" class="nav-item auth-link logout-link">Logout</a>
+      <a [routerLink]="['/homepage']" class="nav-item auth-link" style="cursor: pointer;">{{ 'home' | translate }}</a>
+      <a (click)="logout()" class="nav-item auth-link logout-link" style="cursor: pointer;">Logout</a>
     </ng-container>
     
     <div class="language-selector">

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, BehaviorSubject, throwError, of } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
@@ -59,15 +59,15 @@ interface RegisterProfessionalData {
 export class AuthService {
   // DEVELOPMENT mode is determined by the current host
   private isDevelopment = window.location.hostname === 'localhost';
-  
+
   // API URL is dynamically set based on environment
-  private apiUrl = this.isDevelopment 
+  private apiUrl = this.isDevelopment
     ? 'http://localhost:10000/api'     // Development URL
     : 'https://happyswimming.onrender.com/api';   // Production URL
-    
+
   private currentUserSubject = new BehaviorSubject<any>(null);
   private tokenExpirationTimer: any;
-  
+
   constructor(private http: HttpClient, private router: Router) {
     console.log(`Running in ${this.isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'} mode`);
     console.log(`API URL: ${this.apiUrl}`);
@@ -83,11 +83,11 @@ export class AuthService {
       try {
         const user = JSON.parse(storedUser);
         const expirationDate = new Date(tokenExpiration);
-        
+
         // Check if token is still valid
         if (expirationDate > new Date()) {
           this.currentUserSubject.next(user);
-          
+
           // Set auto-logout timer
           this.autoLogout(expirationDate.getTime() - new Date().getTime());
         } else {
@@ -123,10 +123,10 @@ export class AuthService {
           localStorage.setItem('tokenExpiration', expirationDate.toISOString());
           localStorage.setItem('token', response.token);
           localStorage.setItem('user', JSON.stringify(response.user));
-          
+
           this.currentUserSubject.next(response.user);
           this.autoLogout(24 * 60 * 60 * 1000); // 24 hours
-          
+
           console.log('Login successful', response);
         }),
         catchError(this.handleError)
@@ -136,7 +136,7 @@ export class AuthService {
   // Global error handler for HTTP requests
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An unknown error occurred!';
-    
+
     if (error.error instanceof ErrorEvent) {
       // Client-side error
       errorMessage = `Error: ${error.error.message}`;
@@ -153,7 +153,7 @@ export class AuthService {
         errorMessage = error.error.error;
       }
     }
-    
+
     console.error('Auth error:', errorMessage, error);
     return throwError(() => new Error(errorMessage));
   }
@@ -192,15 +192,15 @@ export class AuthService {
     if (this.tokenExpirationTimer) {
       clearTimeout(this.tokenExpirationTimer);
     }
-    
+
     // Clear local storage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('tokenExpiration');
-    
+
     // Reset user subject
     this.currentUserSubject.next(null);
-    
+
     // Navigate to login
     this.router.navigate(['/auth']);
   }
@@ -209,11 +209,11 @@ export class AuthService {
     // Implement token refresh logic here if your API supports it
     // For now, we'll just check if we have a token
     const token = this.getToken();
-    
+
     if (!token) {
       return throwError(() => new Error('No token available'));
     }
-    
+
     // If your backend supports token refresh, you would call that endpoint here
     // For now, we'll just return the current user
     return of({
@@ -229,11 +229,11 @@ export class AuthService {
   isAuthenticated(): boolean {
     const token = this.getToken();
     const expiration = localStorage.getItem('tokenExpiration');
-    
+
     if (!token || !expiration) {
       return false;
     }
-    
+
     // Check if token is expired
     const expirationDate = new Date(expiration);
     if (expirationDate <= new Date()) {
@@ -241,7 +241,7 @@ export class AuthService {
       this.logout();
       return false;
     }
-    
+
     return true;
   }
 
@@ -273,29 +273,23 @@ export class AuthService {
     );
   }
 
-  getUserProfile(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/profile`).pipe(
-      catchError(this.handleError)
-    );
-  }
-
   registerFreeProfessional(formData: FormData): Observable<any> {
     // Verify essential fields
     if (!formData.has('email') || !formData.has('password')) {
       console.error('Missing required fields in registration form');
       return throwError(() => new Error('Email and password are required for registration'));
     }
-    
+
     // Ensure we have the correct role
     if (!formData.has('role')) {
       formData.append('role', 'professional');
     }
-    
+
     // Ensure we have the insourcing flag
     if (!formData.has('isInsourcing')) {
       formData.append('isInsourcing', 'true');
     }
-    
+
     // Log form data for debugging (without sensitive info)
     console.log('Registering professional with form data keys:');
     const keys: string[] = [];
@@ -305,9 +299,84 @@ export class AuthService {
       }
     });
     console.log('Form contains keys:', keys.join(', '));
-    
+
     return this.http.post(`${this.apiUrl}/register/professional`, formData).pipe(
       catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Get the current user's detailed profile
+   * This uses your existing /api/profile endpoint
+   */
+  getUserProfile(): Observable<any> {
+    const token = this.getToken();
+    if (!token) {
+      return throwError(() => new Error('Authentication required'));
+    }
+
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+
+    return this.http.get(`${this.apiUrl}/profile`, { headers }).pipe(
+      tap(profile => {
+        console.log('Profile data retrieved:', profile);
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Update the user profile with new information
+   * This integrates with your existing server structure
+   */
+  updateUserProfile(data: any): Observable<any> {
+    const token = this.getToken();
+    if (!token) {
+      return throwError(() => new Error('Authentication required'));
+    }
+
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+
+    // Transform camelCase to snake_case for backend compatibility
+    const transformedData: any = {};
+
+    Object.keys(data).forEach(key => {
+      // Convert camelCase to snake_case for backend compatibility
+      const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+      transformedData[snakeKey] = data[key];
+    });
+
+    // Special handling for password updates
+    if (data.currentPassword && data.newPassword) {
+      transformedData.current_password = data.currentPassword;
+      transformedData.new_password = data.newPassword;
+      delete transformedData.current_password;
+      delete transformedData.new_password;
+    }
+
+    return this.http.put(`${this.apiUrl}/profile/update`, transformedData, { headers }).pipe(
+      tap(response => {
+        // If the profile update includes a new email, update the stored user
+        if (data.email && (response as AuthResponse).user) {
+          const currentUser = this.currentUserSubject.value;
+          const updatedUser = { ...currentUser, email: data.email };
+
+          this.currentUserSubject.next(updatedUser);
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
+
+        console.log('Profile updated successfully', response);
+      }),
+      catchError(error => {
+        console.error('Error updating profile:', error);
+        return this.handleError(error);
+      })
     );
   }
 }

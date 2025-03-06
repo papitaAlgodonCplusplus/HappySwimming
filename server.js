@@ -128,7 +128,7 @@ app.post('/api/register/client', async (req, res) => {
 
     // Insert user
     const userResult = await client.query(
-      'INSERT INTO users (email, password_hash, first_name, last_name1, last_name2, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+      'INSERT INTO happyswimming.users (email, password_hash, first_name, last_name1, last_name2, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
       [email, passwordHash, firstName, lastName1, lastName2 || null, 'client']
     );
 
@@ -136,7 +136,7 @@ app.post('/api/register/client', async (req, res) => {
 
     // Insert client
     await client.query(
-      `INSERT INTO clients 
+      `INSERT INTO happyswimming.clients 
        (user_id, company_name, identification_number, address, postal_code, city, country, phone_fixed, phone_mobile, website, pl_code, is_outsourcing) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [userId, companyName || null, identificationNumber, address, postalCode, city, country, phoneFixed || null, phoneMobile, website || null, plCode || null, isOutsourcing]
@@ -205,7 +205,7 @@ app.post('/api/register/professional',
 
       // Insert user
       const userResult = await client.query(
-        'INSERT INTO users (email, password_hash, first_name, last_name1, last_name2, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+        'INSERT INTO happyswimming.users (email, password_hash, first_name, last_name1, last_name2, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
         [email, passwordHash, firstName, lastName1, lastName2 || null, 'professional']
       );
 
@@ -213,7 +213,7 @@ app.post('/api/register/professional',
 
       // Insert professional
       const professionalResult = await client.query(
-        `INSERT INTO professionals (user_id, company_name, identification_number, address, postal_code, city, country, phone_fixed, phone_mobile, website, is_insourcing) 
+        `INSERT INTO happyswimming.professionals (user_id, company_name, identification_number, address, postal_code, city, country, phone_fixed, phone_mobile, website, is_insourcing) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
         [
           userId,
@@ -245,25 +245,25 @@ app.post('/api/register/professional',
         // Example of checking if documents table exists before trying to insert
         try {
           const tableCheck = await client.query(
-            "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'documents')"
+            "SELECT EXISTS (SELECT FROM happyswimming.information_schema.tables WHERE table_name = 'documents')"
           );
 
           if (tableCheck.rows[0].exists) {
             // Documents table exists, we can insert mock records
             await client.query(
-              `INSERT INTO documents (professional_id, type, file_name, mime_type) 
+              `INSERT INTO happyswimming.documents (professional_id, type, file_name, mime_type) 
               VALUES ($1, 'id', 'mock-id-document.pdf', 'application/pdf')`,
               [professionalId]
             );
 
             await client.query(
-              `INSERT INTO documents (professional_id, type, file_name, mime_type) 
+              `INSERT INTO happyswimming.documents (professional_id, type, file_name, mime_type) 
               VALUES ($1, 'cv', 'mock-cv.pdf', 'application/pdf')`,
               [professionalId]
             );
 
             await client.query(
-              `INSERT INTO documents (professional_id, type, file_name, mime_type) 
+              `INSERT INTO happyswimming.documents (professional_id, type, file_name, mime_type) 
               VALUES ($1, 'insurance', 'mock-insurance.pdf', 'application/pdf')`,
               [professionalId]
             );
@@ -285,7 +285,7 @@ app.post('/api/register/professional',
 
           const specialtyParams = [professionalId, ...specialties];
           await client.query(
-            `INSERT INTO professional_specialties (professional_id, specialty_id) VALUES ${specialtyValues}`,
+            `INSERT INTO happyswimming.professional_specialties (professional_id, specialty_id) VALUES ${specialtyValues}`,
             specialtyParams
           );
         } catch (error) {
@@ -318,7 +318,7 @@ app.post('/api/login', async (req, res) => {
 
     // Get user by email
     const userResult = await pool.query(
-      'SELECT id, email, password_hash, role, first_name, last_name1 FROM users WHERE email = $1 AND is_active = true',
+      'SELECT id, email, password_hash, role, first_name, last_name1 FROM happyswimming.users WHERE email = $1 AND is_active = true',
       [email]
     );
 
@@ -347,7 +347,7 @@ app.post('/api/login', async (req, res) => {
 
     if (user.role === 'client') {
       const clientResult = await pool.query(
-        'SELECT id, company_name, is_outsourcing FROM clients WHERE user_id = $1',
+        'SELECT id, company_name, is_outsourcing FROM happyswimming.clients WHERE user_id = $1',
         [user.id]
       );
       if (clientResult.rows.length > 0) {
@@ -355,7 +355,7 @@ app.post('/api/login', async (req, res) => {
       }
     } else if (user.role === 'professional') {
       const professionalResult = await pool.query(
-        'SELECT id, company_name, is_insourcing FROM professionals WHERE user_id = $1',
+        'SELECT id, company_name, is_insourcing FROM happyswimming.professionals WHERE user_id = $1',
         [user.id]
       );
       if (professionalResult.rows.length > 0) {
@@ -383,7 +383,7 @@ app.post('/api/login', async (req, res) => {
 app.get('/api/pl-codes', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, code, description FROM pl_codes WHERE is_active = true ORDER BY code'
+      'SELECT id, code, description FROM happyswimming.pl_codes WHERE is_active = true ORDER BY code'
     );
 
     res.json(result.rows);
@@ -397,7 +397,7 @@ app.get('/api/pl-codes', async (req, res) => {
 app.get('/api/specialties', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, name, description FROM specialties ORDER BY name'
+      'SELECT id, name, description FROM happyswimming.specialties ORDER BY name'
     );
 
     res.json(result.rows);
@@ -414,7 +414,7 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
 
     // Get user data
     const userResult = await pool.query(
-      'SELECT id, email, first_name, last_name1, last_name2, role FROM users WHERE id = $1',
+      'SELECT id, email, first_name, last_name1, last_name2, role FROM happyswimming.users WHERE id = $1',
       [id]
     );
 
@@ -430,8 +430,8 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
     if (role === 'client') {
       const clientResult = await pool.query(
         `SELECT c.*, p.code as pl_code_name, p.description as pl_description 
-         FROM clients c 
-         LEFT JOIN pl_codes p ON c.pl_code = p.code 
+         FROM happyswimming.clients c 
+         LEFT JOIN happyswimming.pl_codes p ON c.pl_code = p.code 
          WHERE c.user_id = $1`,
         [id]
       );
@@ -440,7 +440,7 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
       }
     } else if (role === 'professional') {
       const professionalResult = await pool.query(
-        'SELECT * FROM professionals WHERE user_id = $1',
+        'SELECT * FROM happyswimming.professionals WHERE user_id = $1',
         [id]
       );
       if (professionalResult.rows.length > 0) {
@@ -450,8 +450,8 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
         // Get specialties
         const specialtiesResult = await pool.query(
           `SELECT s.id, s.name, s.description 
-           FROM specialties s
-           JOIN professional_specialties ps ON s.id = ps.specialty_id
+           FROM happyswimming.specialties s
+           JOIN happyswimming.professional_specialties ps ON s.id = ps.specialty_id
            WHERE ps.professional_id = $1
            ORDER BY s.name`,
           [professional.id]
@@ -489,11 +489,11 @@ app.get('/api/enrollments/user', authenticateToken, async (req, res) => {
           cs.professional_id, 
           CONCAT(u.first_name, ' ', u.last_name1) as professional_name,
           cs.price
-        FROM client_services cs
-        JOIN services s ON cs.service_id = s.id
-        JOIN clients c ON cs.client_id = c.id
-        LEFT JOIN professionals p ON cs.professional_id = p.id
-        LEFT JOIN users u ON p.user_id = u.id
+        FROM happyswimming.client_services cs
+        JOIN happyswimming.services s ON cs.service_id = s.id
+        JOIN happyswimming.clients c ON cs.client_id = c.id
+        LEFT JOIN happyswimming.professionals p ON cs.professional_id = p.id
+        LEFT JOIN happyswimming.users u ON p.user_id = u.id
         WHERE c.user_id = $1
         ORDER BY cs.created_at DESC
       `;
@@ -505,11 +505,11 @@ app.get('/api/enrollments/user', authenticateToken, async (req, res) => {
           cs.professional_id, 
           CONCAT(cu.first_name, ' ', cu.last_name1) as client_name,
           cs.price
-        FROM client_services cs
-        JOIN services s ON cs.service_id = s.id
-        JOIN professionals p ON cs.professional_id = p.id
-        JOIN clients c ON cs.client_id = c.id
-        JOIN users cu ON c.user_id = cu.id
+        FROM happyswimming.client_services cs
+        JOIN happyswimming.services s ON cs.service_id = s.id
+        JOIN happyswimming.professionals p ON cs.professional_id = p.id
+        JOIN happyswimming.clients c ON cs.client_id = c.id
+        JOIN happyswimming.users cu ON c.user_id = cu.id
         WHERE p.user_id = $1
         ORDER BY cs.created_at DESC
       `;
@@ -561,9 +561,9 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
     let query;
 
     if (userRole === 'client') {
-      query = 'SELECT id FROM clients WHERE user_id = $1';
+      query = 'SELECT id FROM happyswimming.clients WHERE user_id = $1';
     } else if (userRole === 'professional') {
-      query = 'SELECT id FROM professionals WHERE user_id = $1';
+      query = 'SELECT id FROM happyswimming.professionals WHERE user_id = $1';
     } else {
       return res.status(403).json({ error: 'Unauthorized role' });
     }
@@ -577,7 +577,7 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
 
     // Get course/service details
     const serviceResult = await client.query(
-      'SELECT id, price FROM services WHERE id = $1',
+      'SELECT id, price FROM happyswimming.services WHERE id = $1',
       [courseId]
     );
 
@@ -594,7 +594,7 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
     if (userRole === 'client') {
       // For clients
       enrollmentQuery = `
-      INSERT INTO client_services 
+      INSERT INTO happyswimming.client_services 
       (client_id, service_id, professional_id, start_date, price, status, notes, start_time, end_time)
       VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8)
       RETURNING id
@@ -617,7 +617,7 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
     } else if (userRole === 'professional') {
       // For professionals enrolling in training courses
       enrollmentQuery = `
-        INSERT INTO professional_services
+        INSERT INTO happyswimming.professional_services
         (professional_id, service_id, price_per_hour, notes)
         VALUES ($1, $2, $3, $4)
         RETURNING professional_id, service_id
@@ -664,15 +664,15 @@ app.put('/api/enrollments/:id/cancel', authenticateToken, async (req, res) => {
     if (userRole === 'client') {
       checkQuery = `
         SELECT cs.id 
-        FROM client_services cs
-        JOIN clients c ON cs.client_id = c.id
+        FROM happyswimming.client_services cs
+        JOIN happyswimming.clients c ON cs.client_id = c.id
         WHERE cs.id = $1 AND c.user_id = $2 AND cs.status = 'pending'
       `;
     } else if (userRole === 'professional') {
       checkQuery = `
         SELECT cs.id 
-        FROM client_services cs
-        JOIN professionals p ON cs.professional_id = p.id
+        FROM happyswimming.client_services cs
+        JOIN happyswimming.professionals p ON cs.professional_id = p.id
         WHERE cs.id = $1 AND p.user_id = $2 AND cs.status = 'pending'
       `;
     } else {
@@ -687,9 +687,9 @@ app.put('/api/enrollments/:id/cancel', authenticateToken, async (req, res) => {
       });
     }
 
-    // UPDATE the enrollment status to cancelled
+    // UPDATE happyswimming.the enrollment status to cancelled
     await client.query(
-      'UPDATE client_services SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      'UPDATE happyswimming.client_services SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       ['cancelled', enrollmentId]
     );
 
@@ -712,10 +712,10 @@ app.get('/api/professionals/available', authenticateToken, async (req, res) => {
       SELECT p.id, CONCAT(u.first_name, ' ', u.last_name1) as name,
         array_agg(s.name) as specialties, 
         p.is_insourcing as available
-      FROM professionals p
-      JOIN users u ON p.user_id = u.id
-      LEFT JOIN professional_specialties ps ON p.id = ps.professional_id
-      LEFT JOIN specialties s ON ps.specialty_id = s.id
+      FROM happyswimming.professionals p
+      JOIN happyswimming.users u ON p.user_id = u.id
+      LEFT JOIN happyswimming.professional_specialties ps ON p.id = ps.professional_id
+      LEFT JOIN happyswimming.specialties s ON ps.specialty_id = s.id
       WHERE u.is_active = true
       GROUP BY p.id, u.first_name, u.last_name1, p.is_insourcing
       ORDER BY name
@@ -745,7 +745,7 @@ app.get('/api/professionals/verifications', authenticateToken, async (req, res) 
 
     // Check if the user is a professional
     const userCheck = await pool.query(
-      'SELECT id FROM professionals WHERE user_id = $1',
+      'SELECT id FROM happyswimming.professionals WHERE user_id = $1',
       [userId]
     );
 
@@ -758,8 +758,8 @@ app.get('/api/professionals/verifications', authenticateToken, async (req, res) 
     // Get service IDs the professional is verified for
     const query = `
       SELECT s.id as service_id
-      FROM professional_services ps
-      JOIN services s ON ps.service_id = s.id
+      FROM happyswimming.professional_services ps
+      JOIN happyswimming.services s ON ps.service_id = s.id
       WHERE ps.professional_id = $1
     `;
 
@@ -783,7 +783,7 @@ app.get('/api/professionals/services', authenticateToken, async (req, res) => {
 
     // Check if the user is a professional
     const userCheck = await pool.query(
-      'SELECT id FROM professionals WHERE user_id = $1',
+      'SELECT id FROM happyswimming.professionals WHERE user_id = $1',
       [userId]
     );
 
@@ -796,7 +796,7 @@ app.get('/api/professionals/services', authenticateToken, async (req, res) => {
     // Get professional services directly from the database with the exact column names
     const query = `
       SELECT professional_id, service_id, price_per_hour, notes
-      FROM professional_services
+      FROM happyswimming.professional_services
       WHERE professional_id = $1
     `;
 
@@ -806,6 +806,284 @@ app.get('/api/professionals/services', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error fetching professional services:', error);
     res.status(500).json({ error: 'Failed to fetch professional services' });
+  }
+});
+
+
+// PUT: Update user profile
+app.put('/api/profile/update', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    // Get user ID from auth middleware
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    
+    console.log('Updating profile for user:', userId, 'with data:', req.body);
+    
+    // Get current user data for verification
+    const userQuery = 'SELECT id, email, password_hash, role FROM happyswimming.users WHERE id = $1';
+    const userResult = await client.query(userQuery, [userId]);
+    
+    if (userResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const user = userResult.rows[0];
+    
+    // Handle password change if requested
+    if (req.body.current_password && req.body.new_password) {
+      // Verify current password
+      const isMatch = await bcrypt.compare(req.body.current_password, user.password_hash);
+      
+      if (!isMatch) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+      
+      // Hash new password
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(req.body.new_password, salt);
+      
+      // Update password
+      await client.query(
+        'UPDATE happyswimming.users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [passwordHash, userId]
+      );
+      
+      console.log('Password updated successfully');
+    }
+    
+    // Update user table fields
+    const updateFields = [];
+    const updateValues = [];
+    let valueIndex = 1;
+    
+    // Only update fields that are provided
+    if (req.body.email !== undefined) {
+      // Check if email already exists
+      const emailCheckResult = await client.query(
+        'SELECT id FROM happyswimming.users WHERE email = $1 AND id != $2',
+        [req.body.email, userId]
+      );
+      
+      if (emailCheckResult.rows.length > 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Email already in use' });
+      }
+      
+      updateFields.push(`email = $${valueIndex}`);
+      updateValues.push(req.body.email);
+      valueIndex++;
+    }
+    
+    if (req.body.first_name !== undefined) {
+      updateFields.push(`first_name = $${valueIndex}`);
+      updateValues.push(req.body.first_name);
+      valueIndex++;
+    }
+    
+    if (req.body.last_name1 !== undefined) {
+      updateFields.push(`last_name1 = $${valueIndex}`);
+      updateValues.push(req.body.last_name1);
+      valueIndex++;
+    }
+    
+    if (req.body.last_name2 !== undefined) {
+      updateFields.push(`last_name2 = $${valueIndex}`);
+      updateValues.push(req.body.last_name2);
+      valueIndex++;
+    }
+    
+    // Update user table if there are fields to update
+    if (updateFields.length > 0) {
+      updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+      
+      const updateUserQuery = `
+        UPDATE happyswimming.users 
+        SET ${updateFields.join(', ')} 
+        WHERE id = $${valueIndex}
+      `;
+      
+      updateValues.push(userId);
+      await client.query(updateUserQuery, updateValues);
+      console.log('User fields updated');
+    }
+    
+    // Reset for role-specific table updates
+    updateFields.length = 0;
+    updateValues.length = 0;
+    valueIndex = 1;
+    
+    // Update role-specific tables (client or professional)
+    if (userRole === 'client') {
+      // Update client table fields
+      if (req.body.company_name !== undefined) {
+        updateFields.push(`company_name = $${valueIndex}`);
+        updateValues.push(req.body.company_name);
+        valueIndex++;
+      }
+      
+      if (req.body.address !== undefined) {
+        updateFields.push(`address = $${valueIndex}`);
+        updateValues.push(req.body.address);
+        valueIndex++;
+      }
+      
+      if (req.body.postal_code !== undefined) {
+        updateFields.push(`postal_code = $${valueIndex}`);
+        updateValues.push(req.body.postal_code);
+        valueIndex++;
+      }
+      
+      if (req.body.city !== undefined) {
+        updateFields.push(`city = $${valueIndex}`);
+        updateValues.push(req.body.city);
+        valueIndex++;
+      }
+      
+      if (req.body.country !== undefined) {
+        updateFields.push(`country = $${valueIndex}`);
+        updateValues.push(req.body.country);
+        valueIndex++;
+      }
+      
+      if (req.body.phone_fixed !== undefined) {
+        updateFields.push(`phone_fixed = $${valueIndex}`);
+        updateValues.push(req.body.phone_fixed);
+        valueIndex++;
+      }
+      
+      if (req.body.phone_mobile !== undefined) {
+        updateFields.push(`phone_mobile = $${valueIndex}`);
+        updateValues.push(req.body.phone_mobile);
+        valueIndex++;
+      }
+      
+      if (req.body.website !== undefined) {
+        updateFields.push(`website = $${valueIndex}`);
+        updateValues.push(req.body.website);
+        valueIndex++;
+      }
+      
+      if (req.body.pl_code !== undefined) {
+        updateFields.push(`pl_code = $${valueIndex}`);
+        updateValues.push(req.body.pl_code);
+        valueIndex++;
+      }
+      
+      // Update client table if there are fields to update
+      if (updateFields.length > 0) {
+        updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+        
+        const updateClientQuery = `
+          UPDATE happyswimming.clients 
+          SET ${updateFields.join(', ')} 
+          WHERE user_id = $${valueIndex}
+        `;
+        
+        updateValues.push(userId);
+        await client.query(updateClientQuery, updateValues);
+        console.log('Client fields updated');
+      }
+    } else if (userRole === 'professional') {
+      // Update professional table fields
+      if (req.body.company_name !== undefined) {
+        updateFields.push(`company_name = $${valueIndex}`);
+        updateValues.push(req.body.company_name);
+        valueIndex++;
+      }
+      
+      if (req.body.address !== undefined) {
+        updateFields.push(`address = $${valueIndex}`);
+        updateValues.push(req.body.address);
+        valueIndex++;
+      }
+      
+      if (req.body.postal_code !== undefined) {
+        updateFields.push(`postal_code = $${valueIndex}`);
+        updateValues.push(req.body.postal_code);
+        valueIndex++;
+      }
+      
+      if (req.body.city !== undefined) {
+        updateFields.push(`city = $${valueIndex}`);
+        updateValues.push(req.body.city);
+        valueIndex++;
+      }
+      
+      if (req.body.country !== undefined) {
+        updateFields.push(`country = $${valueIndex}`);
+        updateValues.push(req.body.country);
+        valueIndex++;
+      }
+      
+      if (req.body.phone_fixed !== undefined) {
+        updateFields.push(`phone_fixed = $${valueIndex}`);
+        updateValues.push(req.body.phone_fixed);
+        valueIndex++;
+      }
+      
+      if (req.body.phone_mobile !== undefined) {
+        updateFields.push(`phone_mobile = $${valueIndex}`);
+        updateValues.push(req.body.phone_mobile);
+        valueIndex++;
+      }
+      
+      if (req.body.website !== undefined) {
+        updateFields.push(`website = $${valueIndex}`);
+        updateValues.push(req.body.website);
+        valueIndex++;
+      }
+      
+      // Update professional table if there are fields to update
+      if (updateFields.length > 0) {
+        updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+        
+        const updateProfQuery = `
+          UPDATE happyswimming.professionals 
+          SET ${updateFields.join(', ')} 
+          WHERE user_id = $${valueIndex}
+        `;
+        
+        updateValues.push(userId);
+        await client.query(updateProfQuery, updateValues);
+        console.log('Professional fields updated');
+      }
+    }
+    
+    // Commit the transaction
+    await client.query('COMMIT');
+    
+    // Get updated user information
+    const updatedUserResult = await pool.query(
+      'SELECT id, email, first_name, last_name1, role FROM happyswimming.users WHERE id = $1',
+      [userId]
+    );
+    
+    const updatedUser = updatedUserResult.rows[0];
+    
+    // Return successful response with updated user info
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.first_name,
+        role: updatedUser.role
+      }
+    });
+  } catch (err) {
+    // Rollback transaction on error
+    await client.query('ROLLBACK');
+    console.error('Error updating user profile:', err);
+    res.status(500).json({ error: 'Server error' });
+  } finally {
+    // Release the client back to the pool
+    client.release();
   }
 });
 
