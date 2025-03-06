@@ -34,6 +34,7 @@ export class HomepageComponent implements OnInit {
       
       this.userName = user.name || 'Usuario';
       this.userRole = this.translateRole(user.role);
+      console.log('User role:', this.userRole);
       this.cdr.detectChanges();
     });
     

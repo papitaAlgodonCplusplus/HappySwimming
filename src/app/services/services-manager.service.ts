@@ -25,6 +25,7 @@ interface Enrollment {
   professionalName?: string;
   price: number;
   userId: number;
+  isOutsourcing: boolean;
 }
 
 interface EnrollmentRequest {

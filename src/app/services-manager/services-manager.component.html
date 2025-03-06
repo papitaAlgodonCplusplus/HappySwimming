@@ -160,11 +160,11 @@
                                 ('servicesManager.notAssigned' | translate) }}</td>
                             <td>€{{ enrollment.price }}</td>
                             <td>
-                                <button *ngIf="enrollment.status === 'pending'" class="btn btn-cancel"
+                                <button *ngIf="enrollment.status === 'in_process' || enrollment.status === 'pending'" class="btn btn-cancel"
                                     (click)="cancelEnrollment(enrollment.id)">
                                     {{ 'servicesManager.cancel' | translate }}
                                 </button>
-                                <span *ngIf="enrollment.status !== 'pending'">-</span>
+                                <span *ngIf="enrollment.status !== 'in_process' && enrollment.status !== 'pending'">-</span>
                             </td>
                         </tr>
                     </tbody>

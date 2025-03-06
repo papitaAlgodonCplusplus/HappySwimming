@@ -30,7 +30,7 @@ app.use(cors());
 app.use(express.json());
 
 
-/*   // Database connection DEV
+/* // Database connection DEV
 const pool = new Pool({
   user: process.env.DB_USER || 'postgres',
   host: process.env.DB_HOST || 'localhost',
@@ -38,9 +38,10 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD || 'postgres',
   port: process.env.DB_PORT || 5432,
   schema: 'happyswimming'
-});   */
+}); */
 
-   // Database connection PROD
+
+    // Database connection PROD
 const pool = new Pool({
   host: 'database-1.cxqii6e0qkzu.us-east-1.rds.amazonaws.com',
   port: 5432,
@@ -48,7 +49,8 @@ const pool = new Pool({
   user: 'postgres',
   password: 'PwT.398!',
   ssl: { rejectUnauthorized: false }
-});   
+});
+    */
 
 
 
@@ -496,7 +498,7 @@ app.get('/api/enrollments/professional', authenticateToken, async (req, res) => 
     const query = `
       SELECT cs.id, cs.service_id, s.name as service_name, cs.status,
         cs.created_at as enrollment_date, cs.start_date, cs.end_date,
-        c.id as client_id, c.user_id as client_user_id,
+        c.id as client_id, c.user_id as client_user_id, c.is_outsourcing,
         CONCAT(u.first_name, ' ', u.last_name1) as client_name,
         cs.price
       FROM happyswimming.client_services cs
@@ -519,6 +521,7 @@ app.get('/api/enrollments/professional', authenticateToken, async (req, res) => 
       endDate: row.end_date,
       professionalId: professionalId,
       userId: row.client_user_id,
+      isOutsourcing: row.is_outsourcing,
       clientName: row.client_name, // Add client name to the response
       price: parseFloat(row.price)
     }));
@@ -545,7 +548,7 @@ app.get('/api/enrollments/user', authenticateToken, async (req, res) => {
       query = `
         SELECT cs.id, cs.service_id, s.name as service_name, cs.status,
           cs.created_at as enrollment_date, cs.start_date, cs.end_date,
-          cs.professional_id, 
+          cs.professional_id, c.is_outsourcing,
           CONCAT(u.first_name, ' ', u.last_name1) as professional_name,
           cs.price
         FROM happyswimming.client_services cs
@@ -585,6 +588,7 @@ app.get('/api/enrollments/user', authenticateToken, async (req, res) => {
       enrollmentDate: row.enrollment_date,
       startDate: row.start_date,
       endDate: row.end_date,
+      isOutsourcing: row.is_outsourcing,
       professionalId: row.professional_id,
       professionalName: row.professional_name || row.client_name,
       price: parseFloat(row.price)
@@ -725,14 +729,14 @@ app.put('/api/enrollments/:id/cancel', authenticateToken, async (req, res) => {
         SELECT cs.id 
         FROM happyswimming.client_services cs
         JOIN happyswimming.clients c ON cs.client_id = c.id
-        WHERE cs.id = $1 AND c.user_id = $2 AND cs.status = 'pending'
+        WHERE cs.id = $1 AND c.user_id = $2
       `;
     } else if (userRole === 'professional') {
       checkQuery = `
         SELECT cs.id 
         FROM happyswimming.client_services cs
         JOIN happyswimming.professionals p ON cs.professional_id = p.id
-        WHERE cs.id = $1 AND p.user_id = $2 AND cs.status = 'pending'
+        WHERE cs.id = $1 AND p.user_id = $2
       `;
     } else {
       return res.status(403).json({ error: 'Unauthorized role' });
@@ -1143,6 +1147,188 @@ app.put('/api/profile/update', authenticateToken, async (req, res) => {
   } finally {
     // Release the client back to the pool
     client.release();
+  }
+});
+
+// Add this to your routes in server.js or a separate route file
+
+// Get all students for the current professional
+app.get('/api/professional/students', authenticateToken, async (req, res) => {
+  try {
+    // Get the professional ID from the authenticated user
+    const userId = req.user.id;
+
+    // First, get the professional record for this user
+    const professionalQuery = `
+      SELECT id FROM happyswimming.professionals 
+      WHERE user_id = $1
+    `;
+    const professionalResult = await pool.query(professionalQuery, [userId]);
+    console.log('Professional result:', professionalResult.rows);
+
+    if (professionalResult.rows.length === 0) {
+      return res.status(403).json({ error: 'You are not registered as a professional' });
+    }
+
+    const professionalId = professionalResult.rows[0].id;
+
+    // Query to get all students enrolled in courses taught by this professional
+    const studentsQuery = `
+    SELECT 
+      u.id,
+      u.first_name,
+      u.last_name1,
+      u.last_name2,
+      u.email,
+      u.role,
+      cs.id as enrollment_id,
+      cs.service_id as course_id,
+      s.name as course_name,
+      cs.start_date,
+      cs.end_date,
+      cs.day_of_week,
+      cs.start_time,
+      cs.end_time,
+      cs.status,
+      cs.notes,
+      c.id as client_id,
+      c.company_name,
+      c.phone_mobile
+    FROM happyswimming.client_services cs
+    JOIN happyswimming.clients c ON cs.client_id = c.id
+    JOIN happyswimming.users u ON c.user_id = u.id
+    JOIN happyswimming.services s ON cs.service_id = s.id
+    WHERE cs.professional_id = $1
+    ORDER BY cs.start_date, cs.start_time, u.last_name1, u.first_name
+  `;
+
+    const result = await pool.query(studentsQuery, [professionalId]);
+    console.log('Professional students:', result.rows);
+
+    // Transform the data to match the expected Student interface
+    const students = result.rows.map(row => ({
+      id: row.id,
+      firstName: row.first_name,
+      lastName1: row.last_name1,
+      lastName2: row.last_name2 || null,
+      dateOfBirth: row.date_of_birth,
+      gender: row.gender,
+      emergencyContact: row.emergency_contact,
+      emergencyPhone: row.emergency_phone,
+      medicalNotes: row.medical_notes,
+      enrollmentId: row.enrollment_id,
+      courseId: row.course_id,
+      courseName: row.course_name,
+      startDate: row.start_date,
+      status: row.status,
+      clientId: row.client_id,
+      clientName: `${row.client_first_name} ${row.client_last_name}`
+    }));
+
+    res.json(students);
+  } catch (error) {
+    console.error('Error fetching professional students:', error);
+    res.status(500).json({ error: 'Failed to fetch students' });
+  }
+});
+
+// Update student status and notes
+app.put('/api/professional/students/:enrollmentId', authenticateToken, async (req, res) => {
+  try {
+    // Get the enrollment ID from the route parameter
+    const enrollmentId = req.params.enrollmentId;
+    
+    // Get the update data from the request body
+    const { status, notes } = req.body;
+    
+    // Get the professional ID from the authenticated user
+    const userId = req.user.id;
+    
+    // First, check if the professional is authorized to update this enrollment
+    const checkAuthQuery = `
+      SELECT cs.id 
+      FROM happyswimming.client_services cs
+      JOIN happyswimming.professionals p ON cs.professional_id = p.id
+      WHERE cs.id = $1 
+      AND p.user_id = $2
+    `;
+    
+    const authResult = await pool.query(checkAuthQuery, [enrollmentId, userId]);
+    
+    if (authResult.rows.length === 0) {
+      return res.status(403).json({ error: 'You are not authorized to update this enrollment' });
+    }
+    
+    // Update the enrollment status and notes
+    const updateQuery = `
+      UPDATE happyswimming.client_services 
+      SET status = $1, notes = $2, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $3
+      RETURNING *
+    `;
+    
+    const updateResult = await pool.query(updateQuery, [status, notes, enrollmentId]);
+    
+    if (updateResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Enrollment not found' });
+    }
+    
+    res.json({ 
+      message: 'Enrollment updated successfully',
+      enrollment: updateResult.rows[0]
+    });
+    
+  } catch (error) {
+    console.error('Error updating student enrollment:', error);
+    res.status(500).json({ error: 'Failed to update enrollment' });
+  }
+});
+
+// Delete student enrollment
+app.delete('/api/professional/students/:enrollmentId', authenticateToken, async (req, res) => {
+  try {
+    // Get the enrollment ID from the route parameter
+    const enrollmentId = req.params.enrollmentId;
+    
+    // Get the professional ID from the authenticated user
+    const userId = req.user.id;
+    
+    // First, check if the professional is authorized to delete this enrollment
+    const checkAuthQuery = `
+      SELECT cs.id 
+      FROM happyswimming.client_services cs
+      JOIN happyswimming.professionals p ON cs.professional_id = p.id
+      WHERE cs.id = $1 
+      AND p.user_id = $2
+    `;
+    
+    const authResult = await pool.query(checkAuthQuery, [enrollmentId, userId]);
+    
+    if (authResult.rows.length === 0) {
+      return res.status(403).json({ error: 'You are not authorized to delete this enrollment' });
+    }
+    
+    // Delete the enrollment record from the database
+    const deleteQuery = `
+      DELETE FROM happyswimming.client_services 
+      WHERE id = $1
+      RETURNING id
+    `;
+    
+    const deleteResult = await pool.query(deleteQuery, [enrollmentId]);
+    
+    if (deleteResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Enrollment not found' });
+    }
+    
+    res.json({ 
+      message: 'Enrollment deleted successfully',
+      enrollmentId: deleteResult.rows[0].id
+    });
+    
+  } catch (error) {
+    console.error('Error deleting student enrollment:', error);
+    res.status(500).json({ error: 'Failed to delete enrollment' });
   }
 });
 

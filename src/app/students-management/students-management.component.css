@@ -1,0 +1,402 @@
+.students-management-container {
+    width: 100%;
+    min-height: 100vh;
+    background-color: #a7e0ff;
+    font-family: 'Lexend Peta', sans-serif;
+    padding-top: 120px; /* Account for header */
+    padding-bottom: 40px;
+    color: #204376;
+  }
+  
+  .students-management-content {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #a7e0ff;
+    padding: 2rem;
+    border-radius: 10px;
+  }
+  
+  .title {
+    text-align: left;
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    font-weight: 700;
+    color: #204376;
+  }
+  
+  .success-message {
+    background-color: rgba(0, 128, 0, 0.1);
+    color: #006600;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    border-left: 4px solid #006600;
+  }
+  
+  .error-message {
+    background-color: rgba(255, 0, 0, 0.1);
+    color: #cc0000;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    border-left: 4px solid #cc0000;
+  }
+  
+  .loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+  }
+  
+  .spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border-left-color: #004aad;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+  
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* Courses container */
+  .courses-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+  
+  .course-card {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  .course-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background-color: rgba(0, 74, 173, 0.1);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .course-header:hover {
+    background-color: rgba(0, 74, 173, 0.2);
+  }
+  
+  .course-title {
+    margin: 0;
+    font-size: 1.4rem;
+    color: #004aad;
+  }
+  
+  .course-stats {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .student-count {
+    background-color: #004aad;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+  }
+  
+  .expand-icon {
+    font-size: 1.2rem;
+    color: #004aad;
+  }
+  
+  /* Students table */
+  .students-table-container {
+    padding: 1.5rem;
+    overflow-x: auto;
+  }
+  
+  .students-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .students-table th,
+  .students-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .students-table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+    color: #204376;
+  }
+  
+  .students-table tbody tr:hover {
+    background-color: rgba(0, 74, 173, 0.05);
+  }
+  
+  .actions-cell {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  /* Status badges */
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+  
+  .status-approved {
+    background-color: rgba(0, 128, 0, 0.2);
+    color: #006600;
+  }
+  
+  .status-pending {
+    background-color: rgba(255, 153, 0, 0.2);
+    color: #cc7a00;
+  }
+  
+  .status-in-process {
+    background-color: rgba(0, 102, 204, 0.2);
+    color: #004a99;
+  }
+  
+  .status-reproved {
+    background-color: rgba(204, 0, 0, 0.2);
+    color: #990000;
+  }
+  
+  .status-completed {
+    background-color: rgba(75, 0, 130, 0.2);
+    color: #4b0082;
+  }
+
+  .status-cancelled {
+    background-color: rgba(204, 0, 0, 0.2);
+    color: #990000;
+  }
+  
+  /* Buttons */
+  .btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Lexend Peta', sans-serif;
+  }
+  
+  .btn-edit {
+    background-color: #004aad;
+    color: white;
+  }
+  
+  .btn-edit:hover {
+    background-color: #003c8a;
+  }
+  
+  .btn-delete {
+    background-color: #cc0000;
+    color: white;
+  }
+  
+  .btn-delete:hover {
+    background-color: #b30000;
+  }
+  
+  .btn-cancel {
+    background-color: #e0e0e0;
+    color: #333;
+  }
+  
+  .btn-cancel:hover {
+    background-color: #d0d0d0;
+  }
+  
+  .btn-save {
+    background-color: #006600;
+    color: white;
+  }
+  
+  .btn-save:hover {
+    background-color: #005500;
+  }
+  
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .modal-container {
+    background-color: white;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+  }
+  
+  .delete-modal {
+    max-width: 450px;
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #204376;
+  }
+  
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+  }
+  
+  .modal-body {
+    padding: 1.5rem;
+  }
+  
+  .student-info {
+    background-color: #f5f5f5;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .student-info p {
+    margin: 0.5rem 0;
+  }
+  
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+  
+  .form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-family: 'Lexend Peta', sans-serif;
+  }
+  
+  textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+  }
+  
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+    gap: 1rem;
+  }
+  
+  .no-students-message {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 2rem;
+  }
+  
+  .no-students-message p {
+    font-size: 1.2rem;
+    color: #666;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .students-management-content {
+      width: 95%;
+      padding: 1rem;
+    }
+  
+    .title {
+      font-size: 1.5rem;
+    }
+  
+    .course-title {
+      font-size: 1.2rem;
+    }
+  
+    .course-header {
+      padding: 1rem;
+    }
+  
+    .students-table-container {
+      padding: 1rem;
+    }
+  
+    .students-table th,
+    .students-table td {
+      padding: 0.5rem;
+      font-size: 0.9rem;
+    }
+  
+    .actions-cell {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  
+    .btn {
+      width: 100%;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+    }
+  
+    .modal-container {
+      width: 95%;
+    }
+  }

@@ -33,7 +33,7 @@ interface Enrollment {
   id: number;
   courseId: string;
   courseName: string;
-  status: 'pending' | 'approved' | 'completed' | 'cancelled';
+  status: 'pending' | 'approved' | 'completed' | 'cancelled' | 'in_process';
   enrollmentDate: Date;
   startDate?: Date;
   endDate?: Date;

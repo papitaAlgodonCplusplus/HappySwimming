@@ -121,17 +121,19 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     this.servicesManagerService.getUserEnrollments().subscribe({
       next: (enrollments) => {
         this.myEnrollments = enrollments || [];
-        
+        console.log('User enrollments:', this.myEnrollments);
+        console.log('UserRole:', this.userRole);
+
         // For clients, calculate expenses based on their enrollments
         if (this.userRole === 'client') {
           this.calculateClientExpenses();
         }
-        
+
         // If user is a professional, load enrollments where they are the professional
         if (this.userRole === 'professional') {
           this.loadProfessionalEnrollments();
         }
-        
+
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -163,32 +165,30 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     // Reset calculated values
     this.insourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
     this.outsourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
-    
+
     // Filter active enrollments
-    const activeEnrollments = this.myEnrollments.filter(e => 
+    const activeEnrollments = this.myEnrollments.filter(e =>
       e.status === 'approved' || e.status === 'pending'
     );
-    
+
     // Calculate total amount for enrollments
     let insourcingTotal = 0;
     let outsourcingTotal = 0;
-    
+
     activeEnrollments.forEach(enrollment => {
-      // Assuming enrollment contains some indication if it's insourcing or outsourcing
-      // This might need to be adjusted based on your actual data structure
       if (this.isInsourcingEnrollment(enrollment)) {
         insourcingTotal += enrollment.price;
       } else {
         outsourcingTotal += enrollment.price;
       }
     });
-    
+
     // Calculate expense breakdown for insourcing
     this.insourcingExpenses.total = insourcingTotal;
     this.insourcingExpenses.poolRental = (insourcingTotal * this.INSOURCING_PERCENTAGES.poolRental) / 100;
     this.insourcingExpenses.swimmingTeacher = (insourcingTotal * this.INSOURCING_PERCENTAGES.swimmingTeacher) / 100;
     this.insourcingExpenses.technicalManagement = (insourcingTotal * this.INSOURCING_PERCENTAGES.technicalManagement) / 100;
-    
+
     // Calculate expense breakdown for outsourcing
     this.outsourcingExpenses.total = outsourcingTotal;
     this.outsourcingExpenses.poolRental = (outsourcingTotal * this.OUTSOURCING_PERCENTAGES.poolRental) / 100;
@@ -200,16 +200,16 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     // Reset calculated values
     this.insourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
     this.outsourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
-    
+
     // Filter active enrollments
-    const activeEnrollments = this.professionalEnrollments.filter(e => 
+    const activeEnrollments = this.professionalEnrollments.filter(e =>
       e.status === 'approved' || e.status === 'pending'
     );
-    
+
     // Calculate total amount for enrollments
     let insourcingTotal = 0;
     let outsourcingTotal = 0;
-    
+
     activeEnrollments.forEach(enrollment => {
       if (this.isInsourcingEnrollment(enrollment)) {
         insourcingTotal += enrollment.price;
@@ -217,13 +217,13 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
         outsourcingTotal += enrollment.price;
       }
     });
-    
+
     // Calculate expense breakdown for insourcing
     this.insourcingExpenses.total = insourcingTotal;
     this.insourcingExpenses.poolRental = (insourcingTotal * this.INSOURCING_PERCENTAGES.poolRental) / 100;
     this.insourcingExpenses.swimmingTeacher = (insourcingTotal * this.INSOURCING_PERCENTAGES.swimmingTeacher) / 100;
     this.insourcingExpenses.technicalManagement = (insourcingTotal * this.INSOURCING_PERCENTAGES.technicalManagement) / 100;
-    
+
     // Calculate expense breakdown for outsourcing
     this.outsourcingExpenses.total = outsourcingTotal;
     this.outsourcingExpenses.poolRental = (outsourcingTotal * this.OUTSOURCING_PERCENTAGES.poolRental) / 100;
@@ -232,24 +232,19 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   }
 
   // Helper method to determine if an enrollment is insourcing or outsourcing
-  // Based on course IDs in the database
+  // Based on client's is_outsourcing value from clients table
   isInsourcingEnrollment(enrollment: Enrollment): boolean {
-    // Client courses (5, 6, 7) are for Outsourcing (School services)
-    // Professional courses (1, 2, 3, 4) are for Insourcing (Professional services)
-    const courseId = Number(enrollment.courseId);
-    
-    // Professional courses are 1-4 (Insourcing)
-    if (courseId >= 1 && courseId <= 4) {
-      return true;
+    console.log('Checking insourcing status for enrollment:', enrollment);
+    // For professional users, we need to check the client's is_outsourcing value
+    // We'll need to rely on a client property in the enrollment
+    // This assumes the enrollment object has been enriched with client data
+
+    // If clientIsOutsourcing property exists, use it directly
+    if ('isOutsourcing' in enrollment) {
+      return !enrollment.isOutsourcing;
     }
     
-    // Client courses are 5-7 (Outsourcing)
-    if (courseId >= 5 && courseId <= 7) {
-      return false;
-    }
-    
-    // Default case
-    console.warn(`Unknown course ID: ${courseId}`);
+    console.warn(`Unable to determine insourcing status for enrollment ${enrollment.id}`);
     return false;
   }
 
