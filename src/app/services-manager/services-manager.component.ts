@@ -156,7 +156,17 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         console.log('User authenticated:', user.role);
         this.userRole = user.role;
         this.userId = user.id;
-        this.loadInitialData();
+        
+        // Only load data if we have a valid user ID
+        if (this.userId) {
+          this.loadInitialData();
+        } else {
+          console.error('User ID is null or undefined');
+          this.errorMessage = 'Authentication error. Please try logging in again.';
+          this.cdr.detectChanges();
+        }
+      } else {
+        console.warn('No user found in auth state');
       }
     });
   }
@@ -208,6 +218,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       .subscribe(enrollments => {
         console.log('User enrollments loaded:', enrollments);
         this.myEnrollments = enrollments || [];
+        this.cdr.detectChanges();
         
         // If user is a client, load available professionals
         if (this.userRole === 'client') {
@@ -342,6 +353,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     // Validate that start date is in the future
     const selectedDate = new Date(this.startDate);
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time component for comparison
     if (selectedDate <= today) {
       this.errorMessage = this.translationService.translate('servicesManager.errorFutureDate');
       return false;
