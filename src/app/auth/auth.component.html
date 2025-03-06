@@ -13,7 +13,8 @@
 
     <div class="form-group">
       <label for="password">{{ 'password' | translate }}</label>
-      <input type="password" id="password" [(ngModel)]="password" name="password" class="form-control" [disabled]="isLoading" (keyup.enter)="login()">
+      <input type="password" id="password" [(ngModel)]="password" name="password" class="form-control"
+        [disabled]="isLoading" (keyup.enter)="login()">
     </div>
 
     <div class="forgot-password">
@@ -31,8 +32,9 @@
 
   <div class="image-section">
     <div class="buttons-container">
-      <button class="user-btn client-btn">{{ 'client' | translate }}</button>
-      <button class="user-btn professional-btn">{{ 'professionals' | translate }}</button>
+      <button class="user-btn client-btn" (click)="navigateToRegisterSelector()">{{ 'client' | translate }}</button>
+      <button class="user-btn professional-btn" (click)="navigateToFreeProfessional()">{{ 'professionals' | translate
+        }}</button>
     </div>
 
     <div class="hero-content">

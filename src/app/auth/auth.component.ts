@@ -22,11 +22,11 @@ export class AuthComponent implements OnInit, OnDestroy {
   errorMessage: string = '';
   successMessage: string = '';
   isLoading: boolean = false;
-  
+
   private langSubscription: Subscription | null = null;
   private loadedSubscription: Subscription | null = null;
   private returnUrl: string = '/';
-  
+
   // Use inject for dependency injection
   private translationService = inject(TranslationService);
   private authService = inject(AuthService);
@@ -37,19 +37,19 @@ export class AuthComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Get return URL from route parameters or default to '/'
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
-    
+
     // Check if user coming from successful registration
     if (this.route.snapshot.queryParams['registered'] === 'success') {
       this.cdr.detectChanges();
     }
-    
+
     // Check if user is already logged in
     this.authService.getCurrentUser().subscribe(user => {
       if (user) {
         this.router.navigateByUrl(this.returnUrl);
       }
     });
-    
+
     // Subscribe to language changes to update view
     this.langSubscription = this.translationService.getCurrentLang().subscribe(() => {
       console.log('Auth component detected language change');
@@ -63,7 +63,7 @@ export class AuthComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges(); // Force immediate change detection
       }
     });
-    
+
     // Optional: Check server connection
     this.authService.checkServer().subscribe({
       next: () => {
@@ -76,19 +76,19 @@ export class AuthComponent implements OnInit, OnDestroy {
       }
     });
   }
-  
+
   login() {
     if (!this.email || !this.password) {
       this.errorMessage = 'Please enter both email and password';
       this.cdr.detectChanges();
       return;
     }
-    
+
     this.isLoading = true;
     this.errorMessage = '';
     this.successMessage = '';
     this.cdr.detectChanges();
-    
+
     this.authService.login(this.email, this.password).subscribe({
       next: (response) => {
         console.log('Login successful', response);
@@ -102,6 +102,16 @@ export class AuthComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  navigateToRegisterSelector() {
+    console.log('Navigating to client registration selection');
+    this.router.navigate(['/register']);
+  }
+
+  navigateToFreeProfessional() {
+    console.log('Navigating to free professional registration');
+    this.router.navigate(['/register-free-professional']);
   }
 
   ngOnDestroy(): void {
