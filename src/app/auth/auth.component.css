@@ -3,6 +3,8 @@
   height: 100vh;
   width: 100%;
   font-family: 'Lexend Peta', sans-serif;
+  overflow-y: hidden;
+  overflow-x: hidden;
 }
 
 .login-section {
@@ -104,7 +106,7 @@ app-header {
 
 .user-btn {
   flex: 1;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: #ffffff;
   color: #0066cc;
   border: none;
   font-size: 1.8rem;
@@ -116,7 +118,9 @@ app-header {
   align-items: center;
   transition: all 0.3s ease;
   border-radius: 30px; /* Make buttons more rounded */
-  margin: 10px; /* Add some margin between buttons */
+  margin: 30px 10px 20px 10px; /* Add some margin between buttons, more margin on top */
+  height: 8rem; /* Double the height */
+  width: 100%; /* 1.5x the width */
 }
 
 .user-btn:hover {
@@ -142,7 +146,7 @@ app-header {
 .hero-title {
   font-size: 4rem;
   margin-bottom: 1.5rem;
-  letter-spacing: 5px;
+  letter-spacing: 3px;
   font-family: 'Lexend Peta', sans-serif;
   font-weight: 700;
 }

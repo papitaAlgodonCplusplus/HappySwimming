@@ -18,6 +18,7 @@ interface Course {
   price: number;
   duration: number;
   description?: string;
+  translationKey?: string; // Added for translation support
 }
 
 interface Professional {
@@ -46,7 +47,6 @@ interface ProfessionalService {
   service_id: string;
   price_per_hour: number;
   notes?: string;
-  // The service name will be looked up from the courses array
 }
 
 @Component({
@@ -64,9 +64,30 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   // Available courses based on user role
   clientCourses: Course[] = [
-    { id: '5', name: 'Children Aged 3-6', type: 'client', price: 75, duration: 5 },
-    { id: '6', name: 'Children Aged 6-12', type: 'client', price: 75, duration: 5 },
-    { id: '7', name: 'Any Age and Ability', type: 'client', price: 75, duration: 5 }
+    { 
+      id: '5', 
+      name: 'Children Aged 3-6', 
+      type: 'client', 
+      price: 80, 
+      duration: 5,
+      translationKey: 'swimmingAbilities.titles.children36'
+    },
+    { 
+      id: '6', 
+      name: 'Children Aged 6-12', 
+      type: 'client', 
+      price: 80, 
+      duration: 5,
+      translationKey: 'swimmingAbilities.titles.children612'
+    },
+    { 
+      id: '7', 
+      name: 'Any Age and Ability', 
+      type: 'client', 
+      price: 80, 
+      duration: 5,
+      translationKey: 'swimmingAbilities.titles.anyAge'
+    }
   ];
 
   professionalCourses: Course[] = [
@@ -271,10 +292,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         }),
         finalize(() => {
           console.log('Professional services finalized');
-          // We need to decrement the counter here explicitly
           const checkAllRequestsComplete = () => {
             console.log('Professional services request completed');
-            // We will handle the loading state in the subscription
           };
           checkAllRequestsComplete();
         })
@@ -298,6 +317,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       });
   }
 
+  // Get course details using the ID
   getSelectedCourseDetails(): Course | undefined {
     if (this.userRole === 'client') {
       return this.clientCourses.find(course => course.id === this.selectedCourse);
@@ -306,9 +326,18 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Check if a service is offered by the professional
   isServiceOffered(serviceId: string): boolean {
     if (!this.professionalServices) return false;
     return this.professionalServices.some(service => service.service_id === serviceId);
+  }
+
+  // Get translated course name based on ID
+  getCourseName(course: Course): string {
+    if (course.translationKey) {
+      return this.translationService.translate(course.translationKey);
+    }
+    return course.name;
   }
 
   // Helper method to get the service name from the course arrays
@@ -319,7 +348,12 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
     // Then check client courses
     const clientCourse = this.clientCourses.find(course => course.id === serviceId);
-    if (clientCourse) return clientCourse.name;
+    if (clientCourse) {
+      if (clientCourse.translationKey) {
+        return this.translationService.translate(clientCourse.translationKey);
+      }
+      return clientCourse.name;
+    }
 
     // If not found
     return `Service ${serviceId}`;

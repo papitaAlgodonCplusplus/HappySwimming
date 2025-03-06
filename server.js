@@ -29,17 +29,18 @@ const upload = multer({
 app.use(cors());
 app.use(express.json());
 
-// Database connection DEV
-// const pool = new Pool({
-//   user: process.env.DB_USER || 'postgres',
-//   host: process.env.DB_HOST || 'localhost',
-//   database: process.env.DB_NAME || 'happyswimming',
-//   password: process.env.DB_PASSWORD || 'postgres',
-//   port: process.env.DB_PORT || 5432,
-//   schema: 'happyswimming'
-// });
 
-// Database connection PROD
+/*   // Database connection DEV
+const pool = new Pool({
+  user: process.env.DB_USER || 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || 'happyswimming',
+  password: process.env.DB_PASSWORD || 'postgres',
+  port: process.env.DB_PORT || 5432,
+  schema: 'happyswimming'
+});   */
+
+   // Database connection PROD
 const pool = new Pool({
   host: 'database-1.cxqii6e0qkzu.us-east-1.rds.amazonaws.com',
   port: 5432,
@@ -47,7 +48,9 @@ const pool = new Pool({
   user: 'postgres',
   password: 'PwT.398!',
   ssl: { rejectUnauthorized: false }
-});
+});   
+
+
 
 // Test database connection
 pool.connect((err, client, done) => {
@@ -476,19 +479,19 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
 app.get('/api/enrollments/professional', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    
+
     // Verify the user is a professional
     const professionalCheck = await pool.query(
       'SELECT id FROM happyswimming.professionals WHERE user_id = $1',
       [userId]
     );
-    
+
     if (professionalCheck.rows.length === 0) {
       return res.status(403).json({ error: 'Unauthorized access: User is not a professional' });
     }
-    
+
     const professionalId = professionalCheck.rows[0].id;
-    
+
     // Get enrollments where this professional is assigned, including client name
     const query = `
       SELECT cs.id, cs.service_id, s.name as service_name, cs.status,
@@ -503,9 +506,9 @@ app.get('/api/enrollments/professional', authenticateToken, async (req, res) => 
       WHERE cs.professional_id = $1
       ORDER BY cs.created_at DESC
     `;
-    
+
     const result = await pool.query(query, [professionalId]);
-    
+
     const enrollments = result.rows.map(row => ({
       id: row.id,
       courseId: row.service_id,
@@ -519,7 +522,7 @@ app.get('/api/enrollments/professional', authenticateToken, async (req, res) => 
       clientName: row.client_name, // Add client name to the response
       price: parseFloat(row.price)
     }));
-    
+
     res.json(enrollments);
   } catch (error) {
     console.error('Error fetching professional enrollments:', error);
@@ -869,55 +872,55 @@ app.get('/api/professionals/services', authenticateToken, async (req, res) => {
 // PUT: Update user profile
 app.put('/api/profile/update', authenticateToken, async (req, res) => {
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
-    
+
     // Get user ID from auth middleware
     const userId = req.user.id;
     const userRole = req.user.role;
-    
+
     console.log('Updating profile for user:', userId, 'with data:', req.body);
-    
+
     // Get current user data for verification
     const userQuery = 'SELECT id, email, password_hash, role FROM happyswimming.users WHERE id = $1';
     const userResult = await client.query(userQuery, [userId]);
-    
+
     if (userResult.rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
     const user = userResult.rows[0];
-    
+
     // Handle password change if requested
     if (req.body.current_password && req.body.new_password) {
       // Verify current password
       const isMatch = await bcrypt.compare(req.body.current_password, user.password_hash);
-      
+
       if (!isMatch) {
         await client.query('ROLLBACK');
         return res.status(400).json({ error: 'Current password is incorrect' });
       }
-      
+
       // Hash new password
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(req.body.new_password, salt);
-      
+
       // Update password
       await client.query(
         'UPDATE happyswimming.users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
         [passwordHash, userId]
       );
-      
+
       console.log('Password updated successfully');
     }
-    
+
     // Update user table fields
     const updateFields = [];
     const updateValues = [];
     let valueIndex = 1;
-    
+
     // Only update fields that are provided
     if (req.body.email !== undefined) {
       // Check if email already exists
@@ -925,55 +928,55 @@ app.put('/api/profile/update', authenticateToken, async (req, res) => {
         'SELECT id FROM happyswimming.users WHERE email = $1 AND id != $2',
         [req.body.email, userId]
       );
-      
+
       if (emailCheckResult.rows.length > 0) {
         await client.query('ROLLBACK');
         return res.status(400).json({ error: 'Email already in use' });
       }
-      
+
       updateFields.push(`email = $${valueIndex}`);
       updateValues.push(req.body.email);
       valueIndex++;
     }
-    
+
     if (req.body.first_name !== undefined) {
       updateFields.push(`first_name = $${valueIndex}`);
       updateValues.push(req.body.first_name);
       valueIndex++;
     }
-    
+
     if (req.body.last_name1 !== undefined) {
       updateFields.push(`last_name1 = $${valueIndex}`);
       updateValues.push(req.body.last_name1);
       valueIndex++;
     }
-    
+
     if (req.body.last_name2 !== undefined) {
       updateFields.push(`last_name2 = $${valueIndex}`);
       updateValues.push(req.body.last_name2);
       valueIndex++;
     }
-    
+
     // Update user table if there are fields to update
     if (updateFields.length > 0) {
       updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
-      
+
       const updateUserQuery = `
         UPDATE happyswimming.users 
         SET ${updateFields.join(', ')} 
         WHERE id = $${valueIndex}
       `;
-      
+
       updateValues.push(userId);
       await client.query(updateUserQuery, updateValues);
       console.log('User fields updated');
     }
-    
+
     // Reset for role-specific table updates
     updateFields.length = 0;
     updateValues.length = 0;
     valueIndex = 1;
-    
+
     // Update role-specific tables (client or professional)
     if (userRole === 'client') {
       // Update client table fields
@@ -982,65 +985,65 @@ app.put('/api/profile/update', authenticateToken, async (req, res) => {
         updateValues.push(req.body.company_name);
         valueIndex++;
       }
-      
+
       if (req.body.address !== undefined) {
         updateFields.push(`address = $${valueIndex}`);
         updateValues.push(req.body.address);
         valueIndex++;
       }
-      
+
       if (req.body.postal_code !== undefined) {
         updateFields.push(`postal_code = $${valueIndex}`);
         updateValues.push(req.body.postal_code);
         valueIndex++;
       }
-      
+
       if (req.body.city !== undefined) {
         updateFields.push(`city = $${valueIndex}`);
         updateValues.push(req.body.city);
         valueIndex++;
       }
-      
+
       if (req.body.country !== undefined) {
         updateFields.push(`country = $${valueIndex}`);
         updateValues.push(req.body.country);
         valueIndex++;
       }
-      
+
       if (req.body.phone_fixed !== undefined) {
         updateFields.push(`phone_fixed = $${valueIndex}`);
         updateValues.push(req.body.phone_fixed);
         valueIndex++;
       }
-      
+
       if (req.body.phone_mobile !== undefined) {
         updateFields.push(`phone_mobile = $${valueIndex}`);
         updateValues.push(req.body.phone_mobile);
         valueIndex++;
       }
-      
+
       if (req.body.website !== undefined) {
         updateFields.push(`website = $${valueIndex}`);
         updateValues.push(req.body.website);
         valueIndex++;
       }
-      
+
       if (req.body.pl_code !== undefined) {
         updateFields.push(`pl_code = $${valueIndex}`);
         updateValues.push(req.body.pl_code);
         valueIndex++;
       }
-      
+
       // Update client table if there are fields to update
       if (updateFields.length > 0) {
         updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
-        
+
         const updateClientQuery = `
           UPDATE happyswimming.clients 
           SET ${updateFields.join(', ')} 
           WHERE user_id = $${valueIndex}
         `;
-        
+
         updateValues.push(userId);
         await client.query(updateClientQuery, updateValues);
         console.log('Client fields updated');
@@ -1052,76 +1055,76 @@ app.put('/api/profile/update', authenticateToken, async (req, res) => {
         updateValues.push(req.body.company_name);
         valueIndex++;
       }
-      
+
       if (req.body.address !== undefined) {
         updateFields.push(`address = $${valueIndex}`);
         updateValues.push(req.body.address);
         valueIndex++;
       }
-      
+
       if (req.body.postal_code !== undefined) {
         updateFields.push(`postal_code = $${valueIndex}`);
         updateValues.push(req.body.postal_code);
         valueIndex++;
       }
-      
+
       if (req.body.city !== undefined) {
         updateFields.push(`city = $${valueIndex}`);
         updateValues.push(req.body.city);
         valueIndex++;
       }
-      
+
       if (req.body.country !== undefined) {
         updateFields.push(`country = $${valueIndex}`);
         updateValues.push(req.body.country);
         valueIndex++;
       }
-      
+
       if (req.body.phone_fixed !== undefined) {
         updateFields.push(`phone_fixed = $${valueIndex}`);
         updateValues.push(req.body.phone_fixed);
         valueIndex++;
       }
-      
+
       if (req.body.phone_mobile !== undefined) {
         updateFields.push(`phone_mobile = $${valueIndex}`);
         updateValues.push(req.body.phone_mobile);
         valueIndex++;
       }
-      
+
       if (req.body.website !== undefined) {
         updateFields.push(`website = $${valueIndex}`);
         updateValues.push(req.body.website);
         valueIndex++;
       }
-      
+
       // Update professional table if there are fields to update
       if (updateFields.length > 0) {
         updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
-        
+
         const updateProfQuery = `
           UPDATE happyswimming.professionals 
           SET ${updateFields.join(', ')} 
           WHERE user_id = $${valueIndex}
         `;
-        
+
         updateValues.push(userId);
         await client.query(updateProfQuery, updateValues);
         console.log('Professional fields updated');
       }
     }
-    
+
     // Commit the transaction
     await client.query('COMMIT');
-    
+
     // Get updated user information
     const updatedUserResult = await pool.query(
       'SELECT id, email, first_name, last_name1, role FROM happyswimming.users WHERE id = $1',
       [userId]
     );
-    
+
     const updatedUser = updatedUserResult.rows[0];
-    
+
     // Return successful response with updated user info
     res.json({
       message: 'Profile updated successfully',

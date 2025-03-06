@@ -28,12 +28,15 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label for="identificationNumber">{{ 'registration.identification' | translate }}<span class="required">*</span></label>
-                <input type="text" id="identificationNumber" [(ngModel)]="identificationNumber" class="form-control" [disabled]="isLoading">
+                <label for="identificationNumber">{{ 'registration.identification' | translate }}<span
+                        class="required">*</span></label>
+                <input type="text" id="identificationNumber" [(ngModel)]="identificationNumber" class="form-control"
+                    [disabled]="isLoading">
             </div>
             <div class="form-group wide">
                 <label for="companyName">{{ 'registration.companyName' | translate }}</label>
-                <input type="text" id="companyName" [(ngModel)]="companyName" class="form-control" [disabled]="isLoading">
+                <input type="text" id="companyName" [(ngModel)]="companyName" class="form-control"
+                    [disabled]="isLoading">
             </div>
         </div>
 
@@ -58,7 +61,8 @@
                 <input type="text" id="address" [(ngModel)]="address" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
-                <label for="postalCode">{{ 'registration.postalCode' | translate }}<span class="required">*</span></label>
+                <label for="postalCode">{{ 'registration.postalCode' | translate }}<span
+                        class="required">*</span></label>
                 <input type="text" id="postalCode" [(ngModel)]="postalCode" class="form-control" [disabled]="isLoading">
             </div>
         </div>
@@ -80,8 +84,10 @@
                 <input type="tel" id="phoneFixed" [(ngModel)]="phoneFixed" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
-                <label for="phoneMobile">{{ 'registration.phoneMobile' | translate }}<span class="required">*</span></label>
-                <input type="tel" id="phoneMobile" [(ngModel)]="phoneMobile" class="form-control" [disabled]="isLoading">
+                <label for="phoneMobile">{{ 'registration.phoneMobile' | translate }}<span
+                        class="required">*</span></label>
+                <input type="tel" id="phoneMobile" [(ngModel)]="phoneMobile" class="form-control"
+                    [disabled]="isLoading">
             </div>
             <div class="form-group">
                 <label for="email">{{ 'registration.email' | translate }}<span class="required">*</span></label>
@@ -95,8 +101,10 @@
                 <input type="password" id="password" [(ngModel)]="password" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
-                <label for="confirmPassword">{{ 'password' | translate }} ({{ 'registration.confirm' | translate }})<span class="required">*</span></label>
-                <input type="password" id="confirmPassword" [(ngModel)]="confirmPassword" class="form-control" [disabled]="isLoading">
+                <label for="confirmPassword">{{ 'password' | translate }} ({{ 'registration.confirm' | translate
+                    }})<span class="required">*</span></label>
+                <input type="password" id="confirmPassword" [(ngModel)]="confirmPassword" class="form-control"
+                    [disabled]="isLoading">
             </div>
         </div>
 
@@ -116,12 +124,13 @@
 
         <!-- Swimming Abilities Section -->
         <div class="abilities-section">
-            <h3 class="section-title">Nivel/Descripción habilidades</h3>
+            <h3 class="section-title">{{ 'swimmingAbilities.title' | translate }}</h3>
             <div class="abilities-checkboxes">
                 <div class="ability-item" *ngFor="let ability of swimmingAbilities; let i = index">
                     <label>
-                        <input type="checkbox" [checked]="ability.selected" (change)="toggleAbility(i)" [disabled]="isLoading">
-                        {{ ability.description }}
+                        <input type="checkbox" [checked]="ability.selected" (change)="toggleAbility(i)"
+                            [disabled]="isLoading">
+                        {{ 'swimmingAbilities.abilities.' + i | translate }}
                     </label>
                 </div>
             </div>
@@ -130,12 +139,14 @@
         <div class="terms-container">
             <div class="terms-checkbox">
                 <input type="checkbox" id="acceptTerms" [(ngModel)]="acceptTerms" [disabled]="isLoading">
-                <label for="acceptTerms">{{ 'registration.acceptTerms' | translate }} <span class="lopd-text">{{ 'registration.lopd' | translate }}</span></label>
+                <label for="acceptTerms">{{ 'registration.acceptTerms' | translate }} <span class="lopd-text">{{
+                        'registration.lopd' | translate }}</span></label>
             </div>
         </div>
 
         <div class="button-container">
-            <button class="btn btn-cancel" (click)="cancel()" [disabled]="isLoading">{{ 'registration.cancel' | translate }}</button>
+            <button class="btn btn-cancel" (click)="cancel()" [disabled]="isLoading">{{ 'registration.cancel' |
+                translate }}</button>
             <button class="btn btn-register" (click)="onSubmit()" [disabled]="isLoading">
                 <span *ngIf="!isLoading">{{ 'registration.register' | translate }}</span>
                 <span *ngIf="isLoading">{{ 'registerFreeProfessional.processing' | translate }}</span>

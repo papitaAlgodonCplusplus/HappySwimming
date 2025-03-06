@@ -878,9 +878,9 @@ COPY happyswimming.services (id, name, description, type_id, duration_minutes, m
 2	"Swimming a story" Teacher course	Available online (8 hours, €90) or in-person (10 hours, €1,500 for minimum 10 people)	2	480	20	t	2025-03-05 11:35:07.746578	2025-03-05 11:35:07.746578	90.00
 3	Front-crawl spinning methodology teacher course	In-person only (4 hours, €850 for minimum 10 people)	2	240	15	t	2025-03-05 11:35:07.746578	2025-03-05 11:35:07.746578	850.00
 4	Aquagym instructor course	Online only (4 hours, €45)	2	240	\N	t	2025-03-05 11:35:07.746578	2025-03-05 11:35:07.746578	45.00
-5	Children aged 3 to 6	Swimming lessons for children aged 3 to 6	1	300	10	t	2025-03-05 11:35:07.746578	2025-03-05 11:35:07.746578	75.00
-6	Children aged 6 to 12	Swimming lessons for children aged 6 to 12	1	300	12	t	2025-03-05 11:35:07.746578	2025-03-05 11:35:07.746578	75.00
-7	Any Age and Ability	Swimming lessons for people of all ages and ability levels	1	300	8	t	2025-03-05 11:35:07.746578	2025-03-05 11:35:07.746578	75.00
+5	Children aged 3 to 6	Swimming lessons for children aged 3 to 6	1	300	10	t	2025-03-05 11:35:07.746578	2025-03-05 11:35:07.746578	80.00
+6	Children aged 6 to 12	Swimming lessons for children aged 6 to 12	1	300	12	t	2025-03-05 11:35:07.746578	2025-03-05 11:35:07.746578	80.00
+7	Any Age and Ability	Swimming lessons for people of all ages and ability levels	1	300	8	t	2025-03-05 11:35:07.746578	2025-03-05 11:35:07.746578	80.00
 \.
 
 

@@ -228,5 +228,30 @@
         "noEnrollments": "You don't have any enrollments yet",
         "noProfessionalEnrollments": "You don't have any enrolled clients yet",
         "loading": "Loading data..."
+    },
+    "swimmingAbilities": {
+        "title": "Swimming Level/Skills Description",
+        "titles": {
+            "swimAStory": "\"SWIM A STORY\" AGE: 3 TO 6.",
+            "children36": "\"SWIM A STORY\" AGE: 3 TO 6.",
+            "children612": "FROM BEGINNERS TO DEVELOPMENT OF THE SWIMMING STYLES AGE: 6 TO 12.",
+            "anyAge": "ANY AGE AND ABILITY SWIMMING LESSONS"
+        },
+        "descriptions": {
+            "children36": "For beginners and confident children to learn the fundamental water skills that will keep them safe in the water",
+            "children612": "For confident children with ability start learning the basis of the strokes that will lead to confident swimmers, through fun and play",
+            "anyAge": "From complete beginner to confident swimmers that want to improve technique"
+        },
+        "abilities": {
+            "0": "I cannot put my head under water, nor control my breathing",
+            "1": "I can put my head under water and blow bubbles through nose or mouth",
+            "2": "I can put my head under water and blow bubbles while floating on front and back",
+            "3": "I can move in water on front and back with arm and leg movements without breathing control",
+            "4": "I can do a 360-degree turn on my longitudinal axis",
+            "5": "I can do a somersault in the water",
+            "6": "I need to improve my front crawl technique",
+            "7": "I want to improve my technique in all strokes with turns",
+            "8": "I am afraid of water"
+        }
     }
 }

@@ -1,7 +1,7 @@
 .services-container {
   width: 100%;
   font-family: 'Lexend Peta', sans-serif;
-  padding-top: 12vh; /* Account for header */
+  padding-top: 2vh; /* Additional padding on top of the margin-top */
 }
 
 .services-content {
@@ -83,6 +83,14 @@
   color: #204376;
 }
 
+.service-description {
+  font-size: 0.95rem;
+  color: #204376;
+  margin-top: 0.5rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
 .indent {
   padding-left: 1.5rem;
 }
@@ -116,7 +124,7 @@
     font-size: 1.1rem;
   }
   
-  .box-detail {
+  .box-detail, .service-description {
     font-size: 0.9rem;
   }
   

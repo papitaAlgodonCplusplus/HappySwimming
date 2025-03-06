@@ -215,6 +215,31 @@
         "noProfessionalEnrollments": "No tienes clientes inscritos todavía",
         "loading": "Cargando datos..."
     },
+    "swimmingAbilities": {
+        "titles": {
+            "swimAStory": "\"NADA UN CUENTO\" EDAD: 3 A 6.",
+            "children36": "\"NADA UN CUENTO\" EDAD: 3 A 6.",
+            "children612": "DE PRINCIPIANTES AL DESARROLLO DE LOS ESTILOS DE NATACIÓN EDAD: 6 A 12.",
+            "anyAge": "LECCIONES DE NATACIÓN PARA CUALQUIER EDAD Y HABILIDAD"
+        },
+        "descriptions": {
+            "children36": "Para principiantes y niños con confianza para aprender las habilidades fundamentales del agua que los mantendrán seguros en el agua",
+            "children612": "Para niños con confianza y habilidad que comienzan a aprender las bases de los estilos que los llevarán a ser nadadores seguros, a través de la diversión y el juego",
+            "anyAge": "Desde principiante completo hasta nadadores con confianza que quieren mejorar su técnica"
+        },
+        "title": "Nivel/Descripción habilidades",
+        "abilities": {
+            "0": "No puedo poner la cabeza debajo del agua, ni controlar la respiración",
+            "1": "Puedo poner la cabeza debajo del agua y soplar burbujas por nariz o boca",
+            "2": "Puedo poner la cabeza debajo del agua y soplar burbujas flotando por nariz y boca de frente y de espalda",
+            "3": "Puedo desplazarme en el agua de frente y de espalda con movimientos de brazos y piernas sin control de la respiración",
+            "4": "Puedo dar un giro de 360 grados en mi eje longitudinal",
+            "5": "Puedo dar una voltereta en el agua",
+            "6": "Necesito mejorar la técnica en el estilo de crol",
+            "7": "Quiero mejorar la técnica en todos los estilos con virajes",
+            "8": "Tengo miedo al agua"
+        }
+    },
     "currentPasswordRequired": "Se requiere la contraseña actual",
     "newPasswordRequired": "Se requiere una nueva contraseña",
     "passwordsDoNotMatch": "Las nuevas contraseñas no coinciden",

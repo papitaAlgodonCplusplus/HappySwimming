@@ -36,9 +36,18 @@
   margin-bottom: 3rem;
 }
 
+.option-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .option-image {
   cursor: pointer;
   transition: transform 0.3s ease;
+  overflow: hidden;
+  width: 250px; /* Set fixed width for smaller buttons */
+  height: 250px; /* Fixed height for consistent button size */
 }
 
 .option-image:hover {
@@ -46,9 +55,25 @@
 }
 
 .option-image img {
-  max-width: 60%;
-  height: auto;
-  border-radius: 10px;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensure images cover the full area */
+  display: block;
+}
+
+.option-titles {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.option-label {
+  color: white;
+  font-size: 1.8rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin: 0;
+  line-height: 1.3;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* Add shadow for better readability */
 }
 
 .back-link {
@@ -57,7 +82,7 @@
 }
 
 .back-link a {
-  color: rgba(255, 255, 255, 0.7);
+  color: #204376;
   background-color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
   font-size: 1.1rem;
@@ -67,8 +92,8 @@
 }
 
 .back-link a:hover {
-  color: white;
-  background-color: rgb(255, 255, 255);
+  background-color: white;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
 }
 
 /* Responsive adjustments */
@@ -84,80 +109,11 @@
   }
   
   .option-image {
-    max-width: 80%;
-  }
-}
-
-.option-title {
-  font-size: 1.5rem;
-  color: #204376;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  letter-spacing: 1px;
-}
-
-.option-subtitle {
-  font-size: 1.2rem;
-  color: #204376;
-  margin-bottom: 2rem;
-  font-weight: 400;
-  letter-spacing: 1px;
-}
-
-.option-button {
-  padding: 0.75rem 2rem;
-  background-color: #0088cc;
-  color: white;
-  border: none;
-  border-radius: 30px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.option-button:hover {
-  background-color: #006699;
-  transform: scale(1.05);
-}
-
-.back-link {
-  text-align: center;
-  margin-top: 3rem;
-}
-
-.back-link a {
-  color: #0088cc;
-  text-decoration: none;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-}
-
-.back-link a:hover {
-  color: #006699;
-  text-decoration: underline;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .options-container {
-    flex-direction: column;
-    align-items: center;
-    gap: 4rem;
+    width: 200px;
+    height: 200px;
   }
   
-  .title {
-    font-size: 2rem;
-  }
-  
-  .circle-option {
-    width: 160px;
-    height: 160px;
-  }
-  
-  .swimmer-icon {
-    width: 60px;
-    height: 60px;
+  .option-label {
+    font-size: 1.5rem;
   }
 }
