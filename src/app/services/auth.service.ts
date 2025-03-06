@@ -58,7 +58,7 @@ interface RegisterProfessionalData {
 })
 export class AuthService {
   // DEV: Use the following URL for development
-  // private apiUrl = 'http://localhost:3000/api';
+  // private apiUrl = 'http://localhost:10000/api';
   // PROD: Use the following URL for production
   private apiUrl = 'https://happyswimming.onrender.com/api';
   private currentUserSubject = new BehaviorSubject<any>(null);

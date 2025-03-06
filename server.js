@@ -9,7 +9,7 @@ const router = express.Router();
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'uploads/') // Make sure this directory exists
