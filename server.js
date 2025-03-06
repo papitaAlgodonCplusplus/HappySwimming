@@ -343,6 +343,8 @@ app.post('/api/login', async (req, res) => {
       }
     }
 
+
+    console.log('Login successful:', user.email);
     res.json({
       token,
       user: {
