@@ -602,8 +602,6 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
 
   try {
     await client.query('BEGIN');
-    console.log('Creating enrollment:', req.body);
-
     const { courseId, professionalId, startDate, preferredTime } = req.body;
     const userId = req.user.id;
     const userRole = req.user.role;

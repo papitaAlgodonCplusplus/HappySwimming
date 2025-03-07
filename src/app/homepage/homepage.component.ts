@@ -17,6 +17,8 @@ import { AuthService } from '../services/auth.service';
 export class HomepageComponent implements OnInit {
   userName: string = 'Usuario';
   userRole: string = '';
+  userEmail: string = '';
+  isAdmin: boolean = false;
   
   // Use inject to get services in standalone components
   private authService = inject(AuthService);
@@ -34,7 +36,12 @@ export class HomepageComponent implements OnInit {
       
       this.userName = user.name || 'Usuario';
       this.userRole = this.translateRole(user.role);
-      console.log('User role:', this.userRole);
+      this.userEmail = user.email || '';
+      
+      // Check if user is admin (admin@gmail.com)
+      this.isAdmin = this.userEmail === 'admin@gmail.com';
+      
+      console.log('User role:', this.userRole, 'Is Admin:', this.isAdmin);
       this.cdr.detectChanges();
     });
     

@@ -232,7 +232,30 @@
         "notAssigned": "No Asignado",
         "noNotes": "Sin notas"
     },
+    "professionalCourses": {
+        "swimmingStoryTrainer": {
+            "description": "Curso en línea para Formador de Profesores/Director Técnico (incluye material pedagógico)"
+        },
+        "swimmingStoryTeacher": {
+            "description": "Curso en línea para convertirse en Profesor de Nada un Cuento"
+        },
+        "frontCrawl": {
+            "description": "Formación presencial sobre metodología de crol con giro (mínimo 10 personas)"
+        },
+        "aquagym": {
+            "description": "Curso en línea para convertirse en instructor de aquagym"
+        }
+    },
     "studentsManagement": {
+        "professionalCourse": "Curso Profesional",
+        "clientCourse": "Curso Cliente",
+        "professional": "Profesional",
+        "adminView": "Vista de Administrador",
+        "allStudents": "Todos los Estudiantes",
+        "noActionsAvailable": "No hay acciones disponibles",
+        "adminTitle": "Gestión de Inscripciones",
+        "adminDescription": "Administra todas las inscripciones de clientes y profesionales",
+        "noStudentsAdmin": "No se encontraron inscripciones en el sistema",
         "title": "Gestión de Estudiantes",
         "description": "Administra tus estudiantes, calificaciones y progreso",
         "students": "estudiantes",
@@ -273,7 +296,9 @@
             "Pending": "Pendiente",
             "Reproved": "Reprobado",
             "Completed": "Completado",
-            "completed": "Completado"
+            "completed": "Completado",
+            "Active": "Activo",
+            "active": "Activo"
         }
     },
     "swimmingAbilities": {

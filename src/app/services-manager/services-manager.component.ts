@@ -14,6 +14,7 @@ import { of } from 'rxjs';
 interface Course {
   id: string;
   name: string;
+  descriptionKey?: string; // Added for translation support
   type: 'client' | 'professional';
   price: number;
   duration: number;
@@ -103,7 +104,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       type: 'professional',
       price: 200,
       duration: 10,
-      description: 'Online course for Teacher Trainer/Technical Director (includes pedagogical material)'
+      description: 'Online course for Teacher Trainer/Technical Director (includes pedagogical material)',
+      descriptionKey: 'professionalCourses.swimmingStoryTrainer.description'
     },
     {
       id: '2',
@@ -111,7 +113,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       type: 'professional',
       price: 90,
       duration: 8,
-      description: 'Online course for becoming a Swimming Story Teacher'
+      description: 'Online course for becoming a Swimming Story Teacher',
+      descriptionKey: 'professionalCourses.swimmingStoryTeacher.description'
     },
     {
       id: '3',
@@ -119,7 +122,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       type: 'professional',
       price: 850,
       duration: 4,
-      description: 'In-person training for front-crawl spinning methodology (minimum 10 people)'
+      description: 'In-person training for front-crawl spinning methodology (minimum 10 people)',
+      descriptionKey: 'professionalCourses.frontCrawl.description'
     },
     {
       id: '4',
@@ -127,7 +131,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       type: 'professional',
       price: 45,
       duration: 4,
-      description: 'Online course for becoming an Aquagym instructor'
+      description: 'Online course for becoming an Aquagym instructor',
+      descriptionKey: 'professionalCourses.aquagym.description'
     }
   ];
 
@@ -326,9 +331,11 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   // Get course details using the ID
   getSelectedCourseDetails(): Course | undefined {
     if (this.userRole === 'client') {
-      return this.clientCourses.find(course => course.id === this.selectedCourse);
+      console.log('Looking for client course:', this.selectedCourse);
+      return this.clientCourses.find(course => course.id.toString() === this.selectedCourse.toString());
     } else {
-      return this.professionalCourses.find(course => course.id === this.selectedCourse);
+      console.log('Looking for professional course:', this.selectedCourse);
+      return this.professionalCourses.find(course => course.id.toString() === this.selectedCourse.toString());
     }
   }
 

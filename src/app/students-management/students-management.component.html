@@ -5,7 +5,10 @@
 <app-header></app-header>
 <div class="students-management-container">
   <div class="students-management-content">
-    <h1 class="title">{{ 'studentsManagement.title' | translate }}</h1>
+    <h1 class="title">
+      {{ isAdmin ? ('studentsManagement.adminTitle' | translate) : ('studentsManagement.title' | translate) }}
+      <span *ngIf="isAdmin" style="color: #cc0000; font-size: 0.8em;"> - Admin View</span>
+    </h1>
 
     <div *ngIf="successMessage" class="success-message">
       {{ successMessage }}
@@ -22,9 +25,17 @@
 
     <!-- Courses and Students Section -->
     <div *ngIf="!isLoading && courses.length > 0" class="courses-container">
-      <div *ngFor="let course of courses" class="course-card">
+      <div *ngFor="let course of courses" class="course-card"
+        [ngClass]="isProfessionalCourse(course) ? 'professional-course' : 'client-course'">
         <div class="course-header" (click)="toggleCourseExpansion(course)">
-          <h2 class="course-title">{{ course.translationKey ? (course.translationKey | translate) : course.name }}</h2>
+          <div class="course-header-content">
+            <h2 class="course-title">{{ course.translationKey ? (course.translationKey | translate) : course.name }}
+            </h2>
+            <span *ngIf="isAdmin" class="course-type-badge"
+              [ngClass]="course.type === 'professional_service' ? 'professional-badge' : 'client-badge'">
+              {{ course.type === 'professional_service' ? 'Professional' : 'Client' }}
+            </span>
+          </div>
           <div class="course-stats">
             <span class="student-count">{{ course.studentCount }} {{ 'studentsManagement.students' | translate }}</span>
             <span class="expand-icon">{{ course.expanded ? '▼' : '▶' }}</span>
@@ -33,9 +44,31 @@
 
         <div *ngIf="course.expanded" class="students-table-container">
           <table class="students-table">
+            <colgroup>
+              <!-- Student name column -->
+              <col style="width: 20%;">
+              <!-- Professional/Client column (only for admin) -->
+              <col *ngIf="isAdmin" style="width: 15%;">
+              <!-- Status column -->
+              <col style="width: 12%;">
+              <!-- Start date column -->
+              <col style="width: 12%;">
+              <!-- Calification column -->
+              <col style="width: 12%;">
+              <!-- Assistance column -->
+              <col style="width: 12%;">
+              <!-- Actions column -->
+              <col style="width: 17%;">
+            </colgroup>
             <thead>
               <tr>
                 <th>{{ 'studentsManagement.studentName' | translate }}</th>
+                <!-- Only show professional name in admin view for client courses -->
+                <th *ngIf="isAdmin && course.type !== 'professional_service'">{{ 'servicesManager.professional' |
+                  translate }}</th>
+                <!-- Show client name in admin view for professional courses -->
+                <th *ngIf="isAdmin && course.type === 'professional_service'">{{ 'economicManager.client' | translate }}
+                </th>
                 <th>{{ 'studentsManagement.statusL' | translate }}</th>
                 <th>{{ 'studentsManagement.startDate' | translate }}</th>
                 <th>{{ 'studentsManagement.calification' | translate }}</th>
@@ -45,7 +78,15 @@
             </thead>
             <tbody>
               <tr *ngFor="let student of course.students">
-                <td>{{ student.firstName }}</td>
+                <td>{{ student.name || student.firstName }}</td>
+                <!-- Professional name for client courses in admin view -->
+                <td *ngIf="isAdmin && course.type !== 'professional_service'">
+                  {{ student.professionalName || ('servicesManager.notAssigned' | translate) }}
+                </td>
+                <!-- Client name for professional courses in admin view -->
+                <td *ngIf="isAdmin && course.type === 'professional_service'">
+                  {{ student.name || ('User ' + student.userId) }}
+                </td>
                 <td>
                   <span class="status-badge" [ngClass]="getStatusClass(student.status)">
                     {{ getLocalizedStatus(student.status) }}
@@ -63,7 +104,9 @@
                   </span>
                 </td>
                 <td class="actions-cell">
-                  <button *ngIf="student.status !== 'cancelled'" class="btn btn-edit" (click)="openEditModal(student)">
+                  <!-- Removed the condition hiding the Edit button for professional courses -->
+                  <button *ngIf="student.status !== 'cancelled' && course.type !== 'professional_service'"
+                    class="btn btn-edit" (click)="openEditModal(student)">
                     {{ 'studentsManagement.edit' | translate }}
                   </button>
                   <button class="btn btn-delete" (click)="openDeleteModal(student)">
@@ -79,7 +122,8 @@
 
     <!-- No students message -->
     <div *ngIf="!isLoading && courses.length === 0" class="no-students-message">
-      <p>{{ 'studentsManagement.noStudents' | translate }}</p>
+      <p>{{ isAdmin ? ('studentsManagement.noStudentsAdmin' | translate) : ('studentsManagement.noStudents' | translate)
+        }}</p>
     </div>
 
     <!-- Edit Student Modal -->
@@ -92,8 +136,14 @@
         <div class="modal-body">
           <div *ngIf="selectedStudent">
             <div class="student-info">
-              <p><strong>{{ 'studentsManagement.studentName' | translate }}:</strong> {{ selectedStudent.firstName }}</p>
-              <p><strong>{{ 'studentsManagement.details' | translate }}:</strong> {{ selectedStudent.courseName }}</p>
+              <p><strong>{{ 'studentsManagement.studentName' | translate }}:</strong> {{ selectedStudent.name ||
+                selectedStudent.firstName }}</p>
+              <p><strong>{{ 'studentsManagement.course' | translate }}:</strong> {{ selectedStudent.courseName }}</p>
+              <p *ngIf="isAdmin && selectedStudent.type !== 'professional_service'"><strong>{{
+                  'servicesManager.professional' | translate }}:</strong>
+                {{ selectedStudent.professionalName || ('servicesManager.notAssigned' | translate) }}</p>
+              <p *ngIf="isAdmin"><strong>{{ 'economicManager.serviceType' | translate }}:</strong>
+                {{ selectedStudent.type === 'professional_service' ? 'Professional Service' : 'Client Service' }}</p>
             </div>
 
             <div class="form-group">
@@ -105,32 +155,18 @@
               </select>
             </div>
 
-            <!-- New Calification Input -->
+            <!-- Calification Input -->
             <div class="form-group">
               <label for="calification">{{ 'studentsManagement.calification' | translate }} (0-10)</label>
-              <input 
-                type="number" 
-                id="calification" 
-                [(ngModel)]="selectedStudent.calification" 
-                class="form-control" 
-                min="0" 
-                max="10" 
-                step="0.5"
-              >
+              <input type="number" id="calification" [(ngModel)]="selectedStudent.calification" class="form-control"
+                min="0" max="10" step="0.5">
             </div>
 
-            <!-- New Assistance Input -->
+            <!-- Assistance Input -->
             <div class="form-group">
               <label for="assistance">{{ 'studentsManagement.assistance' | translate }} (0-100%)</label>
-              <input 
-                type="number" 
-                id="assistance" 
-                [(ngModel)]="selectedStudent.assistance" 
-                class="form-control" 
-                min="0" 
-                max="100" 
-                step="1"
-              >
+              <input type="number" id="assistance" [(ngModel)]="selectedStudent.assistance" class="form-control" min="0"
+                max="100" step="1">
             </div>
 
             <div class="form-group">
@@ -160,8 +196,13 @@
         <div class="modal-body">
           <p>{{ 'studentsManagement.deleteWarning' | translate }}</p>
           <div *ngIf="selectedStudent" class="student-info">
-            <p><strong>{{ 'studentsManagement.studentName' | translate }}:</strong> {{ selectedStudent.name }}</p>
+            <p><strong>{{ 'studentsManagement.studentName' | translate }}:</strong> {{ selectedStudent.name ||
+              selectedStudent.firstName }}</p>
             <p><strong>{{ 'studentsManagement.course' | translate }}:</strong> {{ selectedStudent.courseName }}</p>
+            <p *ngIf="isAdmin && selectedStudent.type === 'professional_service'"><strong>{{
+                'economicManager.serviceType' | translate }}:</strong> Professional Service</p>
+            <p *ngIf="isAdmin && selectedStudent.type !== 'professional_service'"><strong>{{
+                'economicManager.serviceType' | translate }}:</strong> Client Service</p>
           </div>
         </div>
         <div class="modal-footer">

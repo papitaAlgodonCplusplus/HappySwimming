@@ -220,7 +220,30 @@
     "backToHome": "Back to Home",
     "economicManagerTitle": "Economic Manager",
     "economicManagerDesc": "Manage income and expense distribution",
+    "professionalCourses": {
+        "swimmingStoryTrainer": {
+            "description": "Online course for Teacher Trainer/Technical Director (includes pedagogical material)"
+        },
+        "swimmingStoryTeacher": {
+            "description": "Online course for becoming a Swimming Story Teacher"
+        },
+        "frontCrawl": {
+            "description": "In-person training for front-crawl spinning methodology (minimum 10 people)"
+        },
+        "aquagym": {
+            "description": "Online course for becoming an Aquagym instructor"
+        }
+    },
     "studentsManagement": {
+        "professionalCourse": "Professional Course",
+        "clientCourse": "Client Course",
+        "professional": "Professional",
+        "adminView": "Admin View",
+        "allStudents": "All Students",
+        "noActionsAvailable": "No actions available",
+        "adminTitle": "Inscriptions Management",
+        "adminDescription": "Manage all client and professional inscriptions",
+        "noStudentsAdmin": "No enrollments found in the system",
         "title": "Students Management",
         "description": "Manage your students, grades and progress",
         "students": "students",
@@ -263,7 +286,9 @@
             "cancelled": "Cancelled",
             "Reproved": "Reproved",
             "Completed": "Completed",
-            "completed": "Completed"
+            "completed": "Completed",
+            "Active": "Active",
+            "active": "Active"
         }
     },
     "economicManager": {

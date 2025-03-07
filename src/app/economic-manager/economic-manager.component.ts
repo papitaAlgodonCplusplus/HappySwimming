@@ -285,9 +285,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     this.outsourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
 
     // Filter active enrollments
-    const activeEnrollments = this.myEnrollments.filter(e =>
-      e.status === 'approved' || e.status === 'pending'
-    );
+    const activeEnrollments = this.myEnrollments;
 
     // Calculate total amount for enrollments
     let insourcingTotal = 0;
@@ -311,9 +309,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     this.outsourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
 
     // Filter active enrollments
-    const activeEnrollments = this.professionalEnrollments.filter(e =>
-      e.status === 'approved' || e.status === 'pending'
-    );
+    const activeEnrollments = this.professionalEnrollments;
 
     // Calculate total amount for enrollments
     let insourcingTotal = 0;
@@ -338,9 +334,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     this.outsourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
 
     // Filter active client enrollments, ensuring clientEnrollments exists
-    const activeClientEnrollments = (this.adminReport.clientEnrollments || []).filter(e =>
-      e.status === 'approved' || e.status === 'pending' || e.status === 'active'
-    );
+    const activeClientEnrollments = (this.adminReport.clientEnrollments || []);
 
     // Calculate total amount for client enrollments
     let insourcingTotal = 0;

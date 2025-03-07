@@ -17,6 +17,10 @@
     background-color: #6a5acd;
   }
 
+  .inscriptions-manager {
+    background-color: #ff6600;
+  }
+
   .grid-item {
     padding: 30px;
     border-radius: 10px;
@@ -31,7 +35,7 @@
     <h1 class="welcome-title">{{ 'welcome' | translate }} {{userName}}!</h1>
 
     <div class="grid-container">
-      <div class="grid-item services-manager" (click)="navigateTo('/services-manager')">
+      <div *ngIf="!isAdmin" class="grid-item services-manager" (click)="navigateTo('/services-manager')">
         <div class="item-content">
           <h2 class="item-title">{{ 'servicesManagerTitle' | translate }}</h2>
           <p class="item-description">{{ 'servicesManagerDesc' | translate }}</p>
@@ -48,7 +52,7 @@
         </div>
       </div>
 
-      <div class="grid-item profile-editor" (click)="navigateTo('/edit-profile')">
+      <div *ngIf="!isAdmin" class="grid-item profile-editor" (click)="navigateTo('/edit-profile')">
         <div class="item-content">
           <h2 class="item-title">{{ 'editProfile' | translate }}</h2>
           <p class="item-description">{{ 'editProfileDesc' | translate }}</p>
@@ -76,20 +80,36 @@
         </div>
       </div>
 
-      <!-- Students Management (Only for professionals) -->
+      <!-- Students Management for professionals -->
       <div *ngIf="userRole === 'professional' || userRole === 'Profesional'" class="grid-item students-manager"
         (click)="navigateTo('/students-management')">
         <div class="item-content">
           <h2 class="item-title">{{ 'studentsManagement.title' | translate }}</h2>
           <p class="item-description">{{ 'studentsManagement.description' | translate }}</p>
           <div class="icon-container">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inscriptions Management for admin -->
+      <div *ngIf="isAdmin" class="grid-item inscriptions-manager" (click)="navigateTo('/students-management')">
+        <div class="item-content">
+          <h2 class="item-title">{{ 'studentsManagement.adminTitle' | translate }}</h2>
+          <p class="item-description">{{ 'studentsManagement.adminDescription' | translate }}</p>
+          <div class="icon-container">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5"></path>
+              <path d="M2 12l10 5 10-5"></path>
+            </svg>
           </div>
         </div>
       </div>

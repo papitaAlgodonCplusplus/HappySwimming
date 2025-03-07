@@ -75,9 +75,10 @@
                 </div>
 
                 <!-- Course Description (if selected) -->
-                <div *ngIf="getSelectedCourseDetails()?.description" class="course-description">
-                    {{ getSelectedCourseDetails()?.description }}
-                </div>
+                <div *ngIf="getSelectedCourseDetails()?.descriptionKey" class="course-description">
+                    {{ getSelectedCourseDetails()?.descriptionKey || '' | translate }}
+                  </div>
+                  
 
                 <!-- Professional Selection (Client only) -->
                 <div *ngIf="userRole === 'client'" class="form-group">

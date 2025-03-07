@@ -1,3 +1,38 @@
+/* Add these new styles at the top for admin view */
+.course-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.course-type-badge {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.client-badge {
+  background-color: rgba(0, 74, 173, 0.15);
+  color: #004aad;
+}
+
+.professional-badge {
+  background-color: rgba(0, 128, 0, 0.15);
+  color: #006600;
+}
+
+/* Add subtle visual differences for professional vs client courses */
+.professional-course .course-header {
+  background-color: rgba(0, 128, 0, 0.1);
+}
+
+.client-course .course-header {
+  background-color: rgba(0, 74, 173, 0.1);
+}
+
+/* Original styles - keep these */
 .students-management-container {
   width: 100%;
   min-height: 100vh;
@@ -92,7 +127,6 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  background-color: rgba(0, 74, 173, 0.1);
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
@@ -157,6 +191,7 @@
 .actions-cell {
   display: flex;
   gap: 0.5rem;
+  margin-top: 1.4rem;
 }
 
 /* Status badges */
