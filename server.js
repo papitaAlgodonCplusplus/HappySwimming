@@ -41,12 +41,12 @@ app.use(express.json());
 
 // Database connection PROD
 const pool = new Pool({
-host: 'database-1.cxqii6e0qkzu.us-east-1.rds.amazonaws.com',
-port: 5432,
-database: 'happyswimming',
-user: 'postgres',
-password: 'PwT.398!',
-ssl: { rejectUnauthorized: false }
+  host: 'database-1.cxqii6e0qkzu.us-east-1.rds.amazonaws.com',
+  port: 5432,
+  database: 'happyswimming',
+  user: 'postgres',
+  password: 'PwT.398!',
+  ssl: { rejectUnauthorized: false }
 });
 
 // Test database connection
@@ -72,28 +72,48 @@ app.use(async (req, res, next) => {
 
 // Authentication middleware
 // Authentication middleware
-const authenticateToken = (req, res, next) => {
-  // Get the authorization header
+function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN format
+  const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    console.log('No token provided');
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
     if (err) {
-      console.log('Token verification failed:', err.message);
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
 
-    // Log successful token verification
-    console.log('Token verified successfully for user:', user);
+    try {
+      // Get fresh user data to check authorization status
+      const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [user.id]);
 
-    // Set the user information on the request object
-    req.user = user;
-    next();
+      if (rows.length === 0) {
+        return res.status(403).json({ error: 'User not found' });
+      }
+
+      const userData = rows[0];
+
+      // Check if user is authorized - NEW CHECK
+      // Skip this check for admin user and specific endpoints like login and register
+      const isAdminRoute = req.path.includes('/admin/');
+      const isPublicRoute = req.path.includes('/login') || req.path.includes('/register');
+
+      if (!userData.is_authorized && userData.email !== 'admin@gmail.com' && !isPublicRoute && !isAdminRoute) {
+        return res.status(403).json({
+          error: 'Your account is pending authorization',
+          authorizationPending: true
+        });
+      }
+
+      // Set user object on request
+      req.user = userData;
+      next();
+    } catch (error) {
+      console.error('Error in authentication middleware:', error);
+      return res.status(500).json({ error: 'Authentication error' });
+    }
   });
 };
 
@@ -312,71 +332,91 @@ app.post('/api/register/professional',
   }
 );
 
-// Login endpoint
+// Fixed Login endpoint using password_hash
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Get user by email
-    const userResult = await pool.query(
-      'SELECT id, email, password_hash, role, first_name, last_name1 FROM happyswimming.users WHERE email = $1 AND is_active = true',
-      [email]
-    );
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // Find user by email
+    const userQuery = 'SELECT * FROM users WHERE email = $1';
+    const userResult = await pool.query(userQuery, [email]);
 
     if (userResult.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const user = userResult.rows[0];
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    // Check if the password_hash exists in the database
+    if (!user.password_hash) {
+      console.error('User has no stored password hash:', email);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+    // Verify password
+    try {
+      const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+    } catch (passwordError) {
+      console.error('Password comparison error:', passwordError);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Check if user is authorized - NEW CHECK
+    if (!user.is_authorized && user.email !== 'admin@gmail.com') {
+      return res.status(403).json({
+        error: 'Your account is pending authorization. Please wait for an administrator to approve your account.',
+        authorizationPending: true
+      });
     }
 
     // Generate JWT token
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'happyswimming_secret_key',
-      { expiresIn: '8h' }
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
     );
 
-    // Get additional profile data based on role
-    let profileData = {};
+    // Get additional user details based on role
+    let userData = { id: user.id, email: user.email, role: user.role };
 
     if (user.role === 'client') {
-      const clientResult = await pool.query(
-        'SELECT id, company_name, is_outsourcing FROM happyswimming.clients WHERE user_id = $1',
-        [user.id]
-      );
+      const clientQuery = 'SELECT * FROM clients WHERE user_id = $1';
+      const clientResult = await pool.query(clientQuery, [user.id]);
+
       if (clientResult.rows.length > 0) {
-        profileData = clientResult.rows[0];
+        const client = clientResult.rows[0];
+        userData = {
+          ...userData,
+          name: client.name,
+          companyName: client.company_name
+        };
       }
     } else if (user.role === 'professional') {
-      const professionalResult = await pool.query(
-        'SELECT id, company_name, is_insourcing FROM happyswimming.professionals WHERE user_id = $1',
-        [user.id]
-      );
+      const professionalQuery = 'SELECT * FROM professionals WHERE user_id = $1';
+      const professionalResult = await pool.query(professionalQuery, [user.id]);
+
       if (professionalResult.rows.length > 0) {
-        profileData = professionalResult.rows[0];
+        const professional = professionalResult.rows[0];
+        userData = {
+          ...userData,
+          name: `${professional.first_name} ${professional.last_name1}`
+        };
       }
     }
 
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        name: `${user.first_name} ${user.last_name1}`,
-        ...profileData
-      }
-    });
+    // Return token and user data
+    res.json({ token, user: userData });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'An error occurred during login' });
   }
 });
 
@@ -1274,8 +1314,8 @@ app.put('/api/professional/students/:enrollmentId', authenticateToken, async (re
     `;
 
     const updateResult = await pool.query(updateQuery, [
-      status, 
-      notes, 
+      status,
+      notes,
       calification !== undefined ? calification : 0,
       assistance !== undefined ? assistance : 0,
       enrollmentId
@@ -1300,7 +1340,7 @@ app.get('/api/professional/students/:enrollmentId/details', authenticateToken, a
   try {
     // Get the enrollment ID from the route parameter
     const enrollmentId = req.params.enrollmentId;
-    
+
     // Get the professional ID from the authenticated user
     const userId = req.user.id;
 
@@ -1437,11 +1477,11 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
       'SELECT email FROM happyswimming.users WHERE id = $1',
       [userId]
     );
-    
+
     if (userCheck.rows.length === 0 || userCheck.rows[0].email !== 'admin@gmail.com') {
       return res.status(403).json({ error: 'Unauthorized access. Admin privileges required.' });
     }
-    
+
     // Get all client enrollments with detailed information
     // Added calification and assistance to the SELECT fields
     const clientServicesQuery = `
@@ -1460,7 +1500,7 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
       LEFT JOIN happyswimming.users pu ON p.user_id = pu.id
       ORDER BY cs.created_at DESC
     `;
-    
+
     // Get all professional services with detailed information
     const professionalServicesQuery = `
       SELECT ps.professional_id, ps.service_id, ps.price_per_hour, ps.notes,
@@ -1472,11 +1512,11 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
       JOIN happyswimming.users u ON p.user_id = u.id
       ORDER BY ps.professional_id, ps.service_id
     `;
-    
+
     // Execute both queries
     const clientServicesResult = await pool.query(clientServicesQuery);
     const professionalServicesResult = await pool.query(professionalServicesQuery);
-    
+
     // Format client enrollments
     // Added calification and assistance to the clientEnrollments objects
     const clientEnrollments = clientServicesResult.rows.map(row => ({
@@ -1499,7 +1539,7 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
       calification: row.calification !== null ? parseFloat(row.calification) : undefined,
       assistance: row.assistance
     }));
-    
+
     // Format professional enrollments
     const professionalEnrollments = professionalServicesResult.rows.map((row, index) => ({
       id: `p${row.professional_id}_${row.service_id}`, // Create a unique ID for professional services
@@ -1514,14 +1554,14 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
       notes: row.notes
       // Note: Professional services don't have calification or assistance
     }));
-    
+
     // Combine both arrays and send response
     const allEnrollments = {
       clientEnrollments: clientEnrollments,
       professionalEnrollments: professionalEnrollments,
       total: clientEnrollments.length + professionalEnrollments.length
     };
-    
+
     res.json(allEnrollments);
   } catch (error) {
     console.error('Error fetching admin enrollments:', error);
@@ -1529,7 +1569,305 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
   }
 });
 
-// Add this to your server.js or main file
+// Admin API Routes
+// These routes should be added to your existing server.js file
+// Add them inside your app configuration after authentication middleware is set up
+
+/**
+ * Admin Routes for User Authorization
+ * These routes require admin privileges
+ */
+
+// Middleware to check if user is admin
+const isAdmin = (req, res, next) => {
+  // Check if user exists and is authenticated
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  // Check if user is admin (assuming admins have email admin@gmail.com)
+  if (req.user.email !== 'admin@gmail.com') {
+    return res.status(403).json({ error: 'Admin privileges required' });
+  }
+
+  // User is admin, proceed
+  next();
+};
+
+// Get all users (admin only)
+app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    // Query database for all users
+    const query = `
+      SELECT 
+        u.id, 
+        u.email, 
+        u.role, 
+        u.is_authorized as "isAuthorized",
+        u.created_at as "registrationDate",
+        CASE
+          WHEN u.role = 'client' THEN c.country
+          WHEN u.role = 'professional' THEN p.country
+          ELSE NULL
+        END as "country",
+        CASE
+          WHEN u.role = 'client' THEN c.company_name
+          WHEN u.role = 'professional' THEN p.company_name
+          ELSE NULL
+        END as "companyName",
+        CASE
+          WHEN u.role = 'professional' THEN u.first_name
+          WHEN u.role = 'client' THEN u.first_name
+          ELSE NULL
+        END as "firstName",
+        CASE
+          WHEN u.role = 'professional' THEN u.last_name1
+          WHEN u.role = 'client' THEN u.last_name1
+          ELSE NULL
+        END as "lastName1",
+        CASE
+          WHEN u.role = 'professional' THEN u.last_name2
+          WHEN u.role = 'client' THEN u.last_name2
+          ELSE NULL
+        END as "lastName2",
+        CASE
+          WHEN u.role = 'professional' THEN p.identification_number
+          WHEN u.role = 'client' THEN c.identification_number
+          ELSE NULL
+        END as "code",
+        CASE
+          WHEN u.role = 'client' THEN c.is_outsourcing
+          ELSE NULL
+        END as "isOutsourcing",
+        CASE
+          WHEN u.role = 'professional' THEN p.is_insourcing
+          ELSE NULL
+        END as "isInsourcing",
+        CASE
+          WHEN u.role = 'client' THEN c.city
+          WHEN u.role = 'professional' THEN p.city
+          ELSE NULL
+        END as "city"
+      FROM 
+        users u
+      LEFT JOIN 
+        clients c ON u.id = c.user_id
+      LEFT JOIN 
+        professionals p ON u.id = p.user_id
+      ORDER BY 
+        u.created_at DESC
+    `;
+
+    // Execute the query
+    const { rows } = await pool.query(query);
+
+    // Return the results
+    res.json(rows);
+  } catch (error) {
+    console.error('Error retrieving users:', error);
+    res.status(500).json({ error: 'An error occurred while retrieving users' });
+  }
+});
+
+// Authorize a user (admin only)
+app.put('/api/admin/authorize/:userId', authenticateToken, isAdmin, async (req, res) => {
+  const userId = req.params.userId;
+
+  // Validate userId
+  if (!userId || isNaN(parseInt(userId))) {
+    return res.status(400).json({ error: 'Invalid user ID' });
+  }
+
+  try {
+    // Update user's authorization status
+    const query = `
+      UPDATE users
+      SET is_authorized = true
+      WHERE id = $1
+      RETURNING id, email, role, is_authorized as "isAuthorized"
+    `;
+
+    const { rows } = await pool.query(query, [userId]);
+
+    // Check if user was found and updated
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Return the updated user
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error authorizing user:', error);
+    res.status(500).json({ error: 'An error occurred while authorizing the user' });
+  }
+});
+
+// Delete a user (admin only)
+app.delete('/api/admin/users/:userId', authenticateToken, isAdmin, async (req, res) => {
+  const userId = req.params.userId;
+
+  // Validate userId
+  if (!userId || isNaN(parseInt(userId))) {
+    return res.status(400).json({ error: 'Invalid user ID' });
+  }
+
+  // Start a transaction to ensure all related data is deleted
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Get user's role to determine which tables to clean up
+    const userQuery = 'SELECT role FROM users WHERE id = $1';
+    const userResult = await client.query(userQuery, [userId]);
+
+    if (userResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userRole = userResult.rows[0].role;
+
+    // Delete client or professional data based on role
+    if (userRole === 'client') {
+      // Delete from clients table
+      await client.query('DELETE FROM clients WHERE user_id = $1', [userId]);
+
+      // Delete client enrollments
+      await client.query('DELETE FROM client_services WHERE client_id IN (SELECT id FROM clients WHERE user_id = $1)', [userId]);
+    } else if (userRole === 'professional') {
+      // Delete from professionals table
+      await client.query('DELETE FROM professionals WHERE user_id = $1', [userId]);
+
+      // Delete professional services
+      await client.query('DELETE FROM professional_services WHERE professional_id IN (SELECT id FROM professionals WHERE user_id = $1)', [userId]);
+    }
+
+    // Finally, delete the user record
+    const deleteQuery = 'DELETE FROM users WHERE id = $1 RETURNING id';
+    const result = await client.query(deleteQuery, [userId]);
+
+    await client.query('COMMIT');
+
+    // Return success
+    res.json({ success: true, message: 'User deleted successfully', userId: userId });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'An error occurred while deleting the user' });
+  } finally {
+    client.release();
+  }
+});
+
+// Get users awaiting authorization (admin only)
+app.get('/api/admin/users/pending', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    // Query database for users not yet authorized
+    const query = `
+      SELECT 
+        u.id, 
+        u.email, 
+        u.role, 
+        u.created_at,
+        u.country,
+        CASE
+          WHEN u.role = 'client' THEN c.company_name
+          ELSE NULL
+        END as "companyName",
+        CASE
+          WHEN u.role = 'professional' THEN p.first_name
+          WHEN u.role = 'client' THEN c.name
+          ELSE NULL
+        END as "firstName",
+        CASE
+          WHEN u.role = 'professional' THEN p.last_name1
+          WHEN u.role = 'client' THEN c.first_surname
+          ELSE NULL
+        END as "lastName1"
+      FROM 
+        users u
+      LEFT JOIN 
+        clients c ON u.id = c.user_id
+      LEFT JOIN 
+        professionals p ON u.id = p.user_id
+      WHERE 
+        u.is_authorized = false
+      ORDER BY 
+        u.created_at DESC
+    `;
+
+    // Execute the query
+    const { rows } = await pool.query(query);
+
+    // Return the results
+    res.json(rows);
+  } catch (error) {
+    console.error('Error retrieving pending users:', error);
+    res.status(500).json({ error: 'An error occurred while retrieving pending users' });
+  }
+});
+
+// Get user authorization statistics (admin only)
+app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    // Query database for authorization statistics
+    const query = `
+      SELECT 
+        role,
+        COUNT(*) as total,
+        SUM(CASE WHEN is_authorized THEN 1 ELSE 0 END) as authorized,
+        SUM(CASE WHEN NOT is_authorized THEN 1 ELSE 0 END) as pending
+      FROM 
+        users
+      GROUP BY 
+        role
+    `;
+
+    // Execute the query
+    const { rows } = await pool.query(query);
+
+    // Transform the results into a more usable format
+    const stats = {
+      client: { total: 0, authorized: 0, pending: 0 },
+      professional: { total: 0, authorized: 0, pending: 0 }
+    };
+
+    rows.forEach(row => {
+      if (row.role in stats) {
+        stats[row.role] = {
+          total: parseInt(row.total),
+          authorized: parseInt(row.authorized),
+          pending: parseInt(row.pending)
+        };
+      }
+    });
+
+    // Return the statistics
+    res.json(stats);
+  } catch (error) {
+    console.error('Error retrieving authorization statistics:', error);
+    res.status(500).json({ error: 'An error occurred while retrieving statistics' });
+  }
+});
+
+// Endpoint to check authorization status
+app.get('/api/check-authorization', authenticateToken, async (req, res) => {
+  try {
+    // User object is already set by the authenticateToken middleware
+    const user = req.user;
+
+    res.json({
+      isAuthorized: user.is_authorized,
+      email: user.email,
+      role: user.role
+    });
+  } catch (error) {
+    console.error('Error checking authorization status:', error);
+    res.status(500).json({ error: 'An error occurred while checking authorization status' });
+  }
+});
+
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });

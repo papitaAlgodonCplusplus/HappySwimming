@@ -1,0 +1,197 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+  @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+</style>
+
+<app-header></app-header>
+<div class="authorize-container">
+  <div class="authorize-content">
+    <h1 class="title">{{ 'userAuthorization.title' | translate }}
+      <span style="color: #cc0000; font-size: 0.8em;"> - {{ 'userAuthorization.adminView' | translate }}</span>
+    </h1>
+
+    <div *ngIf="successMessage" class="success-message">
+      {{ successMessage }}
+    </div>
+
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="isLoading" class="loading-indicator">
+      <div class="spinner"></div>
+      <p>{{ 'userAuthorization.loading' | translate }}...</p>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filter-section">
+      <div class="filter-container">
+        <!-- User Type Filter -->
+        <div class="filter-item">
+          <h3 class="filter-label">{{ 'userAuthorization.userType' | translate }}</h3>
+          <select [(ngModel)]="selectedUserType" (change)="filterUsers()" class="filter-control">
+            <option value="all">{{ 'userAuthorization.allUsers' | translate }}</option>
+            <option value="client">{{ 'userAuthorization.clients' | translate }}</option>
+            <option value="professional">{{ 'userAuthorization.professionals' | translate }}</option>
+          </select>
+        </div>
+        
+        <!-- Authorization Status Filter -->
+        <div class="filter-item">
+          <h3 class="filter-label">{{ 'userAuthorization.authorizationStatus' | translate }}</h3>
+          <select [(ngModel)]="selectedStatus" (change)="filterUsers()" class="filter-control">
+            <option value="all">{{ 'userAuthorization.allStatus' | translate }}</option>
+            <option value="authorized">{{ 'userAuthorization.authorized' | translate }}</option>
+            <option value="unauthorized">{{ 'userAuthorization.unauthorized' | translate }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE SECTION -->
+    <div class="tables-container">
+      <!-- Display Clients group -->
+      <div *ngIf="filteredClients.length > 0" class="user-group">
+        <div class="group-title">{{ 'userAuthorization.clients' | translate }}</div>
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>{{ 'userAuthorization.code' | translate }}</th>
+              <th>{{ 'userAuthorization.name' | translate }}</th>
+              <th>{{ 'userAuthorization.email' | translate }}</th>
+              <th>{{ 'userAuthorization.country' | translate }}</th>
+              <th>{{ 'userAuthorization.date' | translate }}</th>
+              <th>{{ 'userAuthorization.isAuthorized' | translate }}</th>
+              <th>{{ 'userAuthorization.actions' | translate }}</th>
+              <th>{{ 'userAuthorization.delete' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let client of filteredClients">
+              <td>{{ client.code || 'N/A' }}</td>
+              <td>{{ client.firstName }}</td>
+              <td>{{ client.email }}</td>
+              <td>{{ client.country }}</td>
+              <td>{{ client.registrationDate | date:'shortDate' }}</td>
+              <td>
+                <span class="status-icon" [ngClass]="{ 'authorized-icon': client.isAuthorized, 'unauthorized-icon': !client.isAuthorized }">
+                  {{ client.isAuthorized ? '✓' : '✗' }}
+                </span>
+              </td>
+              <td>
+                <button (click)="authorizeUser(client)" class="authorize-btn" 
+                  [disabled]="client.isAuthorized"
+                  [ngClass]="{'disabled-btn': client.isAuthorized}">
+                  <span class="icon">✓</span>
+                  {{ client.isAuthorized ? ('userAuthorization.alreadyAuthorized' | translate) : ('userAuthorization.authorize' | translate) }}
+                </button>
+              </td>
+              <td>
+                <button (click)="deleteUser(client)" class="delete-btn">
+                  <span class="icon">🗑️</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Display Professionals group -->
+      <div *ngIf="filteredProfessionals.length > 0" class="user-group">
+        <div class="group-title">{{ 'userAuthorization.professionals' | translate }}</div>
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>{{ 'userAuthorization.code' | translate }}</th>
+              <th>{{ 'userAuthorization.name' | translate }}</th>
+              <th>{{ 'userAuthorization.email' | translate }}</th>
+              <th>{{ 'userAuthorization.country' | translate }}</th>
+              <th>{{ 'userAuthorization.date' | translate }}</th>
+              <th>{{ 'userAuthorization.isAuthorized' | translate }}</th>
+              <th>{{ 'userAuthorization.actions' | translate }}</th>
+              <th>{{ 'userAuthorization.delete' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let professional of filteredProfessionals">
+              <td>{{ professional.code || 'N/A' }}</td>
+              <td>{{ professional.firstName }}</td>
+              <td>{{ professional.email }}</td>
+              <td>{{ professional.country }}</td>
+              <td>{{ professional.registrationDate | date:'shortDate' }}</td>
+              <td>
+                <span class="status-icon" [ngClass]="{ 'authorized-icon': professional.isAuthorized, 'unauthorized-icon': !professional.isAuthorized }">
+                  {{ professional.isAuthorized ? '✓' : '✗' }}
+                </span>
+              </td>
+              <td>
+                <button (click)="authorizeUser(professional)" class="authorize-btn"
+                  [disabled]="professional.isAuthorized"
+                  [ngClass]="{'disabled-btn': professional.isAuthorized}">
+                  <span class="icon">✓</span>
+                  {{ professional.isAuthorized ? ('userAuthorization.alreadyAuthorized' | translate) : ('userAuthorization.authorize' | translate) }}
+                </button>
+              </td>
+              <td>
+                <button (click)="deleteUser(professional)" class="delete-btn">
+                  <span class="icon">🗑️</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- No Results Message -->
+      <div *ngIf="filteredClients.length === 0 && filteredProfessionals.length === 0" class="no-results">
+        {{ 'userAuthorization.noResults' | translate }}
+      </div>
+    </div>
+
+    <!-- Return Button -->
+    <div class="return-button-container">
+      <button class="return-button" routerLink="/homepage">
+        {{ 'userAuthorization.backToHomepage' | translate }}
+      </button>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div *ngIf="showConfirmationModal" class="modal-overlay">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2>{{ currentAction === 'authorize' ? ('userAuthorization.confirmAuthorization' | translate) : ('userAuthorization.confirmDeletion' | translate) }}</h2>
+          <button class="close-btn" (click)="closeModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div *ngIf="currentAction === 'authorize'">
+            <p>{{ 'userAuthorization.confirmAuthorizationText' | translate }}</p>
+            <div class="user-details">
+              <p><strong>{{ 'userAuthorization.name' | translate }}:</strong> {{ selectedUser?.firstName }} {{ selectedUser?.lastName1 }}</p>
+              <p><strong>{{ 'userAuthorization.email' | translate }}:</strong> {{ selectedUser?.email }}</p>
+              <p><strong>{{ 'userAuthorization.userType' | translate }}:</strong> {{ selectedUser?.role }}</p>
+            </div>
+          </div>
+          <div *ngIf="currentAction === 'delete'">
+            <p>{{ 'userAuthorization.confirmDeletionText' | translate }}</p>
+            <div class="user-details">
+              <p><strong>{{ 'userAuthorization.name' | translate }}:</strong> {{ selectedUser?.firstName }} {{ selectedUser?.lastName1 }}</p>
+              <p><strong>{{ 'userAuthorization.email' | translate }}:</strong> {{ selectedUser?.email }}</p>
+              <p><strong>{{ 'userAuthorization.userType' | translate }}:</strong> {{ selectedUser?.role }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-cancel" (click)="closeModal()">
+            {{ 'userAuthorization.cancel' | translate }}
+          </button>
+          <button 
+            [ngClass]="{'btn-confirm': currentAction === 'authorize', 'btn-delete': currentAction === 'delete'}"
+            class="btn" 
+            (click)="confirmAction()">
+            {{ currentAction === 'authorize' ? ('userAuthorization.confirm' | translate) : ('userAuthorization.delete' | translate) }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

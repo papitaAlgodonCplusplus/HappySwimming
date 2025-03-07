@@ -1,0 +1,460 @@
+/* Main container */
+.authorize-container {
+    width: 100%;
+    min-height: 100vh;
+    background-color: #a7e0ff;
+    font-family: 'Lexend Peta', sans-serif;
+    padding: 120px 0 40px 0;
+    color: #204376;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.authorize-content {
+    width: 95%;
+    max-width: 1820px;
+    /* Increased from 1200px to 1820px as requested */
+    background-color: #a7e0ff;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.title {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    font-weight: 700;
+    color: #204376;
+    width: 100%;
+}
+
+/* Messages */
+.success-message,
+.error-message {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.success-message {
+    background-color: rgba(0, 128, 0, 0.1);
+    color: #006600;
+    border-left: 4px solid #006600;
+}
+
+.error-message {
+    background-color: rgba(255, 0, 0, 0.1);
+    color: #cc0000;
+    border-left: 4px solid #cc0000;
+}
+
+/* Loading indicator */
+.loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    width: 100%;
+}
+
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border-left-color: #004aad;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Filter Section */
+.filter-section {
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.filter-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    width: 100%;
+    max-width: 800px;
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+}
+
+.filter-label {
+    color: #204376;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.filter-control {
+    width: 100%;
+    padding: 0.7rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-family: 'Lexend Peta', sans-serif;
+    color: #333;
+}
+
+/* Tables Section */
+.tables-container {
+    margin-top: 2rem;
+    width: 100%;
+    max-width: 1820px;
+    /* Added max-width to match the content container */
+}
+
+.user-group {
+    margin-bottom: 2rem;
+    width: 100%;
+}
+
+.group-title {
+    color: #204376;
+    font-size: 1.5rem;
+    font-weight: 700;
+    padding: 0.5rem 0;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #004aad;
+    text-align: center;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    table-layout: fixed;
+}
+
+.users-table th,
+.users-table td {
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.users-table th {
+    background-color: #004aad;
+    color: white;
+    font-weight: 400;
+}
+
+.users-table tr:nth-child(even) {
+    background-color: rgba(0, 74, 173, 0.05);
+}
+
+.users-table tr:hover {
+    background-color: rgba(0, 74, 173, 0.1);
+}
+
+/* Status icons */
+.status-icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    border-radius: 50%;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.authorized-icon {
+    background-color: rgba(0, 204, 0, 0.2);
+    color: #00cc00;
+}
+
+.unauthorized-icon {
+    background-color: rgba(204, 0, 0, 0.2);
+    color: #cc0000;
+}
+
+/* Removed btn-container class and styling since we removed the div */
+
+.authorize-btn {
+    background-color: #004aad;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: auto;
+}
+
+.authorize-btn:hover {
+    background-color: #003c8a;
+}
+
+.disabled-btn {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.delete-btn {
+    background-color: #cc0000;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+}
+
+.delete-btn:hover {
+    background-color: #aa0000;
+}
+
+/* Icon styles for both buttons */
+.icon {
+    font-size: 1.2rem;
+    display: inline-block;
+}
+
+/* Define column widths for better layout */
+.users-table th:nth-child(1),
+.users-table td:nth-child(1) {
+    width: 10%;
+}
+
+.users-table th:nth-child(2),
+.users-table td:nth-child(2) {
+    width: 20%;
+}
+
+.users-table th:nth-child(3),
+.users-table td:nth-child(3) {
+    width: 20%;
+}
+
+.users-table th:nth-child(4),
+.users-table td:nth-child(4) {
+    width: 10%;
+}
+
+.users-table th:nth-child(5),
+.users-table td:nth-child(5) {
+    width: 10%;
+}
+
+.users-table th:nth-child(6),
+.users-table td:nth-child(6) {
+    width: 8%;
+}
+
+.users-table th:nth-child(7),
+.users-table td:nth-child(7) {
+    width: 15%;
+}
+
+.users-table th:nth-child(8),
+.users-table td:nth-child(8) {
+    width: 7%;
+}
+
+/* No Results Message */
+.no-results {
+    text-align: center;
+    padding: 3rem;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 2rem;
+    width: 100%;
+}
+
+/* Return Button */
+.return-button-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 2rem;
+}
+
+.return-button {
+    background-color: #004aad;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.return-button:hover {
+    background-color: #003c8a;
+}
+
+/* Confirmation Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-container {
+    background-color: white;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 800px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #204376;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.user-details {
+    background-color: #f5f5f5;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-top: 1rem;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: center;
+    padding: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+    gap: 1rem;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.btn-confirm {
+    background-color: #004aad;
+    color: white;
+}
+
+.btn-delete {
+    background-color: #cc0000;
+    color: white;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .authorize-content {
+        width: 95%;
+        padding: 1rem;
+    }
+
+    .title {
+        font-size: 1.5rem;
+    }
+
+    .filter-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .filter-item {
+        width: 100%;
+    }
+
+    .users-table {
+        display: block;
+        overflow-x: auto;
+        table-layout: auto;
+    }
+
+    .modal-container {
+        width: 95%;
+    }
+}

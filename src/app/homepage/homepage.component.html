@@ -21,6 +21,10 @@
     background-color: #ff6600;
   }
 
+  .user-authorize {
+    background-color: #009688;
+  }
+
   .grid-item {
     padding: 30px;
     border-radius: 10px;
@@ -93,6 +97,22 @@
               <circle cx="9" cy="7" r="4"></circle>
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Authorize Users (admin only) -->
+      <div *ngIf="isAdmin" class="grid-item user-authorize" (click)="navigateTo('/authorize')">
+        <div class="item-content">
+          <h2 class="item-title">{{ 'userAuthorization.title' | translate }}</h2>
+          <p class="item-description">{{ 'userAuthorization.description' | translate }}</p>
+          <div class="icon-container">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <polyline points="16 11 18 13 22 9"></polyline>
             </svg>
           </div>
         </div>
