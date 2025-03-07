@@ -208,6 +208,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
           }
           else if (student.courseName.includes('6 TO 12') ||
             student.courseName.includes('6-12') ||
+            student.courseName.includes('6 to 12') ||
             student.courseName.toLowerCase().includes('swimming styles') ||
             student.courseId === '6') {
             translationKey = 'swimmingAbilities.titles.children612Syntax';
