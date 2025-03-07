@@ -313,6 +313,7 @@
         }
     },
     "studentsManagement": {
+        "noFilterResults": "Nenhum estudante corresponde aos critérios de filtro atuais. Tente ajustar seus filtros ou clique em 'Redefinir Filtros'.",
         "filters": "Filtros",
         "countryFilter": "País",
         "clientNameFilter": "Nome do Cliente",

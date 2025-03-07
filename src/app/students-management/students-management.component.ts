@@ -49,7 +49,7 @@ interface Course {
 interface FilterOptions {
   countries: string[];
   clientNames: string[];
-  courseIds: string[];
+  courseIds: { id: string, name: string }[]; // Updated to include course name
   months: number[];
   years: number[];
 }
@@ -233,10 +233,10 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
 
   // Extract filter options from student data
   extractFilterOptions(students: Student[]) {
-    // Extract unique countries, client names, and course IDs
+    // Extract unique countries, client names, and course data
     const countries = new Set<string>();
     const clientNames = new Set<string>();
-    const courseIds = new Set<string>();
+    const coursesMap = new Map<string, { id: string, name: string }>();
     
     students.forEach(student => {
       if (student.country) {
@@ -249,15 +249,22 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
         clientNames.add(student.firstName + ' ' + (student.lastName || ''));
       }
       
-      if (student.courseId) {
-        courseIds.add(student.courseId);
+      if (student.courseId && student.courseName) {
+        // Use courseId as the key to avoid duplicates
+        coursesMap.set(student.courseId, { 
+          id: student.courseId, 
+          name: student.courseName 
+        });
       }
     });
     
     // Update filter options
     this.filterOptions.countries = Array.from(countries).sort();
     this.filterOptions.clientNames = Array.from(clientNames).sort();
-    this.filterOptions.courseIds = Array.from(courseIds).sort();
+    
+    // Transform the courses map into an array with both id and title
+    this.filterOptions.courseIds = Array.from(coursesMap.values())
+      .sort((a, b) => a.name.localeCompare(b.name));
     
     this.cdr.detectChanges();
   }
@@ -292,7 +299,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
         }
         
         // Filter by course
-        if (this.selectedCourse !== 'all' && student.courseId !== this.selectedCourse) {
+        if (this.selectedCourse !== 'all' && student.courseId.toString() !== this.selectedCourse.toString()) {
           return false;
         }
         

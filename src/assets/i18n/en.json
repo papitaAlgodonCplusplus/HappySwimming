@@ -314,6 +314,7 @@
     },
     "studentsManagement": {
         "filters": "Filters",
+        "noFilterResults": "No students match the current filter criteria. Try adjusting your filters or click 'Reset Filters'.",
         "countryFilter": "Country",
         "clientNameFilter": "Client Name",
         "courseFilter": "Course",

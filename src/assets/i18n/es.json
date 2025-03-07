@@ -349,6 +349,7 @@
     "studentsManagement": {
         "filters": "Filtros",
         "countryFilter": "País",
+        "noFilterResults": "Ningún estudiante coincide con los criterios de filtro actuales. Intente ajustar sus filtros o haga clic en 'Restablecer Filtros'.",
         "clientNameFilter": "Nombre del Cliente",
         "courseFilter": "Curso",
         "monthFilter": "Mes",

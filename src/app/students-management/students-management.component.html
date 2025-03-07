@@ -23,8 +23,8 @@
       <p>{{ 'loading' | translate }}...</p>
     </div>
 
-    <!-- New Filters Section -->
-    <div *ngIf="!isLoading && courses.length > 0" class="filters-section">
+    <!-- New Filters Section - Show when not loading and originalCourses exist -->
+    <div *ngIf="!isLoading && originalCourses.length > 0" class="filters-section">
       <h2 class="filters-title">{{ 'studentsManagement.filters' | translate }}</h2>
       
       <div class="filters-container">
@@ -46,12 +46,14 @@
           </select>
         </div>
         
-        <!-- Course Filter -->
+        <!-- Course Filter - Updated to display course names instead of IDs -->
         <div class="filter-group">
           <label for="courseFilter">{{ 'studentsManagement.courseFilter' | translate }}</label>
           <select id="courseFilter" [(ngModel)]="selectedCourse" (change)="applyFilters()" class="filter-control">
             <option value="all">{{ 'studentsManagement.allCourses' | translate }}</option>
-            <option *ngFor="let courseId of filterOptions.courseIds" [value]="courseId">{{ courseId }}</option>
+            <option *ngFor="let course of filterOptions.courseIds" [value]="course.id">
+              {{ course.name }}
+            </option>
           </select>
         </div>
         
@@ -179,10 +181,14 @@
       </div>
     </div>
 
-    <!-- No students message -->
-    <div *ngIf="!isLoading && courses.length === 0" class="no-students-message">
-      <p>{{ isAdmin ? ('studentsManagement.noStudentsAdmin' | translate) : ('studentsManagement.noStudents' | translate)
-        }}</p>
+    <!-- No students message - Only show when there are originalCourses but no filtered courses -->
+    <div *ngIf="!isLoading && courses.length === 0 && originalCourses.length > 0" class="no-students-message">
+      <p>{{ 'studentsManagement.noFilterResults' | translate }}</p>
+    </div>
+
+    <!-- No students at all message - Only show when there are no originalCourses -->
+    <div *ngIf="!isLoading && originalCourses.length === 0" class="no-students-message">
+      <p>{{ isAdmin ? ('studentsManagement.noStudentsAdmin' | translate) : ('studentsManagement.noStudents' | translate) }}</p>
     </div>
 
     <!-- Edit Student Modal -->
