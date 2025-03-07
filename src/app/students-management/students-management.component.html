@@ -23,6 +23,65 @@
       <p>{{ 'loading' | translate }}...</p>
     </div>
 
+    <!-- New Filters Section -->
+    <div *ngIf="!isLoading && courses.length > 0" class="filters-section">
+      <h2 class="filters-title">{{ 'studentsManagement.filters' | translate }}</h2>
+      
+      <div class="filters-container">
+        <!-- Country Filter -->
+        <div class="filter-group">
+          <label for="countryFilter">{{ 'studentsManagement.countryFilter' | translate }}</label>
+          <select id="countryFilter" [(ngModel)]="selectedCountry" (change)="applyFilters()" class="filter-control">
+            <option value="all">{{ 'studentsManagement.allCountries' | translate }}</option>
+            <option *ngFor="let country of filterOptions.countries" [value]="country">{{ country }}</option>
+          </select>
+        </div>
+        
+        <!-- Client Name Filter -->
+        <div class="filter-group">
+          <label for="clientNameFilter">{{ 'studentsManagement.clientNameFilter' | translate }}</label>
+          <select id="clientNameFilter" [(ngModel)]="selectedClientName" (change)="applyFilters()" class="filter-control">
+            <option value="all">{{ 'studentsManagement.allClients' | translate }}</option>
+            <option *ngFor="let clientName of filterOptions.clientNames" [value]="clientName">{{ clientName }}</option>
+          </select>
+        </div>
+        
+        <!-- Course Filter -->
+        <div class="filter-group">
+          <label for="courseFilter">{{ 'studentsManagement.courseFilter' | translate }}</label>
+          <select id="courseFilter" [(ngModel)]="selectedCourse" (change)="applyFilters()" class="filter-control">
+            <option value="all">{{ 'studentsManagement.allCourses' | translate }}</option>
+            <option *ngFor="let courseId of filterOptions.courseIds" [value]="courseId">{{ courseId }}</option>
+          </select>
+        </div>
+        
+        <!-- Month Filter -->
+        <div class="filter-group">
+          <label for="monthFilter">{{ 'studentsManagement.monthFilter' | translate }}</label>
+          <select id="monthFilter" [(ngModel)]="selectedMonth" (change)="applyFilters()" class="filter-control">
+            <option [value]="0">{{ 'studentsManagement.allMonths' | translate }}</option>
+            <option *ngFor="let month of monthNames" [value]="month.value">{{ month.name }}</option>
+          </select>
+        </div>
+        
+        <!-- Year Filter -->
+        <div class="filter-group">
+          <label for="yearFilter">{{ 'studentsManagement.yearFilter' | translate }}</label>
+          <select id="yearFilter" [(ngModel)]="selectedYear" (change)="applyFilters()" class="filter-control">
+            <option [value]="0">{{ 'studentsManagement.allYears' | translate }}</option>
+            <option *ngFor="let year of filterOptions.years" [value]="year">{{ year }}</option>
+          </select>
+        </div>
+        
+        <!-- Reset Filters Button -->
+        <div class="filter-group filter-buttons">
+          <button class="btn btn-reset-filters" (click)="resetFilters()">
+            {{ 'studentsManagement.resetFilters' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Courses and Students Section -->
     <div *ngIf="!isLoading && courses.length > 0" class="courses-container">
       <div *ngFor="let course of courses" class="course-card"

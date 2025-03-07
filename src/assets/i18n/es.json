@@ -308,7 +308,29 @@
         "noProfessionalEnrollmentsAdmin": "No se encontraron inscripciones de profesionales",
         "noClientEnrollments": "No se encontraron inscripciones de clientes",
         "notAssigned": "No Asignado",
-        "noNotes": "Sin notas"
+        "noNotes": "Sin notas",
+        "filters": "Filtros",
+        "userName": "Nombre de Usuario",
+        "course": "Curso",
+        "month": "Mes",
+        "year": "Año",
+        "filterByName": "Filtrar por nombre",
+        "allCourses": "Todos los Cursos",
+        "allMonths": "Todos los Meses",
+        "allYears": "Todos los Años",
+        "resetFilters": "Restablecer Filtros",
+        "january": "Enero",
+        "february": "Febrero",
+        "march": "Marzo",
+        "april": "Abril",
+        "may": "Mayo",
+        "june": "Junio",
+        "july": "Julio",
+        "august": "Agosto",
+        "september": "Septiembre",
+        "october": "Octubre",
+        "november": "Noviembre",
+        "december": "Diciembre"
     },
     "professionalCourses": {
         "swimmingStoryTrainer": {
@@ -325,6 +347,18 @@
         }
     },
     "studentsManagement": {
+        "filters": "Filtros",
+        "countryFilter": "País",
+        "clientNameFilter": "Nombre del Cliente",
+        "courseFilter": "Curso",
+        "monthFilter": "Mes",
+        "yearFilter": "Año",
+        "allCountries": "Todos los Países",
+        "allClients": "Todos los Clientes",
+        "allCourses": "Todos los Cursos",
+        "allMonths": "Todos los Meses",
+        "allYears": "Todos los Años",
+        "resetFilters": "Restablecer Filtros",
         "professionalCourse": "Curso Profesional",
         "clientCourse": "Curso Cliente",
         "professional": "Profesional",
@@ -386,8 +420,8 @@
             "anyAgeSyntax": "CUALQUIER EDAD Y HABILIDAD",
             "swimAStory": "\"NADA UN CUENTO\" EDAD: 3 A 6.",
             "children36": "\"NADA UN CUENTO\" EDAD: 3 A 6.",
-            "children612": "DE PRINCIPIANTES AL DESARROLLO DE LOS ESTILOS DE NATACIÓN EDAD: 6 A 12.",
-            "anyAge": "LECCIONES DE NATACIÓN PARA CUALQUIER EDAD Y HABILIDAD"
+            "children612": "\"DE PRINCIPIANTES AL DESARROLLO\" \n\n\n\tEDAD: 6 A 12.",
+            "anyAge": "CUALQUIER EDAD Y HABILIDAD"
         },
         "descriptions": {
             "children36": "Para principiantes y niños con confianza para aprender las habilidades fundamentales del agua que los mantendrán seguros en el agua",

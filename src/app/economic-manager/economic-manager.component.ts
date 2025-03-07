@@ -1,3 +1,5 @@
+// First let's add the filtering functionality to the economic-manager.component.ts file
+
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -46,6 +48,22 @@ interface AdminReport {
   allEnrollments: Enrollment[];
 }
 
+// New interfaces for filters
+interface CourseOption {
+  id: string;
+  name: string;
+}
+
+interface MonthOption {
+  value: number;
+  name: string;
+}
+
+interface YearOption {
+  value: number;
+  name: string;
+}
+
 @Component({
   selector: 'app-economic-manager',
   standalone: true,
@@ -67,6 +85,10 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   professionalEnrollments: Enrollment[] = [];
   allEnrollments: Enrollment[] = [];
 
+  // Filtered enrollments
+  filteredClientEnrollments: Enrollment[] = [];
+  filteredProfessionalEnrollments: Enrollment[] = [];
+
   // Admin data
   adminReport: AdminReport = {
     totalInsourcingClients: 0,
@@ -84,6 +106,31 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   // UI state
   isLoading: boolean = false;
   errorMessage: string = '';
+
+  // New filter properties
+  nameFilter: string = '';
+  selectedCourse: string = '';
+  selectedMonth: number = 0; // 0 means all months
+  selectedYear: number = 0; // 0 means all years
+  
+  // Filter options
+  courseOptions: CourseOption[] = [];
+  monthOptions: MonthOption[] = [
+    { value: 0, name: 'All Months' },
+    { value: 1, name: 'January' },
+    { value: 2, name: 'February' },
+    { value: 3, name: 'March' },
+    { value: 4, name: 'April' },
+    { value: 5, name: 'May' },
+    { value: 6, name: 'June' },
+    { value: 7, name: 'July' },
+    { value: 8, name: 'August' },
+    { value: 9, name: 'September' },
+    { value: 10, name: 'October' },
+    { value: 11, name: 'November' },
+    { value: 12, name: 'December' }
+  ];
+  yearOptions: YearOption[] = [];
 
   // Percentages for expense distribution
   readonly INSOURCING_PERCENTAGES = {
@@ -113,12 +160,14 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Subscribe to language changes
     this.langSubscription = this.translationService.getCurrentLang().subscribe(() => {
+      this.updateMonthNames();
       this.cdr.detectChanges();
     });
 
     // Subscribe to translations loaded event
     this.loadedSubscription = this.translationService.isTranslationsLoaded().subscribe(loaded => {
       if (loaded) {
+        this.updateMonthNames();
         this.cdr.detectChanges();
       }
     });
@@ -148,6 +197,41 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
         }
       }
     });
+
+    // Initialize year options
+    this.initializeYearOptions();
+  }
+
+  // Initialize year options (current year and 5 years back)
+  initializeYearOptions() {
+    const currentYear = new Date().getFullYear();
+    this.yearOptions = [{ value: 0, name: 'All Years' }];
+    
+    for (let year = currentYear; year >= currentYear - 5; year--) {
+      this.yearOptions.push({ value: year, name: year.toString() });
+    }
+    
+    // Set default year to current year
+    this.selectedYear = 0; // All years by default
+  }
+
+  // Update month names based on selected language
+  updateMonthNames() {
+    this.monthOptions = [
+      { value: 0, name: this.translationService.translate('economicManager.allMonths') },
+      { value: 1, name: this.translationService.translate('economicManager.january') },
+      { value: 2, name: this.translationService.translate('economicManager.february') },
+      { value: 3, name: this.translationService.translate('economicManager.march') },
+      { value: 4, name: this.translationService.translate('economicManager.april') },
+      { value: 5, name: this.translationService.translate('economicManager.may') },
+      { value: 6, name: this.translationService.translate('economicManager.june') },
+      { value: 7, name: this.translationService.translate('economicManager.july') },
+      { value: 8, name: this.translationService.translate('economicManager.august') },
+      { value: 9, name: this.translationService.translate('economicManager.september') },
+      { value: 10, name: this.translationService.translate('economicManager.october') },
+      { value: 11, name: this.translationService.translate('economicManager.november') },
+      { value: 12, name: this.translationService.translate('economicManager.december') }
+    ];
   }
 
   loadData() {
@@ -166,6 +250,12 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
         this.myEnrollments = enrollments || [];
         console.log('User enrollments:', this.myEnrollments);
         console.log('UserRole:', this.userRole);
+        
+        // Extract unique courses for filtering
+        this.extractCourseOptions(this.myEnrollments);
+
+        // Apply initial filters
+        this.applyFilters();
 
         // For clients, calculate expenses based on their enrollments
         if (this.userRole === 'client') {
@@ -250,6 +340,15 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
           this.adminReport.totalOutsourcingClients = outsourcingClients.length;
           this.adminReport.totalProfessionalEnrollments = this.adminReport.professionalEnrollments.length;
           
+          // Extract unique courses for filtering
+          this.extractCourseOptions([
+            ...this.adminReport.clientEnrollments,
+            ...this.adminReport.professionalEnrollments
+          ]);
+          
+          // Apply initial filters
+          this.applyFilters();
+          
           // Calculate expenses for all client enrollments
           this.calculateAdminExpenses();
         } catch (error) {
@@ -268,6 +367,13 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     this.servicesManagerService.getProfessionalEnrollments().subscribe({
       next: (enrollments) => {
         this.professionalEnrollments = enrollments || [];
+        
+        // Extract unique courses for filtering (combine with existing courses)
+        this.extractCourseOptions(this.professionalEnrollments);
+        
+        // Apply filters
+        this.applyFilters();
+        
         this.calculateProfessionalExpenses();
         this.cdr.detectChanges();
       },
@@ -279,13 +385,137 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Extract unique course options from enrollments
+  extractCourseOptions(enrollments: Enrollment[]) {
+    // Create a map to eliminate duplicates
+    const courseMap = new Map<string, CourseOption>();
+    
+    // Add "All Courses" option first
+    courseMap.set('all', { id: '', name: this.translationService.translate('economicManager.allCourses') });
+    
+    // Extract unique courses from enrollments
+    enrollments.forEach(enrollment => {
+      if (enrollment.courseId && enrollment.courseName) {
+        courseMap.set(enrollment.courseId, {
+          id: enrollment.courseId,
+          name: enrollment.courseName
+        });
+      }
+    });
+    
+    // Convert map to array
+    this.courseOptions = Array.from(courseMap.values());
+  }
+
+  // Apply filters to enrollments
+  applyFilters() {
+    // For clients
+    if (this.userRole === 'client') {
+      this.filteredClientEnrollments = this.filterEnrollments(this.myEnrollments);
+      this.calculateClientExpenses();
+    }
+    // For professionals
+    else if (this.userRole === 'professional') {
+      this.filteredProfessionalEnrollments = this.filterEnrollments(this.professionalEnrollments);
+      this.calculateProfessionalExpenses();
+    }
+    // For admins
+    else if (this.isAdmin) {
+      this.adminReport.clientEnrollments = this.filterEnrollments(this.adminReport.clientEnrollments);
+      this.adminReport.professionalEnrollments = this.filterEnrollments(this.adminReport.professionalEnrollments);
+      this.calculateAdminExpenses();
+    }
+    
+    this.cdr.detectChanges();
+  }
+
+  // Filter enrollments based on selected filters
+  filterEnrollments(enrollments: Enrollment[]): Enrollment[] {
+    return enrollments.filter(enrollment => {
+      // Filter by name (case-insensitive)
+      if (this.nameFilter && !this.matchesNameFilter(enrollment, this.nameFilter)) {
+        return false;
+      }
+      
+      // Filter by course
+      if (this.selectedCourse && enrollment.courseId.toString() !== this.selectedCourse.toString()) {
+        return false;
+      }
+      
+      // Filter by month and year
+      if (!this.matchesDateFilter(enrollment)) {
+        return false;
+      }
+      
+      return true;
+    });
+  }
+
+  // Check if enrollment matches name filter
+  matchesNameFilter(enrollment: Enrollment, nameFilter: string): boolean {
+    const searchTerm = nameFilter.toLowerCase();
+    
+    // Check client name
+    if (enrollment.clientName && enrollment.clientName.toLowerCase().includes(searchTerm)) {
+      return true;
+    }
+    
+    // Check professional name
+    if (enrollment.professionalName && enrollment.professionalName.toLowerCase().includes(searchTerm)) {
+      return true;
+    }
+    
+    // No match found
+    return false;
+  }
+
+  // Check if enrollment matches date filter
+  matchesDateFilter(enrollment: Enrollment): boolean {
+    // If no date filters are selected, return true
+    if (this.selectedMonth === 0 && this.selectedYear === 0) {
+      return true;
+    }
+    
+    // Get enrollment date
+    console.log('Enrollment:', enrollment);
+    const enrollmentDate = enrollment.startDate || enrollment.enrollmentDate;
+    if (!enrollmentDate) {
+      return false;
+    }
+    
+    // Convert to Date object if it's a string
+    const date = enrollmentDate instanceof Date ? enrollmentDate : new Date(enrollmentDate);
+    
+    // Filter by month
+    if (this.selectedMonth !== 0 && date.getMonth() + 1 !== this.selectedMonth) {
+      return false;
+    }
+    
+    // Filter by year
+    if (this.selectedYear !== 0 && date.getFullYear() !== this.selectedYear) {
+      return false;
+    }
+    
+    return true;
+  }
+
+  // Reset all filters
+  resetFilters() {
+    this.nameFilter = '';
+    this.selectedCourse = '';
+    this.selectedMonth = 0;
+    this.selectedYear = 0;
+    this.applyFilters();
+    window.location.reload();
+  }
+
   calculateClientExpenses() {
     // Reset calculated values
     this.insourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
     this.outsourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
 
     // Filter active enrollments
-    const activeEnrollments = this.myEnrollments;
+    const activeEnrollments = this.filteredClientEnrollments;
 
     // Calculate total amount for enrollments
     let insourcingTotal = 0;
@@ -309,7 +539,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     this.outsourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
 
     // Filter active enrollments
-    const activeEnrollments = this.professionalEnrollments;
+    const activeEnrollments = this.filteredProfessionalEnrollments;
 
     // Calculate total amount for enrollments
     let insourcingTotal = 0;

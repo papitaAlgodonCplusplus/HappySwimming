@@ -32,6 +32,7 @@ interface Student {
   professionalName?: string; // Added for admin view
   professionalId?: number; // Added for admin view
   type?: string; // Added to differentiate between client_service and professional_service
+  country?: string; // Added for filtering
 }
 
 interface Course {
@@ -42,6 +43,15 @@ interface Course {
   students: Student[];
   expanded: boolean; // UI state to track if course is expanded in view
   type?: string; // 'client' or 'professional'
+}
+
+// Interface for filter options
+interface FilterOptions {
+  countries: string[];
+  clientNames: string[];
+  courseIds: string[];
+  months: number[];
+  years: number[];
 }
 
 @Component({
@@ -59,6 +69,25 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   userEmail: string = '';
   isAdmin: boolean = false;
 
+  // Filter properties
+  selectedCountry: string = 'all';
+  selectedClientName: string = 'all';
+  selectedCourse: string = 'all';
+  selectedMonth: number = 0; // 0 means all months
+  selectedYear: number = 0; // 0 means all years
+  
+  // Filter options
+  filterOptions: FilterOptions = {
+    countries: [],
+    clientNames: [],
+    courseIds: [],
+    months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    years: []
+  };
+
+  // Original data (unfiltered)
+  originalCourses: Course[] = [];
+  
   // Courses with students
   courses: Course[] = [];
 
@@ -80,6 +109,22 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     { value: 'in_process', translationKey: 'studentsManagement.status.inProcess' },
     { value: 'reproved', translationKey: 'studentsManagement.status.reproved' },
     { value: 'completed', translationKey: 'studentsManagement.status.completed' }
+  ];
+
+  // Month names for dropdown
+  monthNames: { value: number, name: string }[] = [
+    { value: 1, name: 'January' },
+    { value: 2, name: 'February' },
+    { value: 3, name: 'March' },
+    { value: 4, name: 'April' },
+    { value: 5, name: 'May' },
+    { value: 6, name: 'June' },
+    { value: 7, name: 'July' },
+    { value: 8, name: 'August' },
+    { value: 9, name: 'September' },
+    { value: 10, name: 'October' },
+    { value: 11, name: 'November' },
+    { value: 12, name: 'December' }
   ];
 
   // Subscriptions
@@ -128,6 +173,12 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
         }
       }
     });
+    
+    // Initialize years for filter (last 5 years)
+    const currentYear = new Date().getFullYear();
+    for (let i = 0; i < 5; i++) {
+      this.filterOptions.years.push(currentYear - i);
+    }
   }
 
   loadStudentData() {
@@ -154,6 +205,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
         )
         .subscribe(students => {
           this.processStudents(students || []);
+          this.extractFilterOptions(students || []);
         });
     } else {
       // For professionals, use the regular endpoint
@@ -174,8 +226,119 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
         )
         .subscribe(students => {
           this.processStudents(students || []);
+          this.extractFilterOptions(students || []);
         });
     }
+  }
+
+  // Extract filter options from student data
+  extractFilterOptions(students: Student[]) {
+    // Extract unique countries, client names, and course IDs
+    const countries = new Set<string>();
+    const clientNames = new Set<string>();
+    const courseIds = new Set<string>();
+    
+    students.forEach(student => {
+      if (student.country) {
+        countries.add(student.country);
+      }
+      
+      if (student.name) {
+        clientNames.add(student.name);
+      } else if (student.firstName) {
+        clientNames.add(student.firstName + ' ' + (student.lastName || ''));
+      }
+      
+      if (student.courseId) {
+        courseIds.add(student.courseId);
+      }
+    });
+    
+    // Update filter options
+    this.filterOptions.countries = Array.from(countries).sort();
+    this.filterOptions.clientNames = Array.from(clientNames).sort();
+    this.filterOptions.courseIds = Array.from(courseIds).sort();
+    
+    this.cdr.detectChanges();
+  }
+
+  // Apply filters to the original course data
+  applyFilters() {
+    console.log('Applying filters:', {
+      country: this.selectedCountry,
+      clientName: this.selectedClientName,
+      course: this.selectedCourse,
+      month: this.selectedMonth,
+      year: this.selectedYear
+    });
+    
+    // Clone the original courses
+    const filteredCourses = JSON.parse(JSON.stringify(this.originalCourses)) as Course[];
+    
+    // For each course, filter its students
+    filteredCourses.forEach(course => {
+      course.students = course.students.filter(student => {
+        // Filter by country
+        if (this.selectedCountry !== 'all' && student.country !== this.selectedCountry) {
+          return false;
+        }
+        
+        // Filter by client name
+        if (this.selectedClientName !== 'all') {
+          const fullName = student.name || (student.firstName + ' ' + (student.lastName || ''));
+          if (fullName !== this.selectedClientName) {
+            return false;
+          }
+        }
+        
+        // Filter by course
+        if (this.selectedCourse !== 'all' && student.courseId !== this.selectedCourse) {
+          return false;
+        }
+        
+        // Filter by month and year
+        if (student.startDate) {
+          const startDate = new Date(student.startDate);
+          const month = startDate.getMonth() + 1; // getMonth() returns 0-11
+          const year = startDate.getFullYear();
+          
+          if (this.selectedMonth !== 0 && month !== this.selectedMonth) {
+            return false;
+          }
+          
+          if (this.selectedYear !== 0 && year !== this.selectedYear) {
+            return false;
+          }
+        } else if (this.selectedMonth !== 0 || this.selectedYear !== 0) {
+          // If month or year is selected and student has no start date, filter it out
+          return false;
+        }
+        
+        return true;
+      });
+      
+      // Update student count
+      course.studentCount = course.students.length;
+    });
+    
+    // Remove courses with no students
+    this.courses = filteredCourses.filter(course => course.studentCount > 0);
+    
+    this.cdr.detectChanges();
+  }
+  
+  // Reset all filters
+  resetFilters() {
+    this.selectedCountry = 'all';
+    this.selectedClientName = 'all';
+    this.selectedCourse = 'all';
+    this.selectedMonth = 0;
+    this.selectedYear = 0;
+    
+    // Restore original data
+    this.courses = JSON.parse(JSON.stringify(this.originalCourses)) as Course[];
+    
+    this.cdr.detectChanges();
   }
 
   // Update the course type detection in processStudents method
@@ -254,6 +417,9 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       this.courses = Array.from(courseMap.values())
         .sort((a, b) => a.name.localeCompare(b.name));
     }
+    
+    // Store the original unfiltered data
+    this.originalCourses = JSON.parse(JSON.stringify(this.courses)) as Course[];
 
     this.cdr.detectChanges();
   }
@@ -295,6 +461,11 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
 
   getLocalizedStatus(status: string): string {
     return this.translationService.translate(`studentsManagement.status.${status}`);
+  }
+  
+  // Get localized month name
+  getMonthName(month: number): string {
+    return this.monthNames.find(m => m.value === month)?.name || '';
   }
 
   // Determine if this is a professional course
