@@ -234,16 +234,16 @@
     },
     "professionalCourses": {
         "swimmingStoryTrainer": {
-            "description": "Curso en línea para Formador de Profesores/Director Técnico (incluye material pedagógico)"
+            "description": "Curso para Formador de Profesores/Director Técnico (incluye material pedagógico)"
         },
         "swimmingStoryTeacher": {
-            "description": "Curso en línea para convertirse en Profesor de Nada un Cuento"
+            "description": "Curso para convertirse en Profesor de Nada un Cuento"
         },
         "frontCrawl": {
-            "description": "Formación presencial sobre metodología de crol con giro (mínimo 10 personas)"
+            "description": "Formación sobre metodología de crol con giro (mínimo 10 personas)"
         },
         "aquagym": {
-            "description": "Curso en línea para convertirse en instructor de aquagym"
+            "description": "Curso para convertirse en instructor de aquagym"
         }
     },
     "studentsManagement": {
