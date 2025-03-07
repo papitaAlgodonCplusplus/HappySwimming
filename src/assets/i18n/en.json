@@ -230,6 +230,8 @@
         "statusL": "Status",
         "enrollmentDate": "Enrollment Date",
         "startDate": "Start Date",
+        "calification": "Grade",
+        "assistance": "Attendance",
         "actions": "Actions",
         "edit": "Edit",
         "delete": "Delete",
@@ -247,6 +249,8 @@
         "errorLoadingStudents": "Error loading students. Please try again.",
         "errorUpdatingStudent": "Error updating student. Please try again.",
         "errorDeletingStudent": "Error deleting student. Please try again.",
+        "errorInvalidCalification": "Grade must be between 0 and 10.",
+        "errorInvalidAssistance": "Attendance must be between 0 and 100%.",
         "status": {
             "pending": "Pending",
             "approved": "Approved",

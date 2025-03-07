@@ -27,6 +27,8 @@ interface Student {
   progress?: number; // Progress percentage (0-100)
   lastAttendance?: Date; // Last class attendance
   notes?: string;
+  calification?: number; // New field for student grade/score
+  assistance?: number; // New field for attendance percentage
 }
 
 interface Course {
@@ -212,6 +214,24 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       default: return '';
     }
   }
+
+  getCalificationClass(calification: number | undefined): string {
+    if (calification === undefined) return '';
+    
+    if (calification >= 9) return 'calification-excellent';
+    if (calification >= 7) return 'calification-good';
+    if (calification >= 5) return 'calification-pass';
+    return 'calification-fail';
+  }
+
+  getAssistanceClass(assistance: number | undefined): string {
+    if (assistance === undefined) return '';
+    
+    if (assistance >= 90) return 'assistance-excellent';
+    if (assistance >= 75) return 'assistance-good';
+    if (assistance >= 50) return 'assistance-medium';
+    return 'assistance-poor';
+  }
   
   getLocalizedStatus(status: string): string {
     return this.translationService.translate(`studentsManagement.status.${status}`);
@@ -246,9 +266,32 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
   
-  // Update student status
+  // Validate calification (0-10 scale)
+  validateCalification(value: number): boolean {
+    return value >= 0 && value <= 10;
+  }
+  
+  // Validate assistance (0-100 percentage)
+  validateAssistance(value: number): boolean {
+    return value >= 0 && value <= 100;
+  }
+  
+  // Update student status, calification, and assistance
   updateStudent() {
     if (!this.selectedStudent) return;
+    
+    // Validate calification and assistance if provided
+    if (this.selectedStudent.calification !== undefined && !this.validateCalification(this.selectedStudent.calification)) {
+      this.errorMessage = this.translationService.translate('studentsManagement.errorInvalidCalification');
+      this.cdr.detectChanges();
+      return;
+    }
+    
+    if (this.selectedStudent.assistance !== undefined && !this.validateAssistance(this.selectedStudent.assistance)) {
+      this.errorMessage = this.translationService.translate('studentsManagement.errorInvalidAssistance');
+      this.cdr.detectChanges();
+      return;
+    }
     
     this.isLoading = true;
     this.errorMessage = '';
@@ -258,7 +301,9 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       studentId: this.selectedStudent.id,
       enrollmentId: this.selectedStudent.enrollmentId,
       status: this.selectedStudent.status,
-      notes: this.studentNotes
+      notes: this.studentNotes,
+      calification: this.selectedStudent.calification,
+      assistance: this.selectedStudent.assistance
     };
     
     this.studentsService.updateStudentStatus(updateData)

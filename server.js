@@ -1168,6 +1168,7 @@ app.get('/api/professional/students', authenticateToken, async (req, res) => {
     const professionalId = professionalResult.rows[0].id;
 
     // Query to get all students enrolled in courses taught by this professional
+    // Added calification and assistance to the SELECT fields
     const studentsQuery = `
     SELECT 
       u.id,
@@ -1186,6 +1187,8 @@ app.get('/api/professional/students', authenticateToken, async (req, res) => {
       cs.end_time,
       cs.status,
       cs.notes,
+      cs.calification,
+      cs.assistance,
       c.id as client_id,
       c.company_name,
       c.phone_mobile
@@ -1201,6 +1204,7 @@ app.get('/api/professional/students', authenticateToken, async (req, res) => {
     console.log('Professional students:', result.rows);
 
     // Transform the data to match the expected Student interface
+    // Added calification and assistance to the returned student object
     const students = result.rows.map(row => ({
       id: row.id,
       firstName: row.first_name,
@@ -1216,6 +1220,8 @@ app.get('/api/professional/students', authenticateToken, async (req, res) => {
       courseName: row.course_name,
       startDate: row.start_date,
       status: row.status,
+      calification: row.calification !== null ? parseFloat(row.calification) : undefined,
+      assistance: row.assistance,
       clientId: row.client_id,
       clientName: `${row.client_first_name} ${row.client_last_name}`
     }));
@@ -1227,6 +1233,7 @@ app.get('/api/professional/students', authenticateToken, async (req, res) => {
   }
 });
 
+
 // Update student status and notes
 app.put('/api/professional/students/:enrollmentId', authenticateToken, async (req, res) => {
   try {
@@ -1234,7 +1241,8 @@ app.put('/api/professional/students/:enrollmentId', authenticateToken, async (re
     const enrollmentId = req.params.enrollmentId;
 
     // Get the update data from the request body
-    const { status, notes } = req.body;
+    // Added calification and assistance to destructured variables
+    const { status, notes, calification, assistance } = req.body;
 
     // Get the professional ID from the authenticated user
     const userId = req.user.id;
@@ -1254,15 +1262,26 @@ app.put('/api/professional/students/:enrollmentId', authenticateToken, async (re
       return res.status(403).json({ error: 'You are not authorized to update this enrollment' });
     }
 
-    // Update the enrollment status and notes
+    // Update the enrollment status, notes, calification, and assistance
+    // Added calification and assistance to the SET clause and parameters
     const updateQuery = `
       UPDATE happyswimming.client_services 
-      SET status = $1, notes = $2, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $3
+      SET status = $1, 
+          notes = $2, 
+          calification = $3,
+          assistance = $4,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $5
       RETURNING *
     `;
 
-    const updateResult = await pool.query(updateQuery, [status, notes, enrollmentId]);
+    const updateResult = await pool.query(updateQuery, [
+      status, 
+      notes, 
+      calification !== undefined ? calification : 0,
+      assistance !== undefined ? assistance : 0,
+      enrollmentId
+    ]);
 
     if (updateResult.rows.length === 0) {
       return res.status(404).json({ error: 'Enrollment not found' });
@@ -1276,6 +1295,90 @@ app.put('/api/professional/students/:enrollmentId', authenticateToken, async (re
   } catch (error) {
     console.error('Error updating student enrollment:', error);
     res.status(500).json({ error: 'Failed to update enrollment' });
+  }
+});
+
+app.get('/api/professional/students/:enrollmentId/details', authenticateToken, async (req, res) => {
+  try {
+    // Get the enrollment ID from the route parameter
+    const enrollmentId = req.params.enrollmentId;
+    
+    // Get the professional ID from the authenticated user
+    const userId = req.user.id;
+
+    // First, check if the professional is authorized to view this enrollment
+    const checkAuthQuery = `
+      SELECT cs.id 
+      FROM happyswimming.client_services cs
+      JOIN happyswimming.professionals p ON cs.professional_id = p.id
+      WHERE cs.id = $1 
+      AND p.user_id = $2
+    `;
+
+    const authResult = await pool.query(checkAuthQuery, [enrollmentId, userId]);
+
+    if (authResult.rows.length === 0) {
+      return res.status(403).json({ error: 'You are not authorized to view this enrollment' });
+    }
+
+    // Get the detailed enrollment information
+    const detailsQuery = `
+      SELECT 
+        u.id,
+        u.first_name,
+        u.last_name1,
+        u.last_name2,
+        u.email,
+        cs.id as enrollment_id,
+        cs.service_id as course_id,
+        s.name as course_name,
+        cs.start_date,
+        cs.end_date,
+        cs.status,
+        cs.notes,
+        cs.calification,
+        cs.assistance,
+        c.id as client_id,
+        CONCAT(u.first_name, ' ', u.last_name1) as name
+      FROM happyswimming.client_services cs
+      JOIN happyswimming.clients c ON cs.client_id = c.id
+      JOIN happyswimming.users u ON c.user_id = u.id
+      JOIN happyswimming.services s ON cs.service_id = s.id
+      WHERE cs.id = $1
+    `;
+
+    const result = await pool.query(detailsQuery, [enrollmentId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Enrollment not found' });
+    }
+
+    const row = result.rows[0];
+
+    // Format the response
+    const studentDetails = {
+      id: row.id,
+      firstName: row.first_name,
+      lastName1: row.last_name1,
+      lastName2: row.last_name2 || null,
+      email: row.email,
+      name: row.name,
+      enrollmentId: row.enrollment_id,
+      courseId: row.course_id,
+      courseName: row.course_name,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      status: row.status,
+      notes: row.notes,
+      calification: row.calification !== null ? parseFloat(row.calification) : undefined,
+      assistance: row.assistance,
+      clientId: row.client_id
+    };
+
+    res.json(studentDetails);
+  } catch (error) {
+    console.error('Error fetching student details:', error);
+    res.status(500).json({ error: 'Failed to fetch student details' });
   }
 });
 
@@ -1342,10 +1445,11 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
     }
     
     // Get all client enrollments with detailed information
+    // Added calification and assistance to the SELECT fields
     const clientServicesQuery = `
       SELECT cs.id, cs.client_id, cs.service_id, cs.professional_id, 
         cs.start_date, cs.end_date, cs.day_of_week, cs.start_time, cs.end_time,
-        cs.price, cs.status, cs.notes, cs.created_at,
+        cs.price, cs.status, cs.notes, cs.created_at, cs.calification, cs.assistance,
         s.name as service_name,
         c.user_id, c.is_outsourcing,
         CONCAT(cu.first_name, ' ', cu.last_name1) as client_name,
@@ -1376,6 +1480,7 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
     const professionalServicesResult = await pool.query(professionalServicesQuery);
     
     // Format client enrollments
+    // Added calification and assistance to the clientEnrollments objects
     const clientEnrollments = clientServicesResult.rows.map(row => ({
       id: row.id,
       type: 'client_service',
@@ -1392,7 +1497,9 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
       endDate: row.end_date,
       price: parseFloat(row.price),
       isOutsourcing: row.is_outsourcing,
-      notes: row.notes
+      notes: row.notes,
+      calification: row.calification !== null ? parseFloat(row.calification) : undefined,
+      assistance: row.assistance
     }));
     
     // Format professional enrollments
@@ -1407,6 +1514,7 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
       status: 'active', // Professional services don't have a status, so set a default
       price: parseFloat(row.price_per_hour),
       notes: row.notes
+      // Note: Professional services don't have calification or assistance
     }));
     
     // Combine both arrays and send response

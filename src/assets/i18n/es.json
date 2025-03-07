@@ -233,7 +233,6 @@
         "noNotes": "Sin notas"
     },
     "studentsManagement": {
-        "details": "Detalles",
         "title": "Gestión de Estudiantes",
         "description": "Administra tus estudiantes, calificaciones y progreso",
         "students": "estudiantes",
@@ -243,6 +242,8 @@
         "statusL": "Estado",
         "enrollmentDate": "Fecha de Inscripción",
         "startDate": "Fecha de Inicio",
+        "calification": "Calificación",
+        "assistance": "Asistencia",
         "actions": "Acciones",
         "edit": "Editar",
         "delete": "Eliminar",
@@ -259,6 +260,9 @@
         "errorLoadingStudents": "Error al cargar estudiantes. Por favor, inténtalo de nuevo.",
         "errorUpdatingStudent": "Error al actualizar estudiante. Por favor, inténtalo de nuevo.",
         "errorDeletingStudent": "Error al eliminar estudiante. Por favor, inténtalo de nuevo.",
+        "errorInvalidCalification": "La calificación debe estar entre 0 y 10.",
+        "errorInvalidAssistance": "La asistencia debe estar entre 0 y 100%.",
+        "details": "Detalles",
         "status": {
             "pending": "Pendiente",
             "approved": "Aprobado",
