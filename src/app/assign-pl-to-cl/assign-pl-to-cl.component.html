@@ -1,0 +1,102 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+</style>
+
+<app-header></app-header>
+<div class="assign-container">
+  <div class="assign-content">
+    <h1 class="title">
+      {{ 'assignProfessional.title' | translate }}
+      <span style="color: #cc0000; font-size: 0.8em;"> {{ 'assignProfessional.adminView' | translate }}</span>
+    </h1>
+
+    <div *ngIf="successMessage" class="success-message">
+      {{ successMessage }}
+    </div>
+
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="isLoading" class="loading-indicator">
+      <div class="spinner"></div>
+      <p>{{ 'assignProfessional.messages.loading' | translate }}</p>
+    </div>
+
+    <div *ngIf="!isLoading" class="clients-table-container">
+      <table class="clients-table" *ngIf="clients.length > 0">
+        <thead>
+          <tr>
+            <th>{{ 'assignProfessional.table.name' | translate }}</th>
+            <th>{{ 'assignProfessional.table.email' | translate }}</th>
+            <th>{{ 'assignProfessional.table.currentProfessional' | translate }}</th>
+            <th>{{ 'assignProfessional.table.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let client of clients">
+            <td>{{ client.firstName }} {{ client.lastName1 }} {{ client.lastName2 }}</td>
+            <td>{{ client.email }}</td>
+            <td>
+              {{ client.assignedProfessionalName || ('assignProfessional.notAssigned' | translate) }}
+            </td>
+            <td>
+              <button class="btn btn-assign" (click)="openAssignModal(client)"
+                [disabled]="client.assignedProfessionalId">
+                {{ client.assignedProfessionalId ? ('assignProfessional.buttons.assigned' | translate) :
+                ('assignProfessional.buttons.assign' | translate) }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="clients.length === 0" class="no-clients-message">
+        {{ 'assignProfessional.messages.noClientsFound' | translate }}
+      </div>
+    </div>
+
+    <!-- Assign Professional Modal -->
+    <div *ngIf="showAssignModal" class="modal-overlay">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2>
+            {{ 'assignProfessional.messages.assignModalTitle' | translate }}
+          </h2>
+          <button class="close-btn" (click)="closeAssignModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <table class="professionals-table">
+            <thead>
+              <tr>
+                <th>{{ 'assignProfessional.professionalTable.select' | translate }}</th>
+                <th>{{ 'assignProfessional.professionalTable.name' | translate }}</th>
+                <th>{{ 'assignProfessional.professionalTable.email' | translate }}</th>
+                <th>{{ 'assignProfessional.professionalTable.specialties' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let professional of professionals">
+                <td>
+                  <input type="radio" name="selectedProfessional" [value]="professional.id"
+                    [(ngModel)]="selectedProfessional" [checked]="selectedProfessional === professional">
+                </td>
+                <td>{{ professional.firstName }} {{ professional.lastName1 }}</td>
+                <td>{{ professional.email }}</td>
+                <td>{{ professional.specialties.join(', ') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-cancel" (click)="closeAssignModal()">
+            {{ 'assignProfessional.buttons.cancel' | translate }}
+          </button>
+          <button class="btn btn-assign" (click)="assignProfessional()" [disabled]="!selectedProfessional">
+            {{ 'assignProfessional.buttons.assignProfessional' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

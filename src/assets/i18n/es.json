@@ -1,4 +1,42 @@
 {
+    "assignProfessional": {
+        "title": "Asignar Profesionales a Clientes",
+        "adminView": "Vista de Administrador",
+        "table": {
+            "name": "Nombre",
+            "email": "Correo Electrónico",
+            "currentProfessional": "Profesional Actual",
+            "actions": "Acciones"
+        },
+        "buttons": {
+            "assign": "Asignar",
+            "assigned": "Asignado",
+            "cancel": "Cancelar",
+            "assignProfessional": "Asignar Profesional"
+        },
+        "messages": {
+            "noClientsFound": "No se encontraron clientes sin asignar.",
+            "loading": "Cargando...",
+            "assignModalTitle": "Asignar Profesional"
+        },
+        "professionalTable": {
+            "select": "Seleccionar",
+            "name": "Nombre",
+            "email": "Correo Electrónico",
+            "specialties": "Especialidades"
+        },
+        "notAssigned": "No Asignado"
+    },
+    "contact": {
+        "title": "Contáctanos",
+        "subject": "Asunto",
+        "message": "Mensaje",
+        "send": "Enviar",
+        "sending": "Enviando",
+        "successMessage": "¡Gracias! Tu mensaje ha sido enviado con éxito.",
+        "errorRequiredFields": "Por favor, completa todos los campos requeridos.",
+        "errorSending": "Error al enviar el mensaje. Por favor, inténtalo de nuevo más tarde."
+    },
     "userAuthorization": {
         "title": "Autorización de Usuarios",
         "adminView": "Vista de Administrador",

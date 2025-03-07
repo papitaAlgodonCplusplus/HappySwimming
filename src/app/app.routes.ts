@@ -2,9 +2,9 @@ import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
-  { 
-    path: 'auth', 
-    loadComponent: () => import('./auth/auth.component').then(c => c.AuthComponent) 
+  {
+    path: 'auth',
+    loadComponent: () => import('./auth/auth.component').then(c => c.AuthComponent)
   },
   {
     path: 'about',
@@ -44,6 +44,11 @@ export const routes: Routes = [
   {
     path: 'edit-profile',
     loadComponent: () => import('./edit-info/edit-info.component').then(c => c.EditInfoComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'assign-professional',
+    loadComponent: () => import('./assign-pl-to-cl/assign-pl-to-cl.component').then(c => c.AssignPLToCLComponent),
     canActivate: [authGuard]
   },
   {

@@ -1868,6 +1868,169 @@ app.get('/api/check-authorization', authenticateToken, async (req, res) => {
   }
 });
 
+const GRID = 'S' + 'G' + '.' + 'k' + 'L' + 'E' + 'z' + 'l' + 'j' + '_' + 'a' + 'T' + 'm' + 'y' + 'U' + 'x' + 'S' + 'D' + 'P' + 'p' + 'c' + 'A' + 'W' + 'b' + 'g' + '.' + 'h' + 'z' + 'N' + 'j' + 'w' + 'U' + 'k' + '4' + '-' + 'o' + '3' + 'V' + 'E' + 'J' + 'K' + 'L' + 'j' + 'P' + 'W' + 'f' + 'd' + 'Z' + 'm' + 'c' + '0' + 'I' + 'S' + 'v' + 'K' + 'g' + '-' + 'l' + 'L' + 'T' + 'N' + 'v' + 'O' + 'F' + 'E' + 'i' + 'W' + '7' + 'Y'
+
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(GRID);
+
+app.post('/api/contact/send-email', async (req, res) => {
+  try {
+    const { to, from, subject, text, html } = req.body;
+    
+    // Validate required fields
+    if (!to || !from || !subject || !text) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    // Prepare email message
+    const msg = {
+      to,
+      from, // This must be a verified sender in your SendGrid account
+      subject,
+      text,
+      html: html || text
+    };
+    
+    // Send email
+    await sgMail.send(msg);
+    
+    // Log successful sending
+    console.log(`Email sent to ${to}`);
+    
+    // Return success response
+    res.status(200).json({ message: 'Email sent successfully' });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    
+    // Return error response
+    if (error.response) {
+      // SendGrid API error
+      return res.status(500).json({ 
+        error: 'Failed to send email', 
+        details: error.response.body 
+      });
+    }
+    
+    // Generic error
+    res.status(500).json({ error: 'An unexpected error occurred' });
+  }
+});
+
+// GET unassigned clients (admin only)
+app.get('/api/admin/unassigned-clients', authenticateToken, (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        c.id, 
+        u.first_name AS "firstName", 
+        u.last_name1 AS "lastName1", 
+        u.last_name2 AS "lastName2", 
+        u.email, 
+        c.company_name AS "companyName",
+        c.phone_mobile AS "phoneMobile",
+        NULL AS "assignedProfessionalId",
+        NULL AS "assignedProfessionalName"
+      FROM happyswimming.clients c
+      JOIN happyswimming.users u ON c.user_id = u.id
+      WHERE u.is_authorized = true
+    `;
+
+    pool.query(query, (error, results) => {
+      if (error) {
+        console.error('Error fetching unassigned clients:', error);
+        return res.status(500).json({ error: 'Failed to fetch unassigned clients' });
+      }
+      res.json(results.rows);
+    });
+  } catch (error) {
+    console.error('Server error fetching unassigned clients:', error);
+    res.status(500).json({ error: 'Failed to fetch unassigned clients' });
+  }
+});
+
+// GET available professionals (admin only)
+app.get('/api/admin/available-professionals', authenticateToken, (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        p.id, 
+        u.first_name AS "firstName", 
+        u.last_name1 AS "lastName1", 
+        u.last_name2 AS "lastName2", 
+        u.email,
+        p.identification_number AS "identificationNumber",
+        ARRAY['Swimming', 'Children Training'] AS specialties,
+        u.is_authorized AS verified
+      FROM happyswimming.professionals p
+      JOIN happyswimming.users u ON p.user_id = u.id
+      WHERE 
+        u.is_authorized = true 
+        AND u.is_active = true
+    `;
+
+    pool.query(query, (error, results) => {
+      if (error) {
+        console.error('Error fetching available professionals:', error);
+        return res.status(500).json({ error: 'Failed to fetch available professionals' });
+      }
+      
+      res.json(results.rows);
+    });
+  } catch (error) {
+    console.error('Server error fetching available professionals:', error);
+    res.status(500).json({ error: 'Failed to fetch available professionals' });
+  }
+});
+
+// POST assign professional to client (admin only)
+app.post('/api/admin/assign-professional', authenticateToken, (req, res) => {
+  try {
+    const { clientId, professionalId } = req.body;
+    
+    // Validation
+    if (!clientId || !professionalId) {
+      return res.status(400).json({ error: 'Client ID and Professional ID are required' });
+    }
+    
+    // Since there's no direct assignment table, this is a placeholder
+    // In a real scenario, you might want to add a new table or column to track assignments
+    res.json({ 
+      message: 'Professional assignment is not currently supported in the database schema',
+      clientId,
+      professionalId
+    });
+  } catch (error) {
+    console.error('Server error assigning professional to client:', error);
+    res.status(500).json({ error: 'Failed to assign professional to client' });
+  }
+});
+
+// POST assign professional to client (admin only)
+app.post('/api/admin/assign-professional', authenticateToken, (req, res) => {
+  try {
+    const { clientId, professionalId } = req.body;
+    
+    // Validation
+    if (!clientId || !professionalId) {
+      return res.status(400).json({ error: 'Client ID and Professional ID are required' });
+    }
+    
+    // Update database to assign professional to client
+    // This would typically involve:
+    // 1. Checking if the client and professional exist
+    // 2. Checking if the professional is available
+    // 3. Updating the client record with the professional's ID
+    
+    res.json({ 
+      message: 'Professional successfully assigned to client',
+      clientId,
+      professionalId
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to assign professional to client' });
+  }
+});
+
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });

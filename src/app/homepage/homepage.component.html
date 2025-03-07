@@ -25,6 +25,10 @@
     background-color: #009688;
   }
 
+  .assign-professional {
+    background-color: #8a2be2;
+  }
+
   .grid-item {
     padding: 30px;
     border-radius: 10px;
@@ -129,6 +133,24 @@
               <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
               <path d="M2 17l10 5 10-5"></path>
               <path d="M2 12l10 5 10-5"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assign Professionals to Clients (admin only) -->
+      <div *ngIf="isAdmin" class="grid-item assign-professional" (click)="navigateTo('/assign-professional')">
+        <div class="item-content">
+          <h2 class="item-title">Assign Professionals</h2>
+          <p class="item-description">Assign professionals to clients in the system</p>
+          <div class="icon-container">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M21 11V6a2 2 0 0 0-2-2h-1.5"></path>
+              <path d="M22 16.5 23 17.5l-5 5"></path>
+              <path d="M22 21.5v-5H17"></path>
             </svg>
           </div>
         </div>

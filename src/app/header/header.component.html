@@ -5,7 +5,7 @@
   <div class="navigation">
     <a [routerLink]="['/about']" class="nav-item">{{ 'aboutUs' | translate }}</a>
     <a [routerLink]="['/services']" class="nav-item">{{ 'services' | translate }}</a>
-    <a href="#" class="nav-item">{{ 'contactUs' | translate }}</a>
+    <a href="javascript:void(0)" class="nav-item" (click)="openContactModal()">{{ 'contactUs' | translate }}</a>
     
     <!-- Show these options when authenticated -->
     <ng-container *ngIf="isAuthenticated">
@@ -20,6 +20,46 @@
       <a href="javascript:void(0)" class="lang-flag" (click)="switchLanguage('en')">
         <img src="/assets/en-flag.png" alt="English" [class.active]="currentLang === 'en'">
       </a>
+    </div>
+  </div>
+</div>
+
+<!-- Contact Modal -->
+<div *ngIf="showContactModal" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>{{ 'contact.title' | translate }}</h2>
+      <button class="close-btn" (click)="closeContactModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div *ngIf="contactError" class="error-message">
+        {{ contactError }}
+      </div>
+      
+      <div *ngIf="contactSuccess" class="success-message">
+        {{ 'contact.successMessage' | translate }}
+      </div>
+      
+      <div *ngIf="!contactSuccess">
+        <div class="form-group">
+          <label for="contactSubject">{{ 'contact.subject' | translate }}</label>
+          <input type="text" id="contactSubject" [(ngModel)]="contactSubject" class="form-control" [disabled]="isSubmitting">
+        </div>
+        
+        <div class="form-group">
+          <label for="contactMessage">{{ 'contact.message' | translate }}</label>
+          <textarea id="contactMessage" [(ngModel)]="contactMessage" class="form-control" rows="5" [disabled]="isSubmitting"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" *ngIf="!contactSuccess">
+      <button class="btn btn-cancel" (click)="closeContactModal()" [disabled]="isSubmitting">
+        {{ 'cancel' | translate }}
+      </button>
+      <button class="btn btn-send" (click)="submitContactForm()" [disabled]="isSubmitting">
+        <span *ngIf="!isSubmitting">{{ 'contact.send' | translate }}</span>
+        <span *ngIf="isSubmitting">{{ 'contact.sending' | translate }}...</span>
+      </button>
     </div>
   </div>
 </div>

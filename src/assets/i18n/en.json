@@ -1,4 +1,32 @@
 {
+    "assignProfessional": {
+        "title": "Assign Professionals to Clients",
+        "adminView": "Admin View",
+        "table": {
+            "name": "Name",
+            "email": "Email",
+            "currentProfessional": "Current Professional",
+            "actions": "Actions"
+        },
+        "buttons": {
+            "assign": "Assign",
+            "assigned": "Assigned",
+            "cancel": "Cancel",
+            "assignProfessional": "Assign Professional"
+        },
+        "messages": {
+            "noClientsFound": "No unassigned clients found.",
+            "loading": "Loading...",
+            "assignModalTitle": "Assign Professional"
+        },
+        "professionalTable": {
+            "select": "Select",
+            "name": "Name",
+            "email": "Email",
+            "specialties": "Specialties"
+        },
+        "notAssigned": "Not Assigned"
+    },
     "userAuthorization": {
         "title": "User Authorization",
         "adminView": "Admin View",
@@ -38,6 +66,16 @@
         "deletionSuccess": "User deleted successfully",
         "deletionError": "Error deleting user",
         "unknownError": "An unknown error occurred"
+    },
+    "contact": {
+        "title": "Contact Us",
+        "subject": "Subject",
+        "message": "Message",
+        "send": "Send",
+        "sending": "Sending",
+        "successMessage": "Thank you! Your message has been sent successfully.",
+        "errorRequiredFields": "Please fill in all required fields.",
+        "errorSending": "Failed to send message. Please try again later."
     },
     "aboutUs": "ABOUT US",
     "services": "SERVICES",

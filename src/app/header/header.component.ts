@@ -1,15 +1,17 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { TranslationService } from '../services/translation.service';
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { AuthService } from '../services/auth.service';
+import { ContactService } from '../services/contact.service';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslatePipe],
+  imports: [CommonModule, RouterModule, TranslatePipe, FormsModule],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -20,6 +22,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
   userRole: string | null = null;
   userName: string = '';
   
+  // Contact modal properties
+  showContactModal: boolean = false;
+  contactSubject: string = '';
+  contactMessage: string = '';
+  isSubmitting: boolean = false;
+  contactSuccess: boolean = false;
+  contactError: string = '';
+  
   private langSubscription: Subscription | null = null;
   private loadedSubscription: Subscription | null = null;
   private authSubscription: Subscription | null = null;
@@ -27,6 +37,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   // Use inject for dependency injection
   private translationService = inject(TranslationService);
   private authService = inject(AuthService);
+  private contactService = inject(ContactService);
   private cdr = inject(ChangeDetectorRef);
   private router = inject(Router);
 
@@ -64,10 +75,64 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.router.navigate(['/auth']);
   }
   
-  
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/auth']);
+  }
+  
+  // Contact modal methods
+  openContactModal(): void {
+    this.showContactModal = true;
+    this.contactSubject = '';
+    this.contactMessage = '';
+    this.contactSuccess = false;
+    this.contactError = '';
+    this.cdr.detectChanges();
+  }
+  
+  closeContactModal(): void {
+    this.showContactModal = false;
+    this.cdr.detectChanges();
+  }
+  
+  submitContactForm(): void {
+    // Validate form
+    if (!this.contactSubject.trim() || !this.contactMessage.trim()) {
+      this.contactError = this.translationService.translate('contact.errorRequiredFields');
+      this.cdr.detectChanges();
+      return;
+    }
+    
+    this.isSubmitting = true;
+    this.contactError = '';
+    this.cdr.detectChanges();
+    
+    // Prepare contact data
+    const contactData = {
+      subject: this.contactSubject,
+      message: this.contactMessage,
+      email: this.isAuthenticated ? this.userName : 'Anonymous User'
+    };
+    
+    // Send email
+    this.contactService.sendContactEmail(contactData).subscribe({
+      next: () => {
+        this.isSubmitting = false;
+        this.contactSuccess = true;
+        this.cdr.detectChanges();
+        
+        // Close modal after some time
+        setTimeout(() => {
+          this.closeContactModal();
+        }, 3000);
+      },
+      error: (error) => {
+        console.error('Error sending contact message:', error);
+        this.isSubmitting = false;
+        this.contactError = this.translationService.translate('contact.errorSending');
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   ngOnDestroy(): void {
