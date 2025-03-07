@@ -234,6 +234,7 @@
         "edit": "Edit",
         "delete": "Delete",
         "notes": "Notes",
+        "details": "Details",
         "saveChanges": "Save Changes",
         "editStudent": "Edit Student",
         "confirmDelete": "Confirm Deletion",
@@ -293,6 +294,9 @@
         "titles": {
             "swimAStory": "\"SWIM A STORY\" AGE: 3 TO 6.",
             "children36": "\"SWIM A STORY\" AGE: 3 TO 6.",
+            "children36Syntax": "SWIM A STORY",
+            "children612Syntax": "FROM BEGINNERS TO DEVELOPMENT",
+            "anyAgeSyntax": "ANY AGE AND ABILITY",
             "children612": "FROM BEGINNERS TO DEVELOPMENT OF THE SWIMMING STYLES AGE: 6 TO 12.",
             "anyAge": "ANY AGE AND ABILITY SWIMMING LESSONS"
         },

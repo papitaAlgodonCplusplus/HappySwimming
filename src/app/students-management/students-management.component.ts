@@ -32,6 +32,7 @@ interface Student {
 interface Course {
   id: string;
   name: string;
+  translationKey?: string; // Added for translation support
   studentCount: number;
   students: Student[];
   expanded: boolean; // UI state to track if course is expanded in view
@@ -148,9 +149,33 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     
     students.forEach(student => {
       if (!courseMap.has(student.courseId)) {
+        // Determine translation key based on course name or ID
+        let translationKey: string | undefined = undefined;
+        
+        // Check for specific course names or patterns to map to translation keys
+        if (student.courseName.includes('3 TO 6') || 
+            student.courseName.includes('3-6') || 
+            student.courseName.toLowerCase().includes('swim a story') || 
+            student.courseName.toLowerCase().includes('nada un cuento') ||
+            student.courseId === '5') {
+          translationKey = 'swimmingAbilities.titles.children36Syntax';
+        } 
+        else if (student.courseName.includes('6 TO 12') || 
+                student.courseName.includes('6-12') || 
+                student.courseName.toLowerCase().includes('swimming styles') ||
+                student.courseId === '6') {
+          translationKey = 'swimmingAbilities.titles.children612Syntax';
+        } 
+        else if (student.courseName.toLowerCase().includes('any age') || 
+                student.courseName.toLowerCase().includes('cualquier edad') ||
+                student.courseId === '7') {
+          translationKey = 'swimmingAbilities.titles.anyAgeSyntax';
+        }
+        
         courseMap.set(student.courseId, {
           id: student.courseId,
           name: student.courseName,
+          translationKey: translationKey,
           studentCount: 0,
           students: [],
           expanded: false

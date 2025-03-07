@@ -233,6 +233,7 @@
         "noNotes": "Sin notas"
     },
     "studentsManagement": {
+        "details": "Detalles",
         "title": "Gestión de Estudiantes",
         "description": "Administra tus estudiantes, calificaciones y progreso",
         "students": "estudiantes",
@@ -273,6 +274,9 @@
     },
     "swimmingAbilities": {
         "titles": {
+            "children36Syntax": "NADA UN CUENTO",
+            "children612Syntax": "DE PRINCIPIANTES AL DESARROLLO",
+            "anyAgeSyntax": "CUALQUIER EDAD Y HABILIDAD",
             "swimAStory": "\"NADA UN CUENTO\" EDAD: 3 A 6.",
             "children36": "\"NADA UN CUENTO\" EDAD: 3 A 6.",
             "children612": "DE PRINCIPIANTES AL DESARROLLO DE LOS ESTILOS DE NATACIÓN EDAD: 6 A 12.",
