@@ -105,7 +105,7 @@
                 </td>
                 <td class="actions-cell">
                   <!-- Removed the condition hiding the Edit button for professional courses -->
-                  <button *ngIf="student.status !== 'cancelled' && course.type !== 'professional_service'"
+                  <button *ngIf="student.status !== 'cancelled' && course.type !== 'professional_service' && !isAdmin"
                     class="btn btn-edit" (click)="openEditModal(student)">
                     {{ 'studentsManagement.edit' | translate }}
                   </button>
