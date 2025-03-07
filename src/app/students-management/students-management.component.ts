@@ -200,6 +200,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
           // Check for specific course names or patterns to map to translation keys
           if (student.courseName.includes('3 TO 6') ||
             student.courseName.includes('3-6') ||
+            student.courseName.includes('3 to 6') ||
             student.courseName.toLowerCase().includes('swim a story') ||
             student.courseName.toLowerCase().includes('nada un cuento') ||
             student.courseId === '5') {
