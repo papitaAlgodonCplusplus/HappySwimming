@@ -218,7 +218,19 @@
         "client": "Cliente",
         "noEnrollments": "No tienes ninguna inscripción todavía",
         "noProfessionalEnrollments": "No tienes clientes inscritos todavía",
-        "loading": "Cargando datos..."
+        "loading": "Cargando datos...",
+        "adminView": "Vista de Administrador",
+        "adminSummary": "Resumen Económico del Administrador",
+        "totalInsourcingClients": "Total de Clientes Insourcing",
+        "totalOutsourcingClients": "Total de Clientes Outsourcing",
+        "totalProfessionalEnrollments": "Total de Inscripciones Profesionales",
+        "totalCombinedRevenue": "Ingresos Totales Combinados",
+        "professionalEnrollments": "Inscripciones de Profesionales",
+        "clientEnrollments": "Inscripciones de Clientes",
+        "noProfessionalEnrollmentsAdmin": "No se encontraron inscripciones de profesionales",
+        "noClientEnrollments": "No se encontraron inscripciones de clientes",
+        "notAssigned": "No Asignado",
+        "noNotes": "Sin notas"
     },
     "studentsManagement": {
         "title": "Gestión de Estudiantes",

@@ -22,7 +22,7 @@ interface Course {
 }
 
 interface Professional {
-  id: number;
+  id: number | string;
   name: string;
   specialties: string[];
   verified: boolean;
@@ -30,16 +30,22 @@ interface Professional {
 }
 
 interface Enrollment {
-  id: number;
+  type?: 'client_service' | 'professional_service';
+  id: number | string;
   courseId: string;
   courseName: string;
-  status: 'pending' | 'approved' | 'completed' | 'cancelled' | 'in_process';
-  enrollmentDate: Date;
+  status: 'pending' | 'approved' | 'completed' | 'cancelled' | 'active' | 'in_process';
+  enrollmentDate?: Date;
   startDate?: Date;
   endDate?: Date;
   professionalId?: number;
   professionalName?: string;
   price: number;
+  userId: number;
+  clientId?: number;
+  clientName?: string;
+  isOutsourcing?: boolean;
+  notes?: string;
 }
 
 interface ProfessionalService {
@@ -64,27 +70,27 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   // Available courses based on user role
   clientCourses: Course[] = [
-    { 
-      id: '5', 
-      name: 'Children Aged 3-6', 
-      type: 'client', 
-      price: 80, 
+    {
+      id: '5',
+      name: 'Children Aged 3-6',
+      type: 'client',
+      price: 80,
       duration: 5,
       translationKey: 'swimmingAbilities.titles.children36'
     },
-    { 
-      id: '6', 
-      name: 'Children Aged 6-12', 
-      type: 'client', 
-      price: 80, 
+    {
+      id: '6',
+      name: 'Children Aged 6-12',
+      type: 'client',
+      price: 80,
       duration: 5,
       translationKey: 'swimmingAbilities.titles.children612'
     },
-    { 
-      id: '7', 
-      name: 'Any Age and Ability', 
-      type: 'client', 
-      price: 80, 
+    {
+      id: '7',
+      name: 'Any Age and Ability',
+      type: 'client',
+      price: 80,
       duration: 5,
       translationKey: 'swimmingAbilities.titles.anyAge'
     }
@@ -343,11 +349,12 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   // Helper method to get the service name from the course arrays
   getServiceName(serviceId: string): string {
     // First check professional courses
-    const professionalCourse = this.professionalCourses.find(course => course.id === serviceId);
+    console.log('Looking for service:', serviceId);
+    const professionalCourse = this.professionalCourses.find(course => course.id === serviceId.toString());
     if (professionalCourse) return professionalCourse.name;
 
     // Then check client courses
-    const clientCourse = this.clientCourses.find(course => course.id === serviceId);
+    const clientCourse = this.clientCourses.find(course => course.id === serviceId.toString());
     if (clientCourse) {
       if (clientCourse.translationKey) {
         return this.translationService.translate(clientCourse.translationKey);
@@ -481,7 +488,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return this.translationService.translate(`servicesManager.${status}`);
   }
 
-  cancelEnrollment(enrollmentId: number) {
+  cancelEnrollment(enrollmentId: any) {
     const confirmMessage = this.translationService.translate('servicesManager.confirmCancel');
     if (confirm(confirmMessage)) {
       this.isLoading = true;

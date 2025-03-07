@@ -15,8 +15,8 @@ const filesConfig = [
     path: 'server.js',
     type: 'code',
     sections: {
-      dev: [33, 42],   // Development section: [startLine, endLine]
-      prod: [45, 55]   // Production section: [startLine, endLine]
+      dev: [33, 40],   // Development section: [startLine, endLine]
+      prod: [43, 50]   // Production section: [startLine, endLine]
     }
   }
 ];
@@ -51,20 +51,27 @@ function toggleCodeSections(filePath, sectionToUncomment, sectionToComment) {
   const fileContent = fs.readFileSync(filePath, 'utf8');
   const lines = fileContent.split('\n');
 
-  // Uncomment section (remove lines)
-  for (let i = sectionToUncomment[0] - 1; i < sectionToUncomment[1]; i++) {
-    lines[i] = lines[i].replace('*', '').replace(/\/\s*$/, '').trim();
+  // Uncomment section (remove /* and */ markers to make the section active)
+  const [uncommentStart, uncommentEnd] = sectionToUncomment;
+  if (lines[uncommentStart - 1].includes('/*')) {
+    lines[uncommentStart - 1] = lines[uncommentStart - 1].replace(/\/\*\s*Development Environment\s*/, '/* Development Environment */');
+  }
+  if (lines[uncommentEnd - 1].includes('*/')) {
+    lines[uncommentEnd - 1] = lines[uncommentEnd - 1].replace(/\/\*\s*End Development Environment\s*\*\//, '/* End Development Environment */');
   }
 
-  // Comment section (add /* and */ markers)
-  for (let i = sectionToComment[0] - 1; i < sectionToComment[1]; i++) {
-    lines[i] = `/* ${lines[i]} */`;
+  // Comment section (add /* and */ markers to make the section inactive)
+  const [commentStart, commentEnd] = sectionToComment;
+  if (lines[commentStart - 1].includes('*/')) {
+    lines[commentStart - 1] = lines[commentStart - 1].replace(/\/\*\s*Production Environment\s*\*\//, '/* Production Environment');
+  }
+  if (lines[commentEnd - 1].includes('*/')) {
+    lines[commentEnd - 1] = lines[commentEnd - 1].replace(/\/\*\s*End Production Environment\s*\*\//, '/* End Production Environment */');
   }
 
   fs.writeFileSync(filePath, lines.join('\n'), 'utf8');
   console.log(`Processed code file: ${filePath}`);
 }
-
 
 // Main execution
 const targetEnv = process.argv[2] || 'dev'; // 'dev' or 'prod'

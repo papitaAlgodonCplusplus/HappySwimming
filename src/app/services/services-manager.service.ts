@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
-import { catchError, retry, tap } from 'rxjs/operators';
+import { Observable, of, throwError, forkJoin } from 'rxjs';
+import { catchError, retry, tap, map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { Router } from '@angular/router';
 
@@ -14,18 +14,22 @@ interface Professional {
 }
 
 interface Enrollment {
-  id: number;
+  type?: 'client_service' | 'professional_service';
+  id: number | string;
   courseId: string;
   courseName: string;
-  status: 'pending' | 'approved' | 'completed' | 'cancelled';
-  enrollmentDate: Date;
+  status: 'pending' | 'approved' | 'completed' | 'cancelled' | 'active';
+  enrollmentDate?: Date;
   startDate?: Date;
   endDate?: Date;
   professionalId?: number;
   professionalName?: string;
   price: number;
   userId: number;
-  isOutsourcing: boolean;
+  clientId?: number;
+  clientName?: string;
+  isOutsourcing?: boolean;
+  notes?: string;
 }
 
 interface EnrollmentRequest {
@@ -41,6 +45,12 @@ interface ProfessionalService {
   service_id: string;
   price_per_hour: number;
   notes?: string;
+}
+
+interface AdminEnrollmentResponse {
+  clientEnrollments: Enrollment[];
+  professionalEnrollments: Enrollment[];
+  total: number;
 }
 
 @Injectable({
@@ -65,7 +75,7 @@ export class ServicesManagerService {
   }
 
   // Helper method to set auth headers
-  private getHeaders(): HttpHeaders {
+  getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
     if (!token) {
       console.error('No auth token available');
@@ -136,7 +146,7 @@ export class ServicesManagerService {
     );
   }
   
-  // New method: Get enrollments where current user is the professional
+  // Get enrollments where current user is the professional
   getProfessionalEnrollments(): Observable<Enrollment[]> {
     return this.http.get<Enrollment[]>(`${this.apiUrl}/enrollments/professional`, {
       headers: this.getHeaders()
@@ -148,6 +158,67 @@ export class ServicesManagerService {
       }),
       tap(enrollments => {
         console.log('Professional enrollments data received:', enrollments);
+      })
+    );
+  }
+
+  // Admin endpoint to get all enrollments from client_services and professional_services
+  getAllEnrollmentsAdmin(): Observable<AdminEnrollmentResponse> {
+    return this.http.get<AdminEnrollmentResponse>(`${this.apiUrl}/admin/enrollments`, {
+      headers: this.getHeaders()
+    }).pipe(
+      retry(1),
+      catchError(error => {
+        console.error('Error in getAllEnrollmentsAdmin:', error);
+        return this.handleError(error);
+      }),
+      tap(enrollments => {
+        console.log('Admin enrollments data received:', enrollments);
+      })
+    );
+  }
+
+  // Fallback method that uses existing endpoints if admin endpoint fails
+  getAllEnrollmentsFallback(): Observable<Enrollment[]> {
+    return forkJoin({
+      userEnrollments: this.getUserEnrollments(),
+      professionalEnrollments: this.getProfessionalEnrollments(),
+      professionalServices: this.getProfessionalServices()
+    }).pipe(
+      map(result => {
+        // Process professional services to match enrollment format
+        const professionalServiceEnrollments = result.professionalServices.map((service, index) => {
+          return {
+            id: `ps_${service.professional_id}_${service.service_id}`,
+            type: 'professional_service' as 'professional_service',
+            courseId: service.service_id,
+            courseName: `Service ID: ${service.service_id}`, // We don't have names in professional_services
+            status: 'active' as 'active',
+            professionalId: service.professional_id,
+            price: service.price_per_hour,
+            userId: 0, // This will be updated later if needed
+            notes: service.notes,
+            isOutsourcing: false // Assuming professional services are insourcing
+          };
+        });
+
+        // Combine all enrollments
+        const allEnrollments = [
+          ...result.userEnrollments,
+          ...result.professionalEnrollments,
+          ...professionalServiceEnrollments
+        ];
+
+        // Deduplicate based on ID and type
+        const uniqueEnrollments = Array.from(
+          new Map(allEnrollments.map(item => [`${item.type || 'client'}_${item.id}`, item])).values()
+        );
+
+        return uniqueEnrollments;
+      }),
+      catchError(error => {
+        console.error('Error in getAllEnrollmentsFallback:', error);
+        return this.handleError(error);
       })
     );
   }

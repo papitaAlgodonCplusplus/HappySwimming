@@ -274,7 +274,19 @@
         "client": "Client",
         "noEnrollments": "You don't have any enrollments yet",
         "noProfessionalEnrollments": "You don't have any enrolled clients yet",
-        "loading": "Loading data..."
+        "loading": "Loading data...",
+        "adminView": "Admin View",
+        "adminSummary": "Admin Economic Summary",
+        "totalInsourcingClients": "Total Insourcing Clients",
+        "totalOutsourcingClients": "Total Outsourcing Clients",
+        "totalProfessionalEnrollments": "Total Professional Enrollments",
+        "totalCombinedRevenue": "Total Combined Revenue",
+        "professionalEnrollments": "Professional Enrollments",
+        "clientEnrollments": "Client Enrollments",
+        "noProfessionalEnrollmentsAdmin": "No professional enrollments found",
+        "noClientEnrollments": "No client enrollments found",
+        "notAssigned": "Not Assigned",
+        "noNotes": "No notes"
     },
     "swimmingAbilities": {
         "title": "Swimming Level/Skills Description",

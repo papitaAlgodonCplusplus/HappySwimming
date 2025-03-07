@@ -1,149 +1,240 @@
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
-  </style>
-  
-  <app-header></app-header>
-  <div class="economic-manager-container">
-    <div class="economic-manager-content">
-      <h1 class="title">{{ 'economicManager.title' | translate }}</h1>
-  
-      <div *ngIf="errorMessage" class="error-message">
-        {{ errorMessage }}
+  @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+</style>
+
+<app-header></app-header>
+<div class="economic-manager-container">
+  <div class="economic-manager-content">
+    <h1 class="title">{{ 'economicManager.title' | translate }} 
+      <span *ngIf="isAdmin" style="color: #cc0000; font-size: 0.8em;"> - {{ 'economicManager.adminView' | translate }}</span>
+    </h1>
+
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="isLoading" class="loading-indicator">
+      <p>{{ 'economicManager.loading' | translate }}</p>
+    </div>
+
+    <!-- Admin Summary Section -->
+    <div *ngIf="!isLoading && isAdmin" class="expenses-section">
+      <h2 class="section-title">{{ 'economicManager.adminSummary' | translate }}</h2>
+      
+      <div class="total-amount">
+        <span class="label">{{ 'economicManager.totalInsourcingClients' | translate }}:</span>
+        <span class="value">{{ adminReport.totalInsourcingClients }}</span>
       </div>
-  
-      <div *ngIf="isLoading" class="loading-indicator">
-        <p>{{ 'economicManager.loading' | translate }}</p>
+
+      <div class="total-amount">
+        <span class="label">{{ 'economicManager.totalOutsourcingClients' | translate }}:</span>
+        <span class="value">{{ adminReport.totalOutsourcingClients }}</span>
       </div>
-  
-      <div *ngIf="!isLoading" class="expenses-container">
-        <!-- Insourcing Section -->
-        <div class="expenses-section">
-          <h2 class="section-title">{{ 'economicManager.insourcingService' | translate }}</h2>
-          
-          <div class="total-amount">
-            <span class="label">{{ 'economicManager.totalAmount' | translate }}:</span>
-            <span class="value">€{{ insourcingExpenses.total.toFixed(2) }}</span>
-          </div>
-  
-          <div class="expenses-chart">
-            <div class="expense-bar-container">
-              <div class="expense-label">{{ 'economicManager.poolRental' | translate }} (50%)</div>
-              <div class="expense-bar">
-                <div class="expense-progress pool-rental" [style.width]="'50%'"></div>
-              </div>
-              <div class="expense-value">€{{ insourcingExpenses.poolRental.toFixed(2) }}</div>
-            </div>
-  
-            <div class="expense-bar-container">
-              <div class="expense-label">{{ 'economicManager.swimmingTeacher' | translate }} (30%)</div>
-              <div class="expense-bar">
-                <div class="expense-progress swimming-teacher" [style.width]="'30%'"></div>
-              </div>
-              <div class="expense-value">€{{ insourcingExpenses.swimmingTeacher.toFixed(2) }}</div>
-            </div>
-  
-            <div class="expense-bar-container">
-              <div class="expense-label">{{ 'economicManager.technicalManagement' | translate }} (20%)</div>
-              <div class="expense-bar">
-                <div class="expense-progress technical-management" [style.width]="'20%'"></div>
-              </div>
-              <div class="expense-value">€{{ insourcingExpenses.technicalManagement.toFixed(2) }}</div>
-            </div>
-          </div>
-        </div>
-  
-        <!-- Outsourcing Section -->
-        <div class="expenses-section">
-          <h2 class="section-title">{{ 'economicManager.outsourcingService' | translate }}</h2>
-          
-          <div class="total-amount">
-            <span class="label">{{ 'economicManager.totalAmount' | translate }}:</span>
-            <span class="value">€{{ outsourcingExpenses.total.toFixed(2) }}</span>
-          </div>
-  
-          <div class="expenses-chart">
-            <div class="expense-bar-container">
-              <div class="expense-label">{{ 'economicManager.poolRental' | translate }} (40%)</div>
-              <div class="expense-bar">
-                <div class="expense-progress pool-rental" [style.width]="'40%'"></div>
-              </div>
-              <div class="expense-value">€{{ outsourcingExpenses.poolRental.toFixed(2) }}</div>
-            </div>
-  
-            <div class="expense-bar-container">
-              <div class="expense-label">{{ 'economicManager.swimmingTeacher' | translate }} (30%)</div>
-              <div class="expense-bar">
-                <div class="expense-progress swimming-teacher" [style.width]="'30%'"></div>
-              </div>
-              <div class="expense-value">€{{ outsourcingExpenses.swimmingTeacher.toFixed(2) }}</div>
-            </div>
-  
-            <div class="expense-bar-container">
-              <div class="expense-label">{{ 'economicManager.technicalManagement' | translate }} (30%)</div>
-              <div class="expense-bar">
-                <div class="expense-progress technical-management" [style.width]="'30%'"></div>
-              </div>
-              <div class="expense-value">€{{ outsourcingExpenses.technicalManagement.toFixed(2) }}</div>
-            </div>
-          </div>
-        </div>
+
+      <div class="total-amount">
+        <span class="label">{{ 'economicManager.totalProfessionalEnrollments' | translate }}:</span>
+        <span class="value">{{ adminReport.totalProfessionalEnrollments }}</span>
       </div>
-  
-      <!-- Enrollments table for reference -->
-      <div *ngIf="!isLoading" class="enrollments-section">
-        <h2 class="section-title">{{ 'economicManager.enrollmentDetails' | translate }}</h2>
+
+      <div class="total-amount">
+        <span class="label">{{ 'economicManager.totalCombinedRevenue' | translate }}:</span>
+        <span class="value">€{{ (insourcingExpenses.total + outsourcingExpenses.total).toFixed(2) }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoading" class="expenses-container">
+      <!-- Insourcing Section -->
+      <div class="expenses-section">
+        <h2 class="section-title">{{ 'economicManager.insourcingService' | translate }}</h2>
         
-        <div *ngIf="userRole === 'client'" class="enrollments-table-container">
-          <table class="enrollments-table" *ngIf="myEnrollments.length > 0">
-            <thead>
-              <tr>
-                <th>{{ 'servicesManager.course' | translate }}</th>
-                <th>{{ 'servicesManager.status' | translate }}</th>
-                <th>{{ 'servicesManager.price' | translate }}</th>
-                <th>{{ 'economicManager.serviceType' | translate }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let enrollment of myEnrollments">
-                <td>{{ enrollment.courseName }}</td>
-                <td>{{ enrollment.status }}</td>
-                <td>€{{ enrollment.price.toFixed(2) }}</td>
-                <td>{{ isInsourcingEnrollment(enrollment) ? 'Insourcing' : 'Outsourcing' }}</td>
-              </tr>
-            </tbody>
-          </table>
-          
-          <div *ngIf="myEnrollments.length === 0" class="no-data-message">
-            {{ 'economicManager.noEnrollments' | translate }}
+        <div class="total-amount">
+          <span class="label">{{ 'economicManager.totalAmount' | translate }}:</span>
+          <span class="value">€{{ insourcingExpenses.total.toFixed(2) }}</span>
+        </div>
+
+        <div class="expenses-chart">
+          <div class="expense-bar-container">
+            <div class="expense-label">{{ 'economicManager.poolRental' | translate }} (50%)</div>
+            <div class="expense-bar">
+              <div class="expense-progress pool-rental" [style.width]="'50%'"></div>
+            </div>
+            <div class="expense-value">€{{ insourcingExpenses.poolRental.toFixed(2) }}</div>
+          </div>
+
+          <div class="expense-bar-container">
+            <div class="expense-label">{{ 'economicManager.swimmingTeacher' | translate }} (30%)</div>
+            <div class="expense-bar">
+              <div class="expense-progress swimming-teacher" [style.width]="'30%'"></div>
+            </div>
+            <div class="expense-value">€{{ insourcingExpenses.swimmingTeacher.toFixed(2) }}</div>
+          </div>
+
+          <div class="expense-bar-container">
+            <div class="expense-label">{{ 'economicManager.technicalManagement' | translate }} (20%)</div>
+            <div class="expense-bar">
+              <div class="expense-progress technical-management" [style.width]="'20%'"></div>
+            </div>
+            <div class="expense-value">€{{ insourcingExpenses.technicalManagement.toFixed(2) }}</div>
           </div>
         </div>
+      </div>
+
+      <!-- Outsourcing Section -->
+      <div class="expenses-section">
+        <h2 class="section-title">{{ 'economicManager.outsourcingService' | translate }}</h2>
         
-        <div *ngIf="userRole === 'professional'" class="enrollments-table-container">
-          <table class="enrollments-table" *ngIf="professionalEnrollments.length > 0">
-            <thead>
-              <tr>
-                <th>{{ 'servicesManager.course' | translate }}</th>
-                <th>{{ 'economicManager.client' | translate }}</th>
-                <th>{{ 'servicesManager.status' | translate }}</th>
-                <th>{{ 'servicesManager.price' | translate }}</th>
-                <th>{{ 'economicManager.serviceType' | translate }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let enrollment of professionalEnrollments">
-                <td>{{ enrollment.courseName }}</td>
-                <td>{{ enrollment.clientName || 'User ' + enrollment.userId }}</td>
-                <td>{{ enrollment.status }}</td>
-                <td>€{{ enrollment.price.toFixed(2) }}</td>
-                <td>{{ isInsourcingEnrollment(enrollment) ? 'Insourcing' : 'Outsourcing' }}</td>
-              </tr>
-            </tbody>
-          </table>
-          
-          <div *ngIf="professionalEnrollments.length === 0" class="no-data-message">
-            {{ 'economicManager.noProfessionalEnrollments' | translate }}
+        <div class="total-amount">
+          <span class="label">{{ 'economicManager.totalAmount' | translate }}:</span>
+          <span class="value">€{{ outsourcingExpenses.total.toFixed(2) }}</span>
+        </div>
+
+        <div class="expenses-chart">
+          <div class="expense-bar-container">
+            <div class="expense-label">{{ 'economicManager.poolRental' | translate }} (40%)</div>
+            <div class="expense-bar">
+              <div class="expense-progress pool-rental" [style.width]="'40%'"></div>
+            </div>
+            <div class="expense-value">€{{ outsourcingExpenses.poolRental.toFixed(2) }}</div>
+          </div>
+
+          <div class="expense-bar-container">
+            <div class="expense-label">{{ 'economicManager.swimmingTeacher' | translate }} (30%)</div>
+            <div class="expense-bar">
+              <div class="expense-progress swimming-teacher" [style.width]="'30%'"></div>
+            </div>
+            <div class="expense-value">€{{ outsourcingExpenses.swimmingTeacher.toFixed(2) }}</div>
+          </div>
+
+          <div class="expense-bar-container">
+            <div class="expense-label">{{ 'economicManager.technicalManagement' | translate }} (30%)</div>
+            <div class="expense-bar">
+              <div class="expense-progress technical-management" [style.width]="'30%'"></div>
+            </div>
+            <div class="expense-value">€{{ outsourcingExpenses.technicalManagement.toFixed(2) }}</div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Professional Enrollments table for Admin -->
+    <div *ngIf="!isLoading && isAdmin" class="enrollments-section">
+      <h2 class="section-title">{{ 'economicManager.professionalEnrollments' | translate }}</h2>
+      
+      <div class="enrollments-table-container">
+        <table class="enrollments-table" *ngIf="adminReport.professionalEnrollments.length > 0">
+          <thead>
+            <tr>
+              <th>{{ 'servicesManager.course' | translate }}</th>
+              <th>{{ 'servicesManager.professional' | translate }}</th>
+              <th>{{ 'servicesManager.pricePerHour' | translate }}</th>
+              <th>{{ 'servicesManager.notes' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let enrollment of adminReport.professionalEnrollments">
+              <td>{{ enrollment.courseName }}</td>
+              <td>{{ enrollment.professionalName }}</td>
+              <td>€{{ enrollment.price.toFixed(2) }}</td>
+              <td>{{ enrollment.notes || 'economicManager.noNotes' | translate }}</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div *ngIf="adminReport.professionalEnrollments.length === 0" class="no-data-message">
+          {{ 'economicManager.noProfessionalEnrollmentsAdmin' | translate }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Client Enrollments table for Admin -->
+    <div *ngIf="!isLoading && isAdmin" class="enrollments-section">
+      <h2 class="section-title">{{ 'economicManager.clientEnrollments' | translate }}</h2>
+      
+      <div class="enrollments-table-container">
+        <table class="enrollments-table" *ngIf="adminReport.clientEnrollments.length > 0">
+          <thead>
+            <tr>
+              <th>{{ 'servicesManager.course' | translate }}</th>
+              <th>{{ 'economicManager.client' | translate }}</th>
+              <th>{{ 'servicesManager.professional' | translate }}</th>
+              <th>{{ 'servicesManager.status' | translate }}</th>
+              <th>{{ 'servicesManager.price' | translate }}</th>
+              <th>{{ 'economicManager.serviceType' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let enrollment of adminReport.clientEnrollments">
+              <td>{{ enrollment.courseName }}</td>
+              <td>{{ enrollment.clientName || 'User ' + enrollment.userId }}</td>
+              <td>{{ enrollment.professionalName || 'economicManager.notAssigned' | translate }}</td>
+              <td>{{ enrollment.status }}</td>
+              <td>€{{ enrollment.price.toFixed(2) }}</td>
+              <td>{{ isInsourcingEnrollment(enrollment) ? 'Insourcing' : 'Outsourcing' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div *ngIf="adminReport.clientEnrollments.length === 0" class="no-data-message">
+          {{ 'economicManager.noClientEnrollments' | translate }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Enrollments table for regular users -->
+    <div *ngIf="!isLoading && !isAdmin" class="enrollments-section">
+      <h2 class="section-title">{{ 'economicManager.enrollmentDetails' | translate }}</h2>
+      
+      <div *ngIf="userRole === 'client'" class="enrollments-table-container">
+        <table class="enrollments-table" *ngIf="myEnrollments.length > 0">
+          <thead>
+            <tr>
+              <th>{{ 'servicesManager.course' | translate }}</th>
+              <th>{{ 'servicesManager.status' | translate }}</th>
+              <th>{{ 'servicesManager.price' | translate }}</th>
+              <th>{{ 'economicManager.serviceType' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let enrollment of myEnrollments">
+              <td>{{ enrollment.courseName }}</td>
+              <td>{{ enrollment.status }}</td>
+              <td>€{{ enrollment.price.toFixed(2) }}</td>
+              <td>{{ isInsourcingEnrollment(enrollment) ? 'Insourcing' : 'Outsourcing' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div *ngIf="myEnrollments.length === 0" class="no-data-message">
+          {{ 'economicManager.noEnrollments' | translate }}
+        </div>
+      </div>
+      
+      <div *ngIf="userRole === 'professional'" class="enrollments-table-container">
+        <table class="enrollments-table" *ngIf="professionalEnrollments.length > 0">
+          <thead>
+            <tr>
+              <th>{{ 'servicesManager.course' | translate }}</th>
+              <th>{{ 'economicManager.client' | translate }}</th>
+              <th>{{ 'servicesManager.status' | translate }}</th>
+              <th>{{ 'servicesManager.price' | translate }}</th>
+              <th>{{ 'economicManager.serviceType' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let enrollment of professionalEnrollments">
+              <td>{{ enrollment.courseName }}</td>
+              <td>{{ enrollment.clientName || 'User ' + enrollment.userId }}</td>
+              <td>{{ enrollment.status }}</td>
+              <td>€{{ enrollment.price.toFixed(2) }}</td>
+              <td>{{ isInsourcingEnrollment(enrollment) ? 'Insourcing' : 'Outsourcing' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div *ngIf="professionalEnrollments.length === 0" class="no-data-message">
+          {{ 'economicManager.noProfessionalEnrollments' | translate }}
+        </div>
+      </div>
+    </div>
   </div>
+</div>
