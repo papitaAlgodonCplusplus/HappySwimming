@@ -204,21 +204,174 @@ textarea.form-control {
   border-left: 4px solid #006600;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .navigation {
-    gap: 1rem;
-  }
+/* Mobile menu button */
+.menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
 
-  .nav-item {
+/* Mobile navigation */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: #004aad;
+  z-index: 1050;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.mobile-nav-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+}
+
+.mobile-nav-item {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  font-family: 'Lexend Peta', sans-serif;
+  font-size: 1.2rem;
+  padding: 1rem;
+  text-align: center;
+  width: 100%;
+}
+
+.mobile-language-selector {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+/* Responsive adjustments for a more mobile-friendly header */
+@media (max-width: 412px), (max-height: 912px) and (max-width: 500px) {
+  .header {
+    padding: 0.5rem 1rem;
+  }
+  
+  .logo {
+    height: 50px;
+  }
+  
+  .navigation {
+    display: none; /* Hide desktop navigation */
+  }
+  
+  .menu-toggle {
+    display: block; /* Show mobile menu button */
+  }
+  
+  /* When mobile menu is active */
+  .mobile-nav.active {
+    display: flex;
+  }
+  
+  /* Modal adjustments for mobile */
+  .modal-container {
+    width: 95%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  .modal-header h2 {
+    font-size: 1.2rem;
+  }
+  
+  .form-group label {
     font-size: 0.9rem;
   }
+  
+  .btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .modal-footer .btn {
+    width: 100%;
+  }
+}
 
+/* Tablet adjustments */
+@media (min-width: 413px) and (max-width: 768px) {
+  .header {
+    padding: 0.7rem 1.5rem;
+  }
+  
   .logo {
     height: 60px;
   }
   
+  .navigation {
+    gap: 1rem;
+  }
+  
+  .nav-item {
+    font-size: 0.9rem;
+  }
+  
+  .auth-link {
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .lang-flag img {
+    width: 25px;
+  }
+  
   .modal-container {
     width: 95%;
+  }
+}
+
+/* Landscape mode on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .header {
+    padding: 0.3rem 1rem;
+  }
+  
+  .logo {
+    height: 40px;
+  }
+  
+  .navigation {
+    gap: 0.8rem;
+  }
+  
+  .nav-item {
+    font-size: 0.8rem;
+  }
+  
+  .lang-flag img {
+    width: 20px;
+  }
+  
+  /* Mobile navigation in landscape */
+  .mobile-nav {
+    padding: 1rem;
+    overflow-y: auto;
+  }
+  
+  .mobile-nav-item {
+    padding: 0.5rem;
+    font-size: 1rem;
   }
 }

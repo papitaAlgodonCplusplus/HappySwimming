@@ -308,15 +308,17 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
           const startDate = new Date(student.startDate);
           const month = startDate.getMonth() + 1; // getMonth() returns 0-11
           const year = startDate.getFullYear();
+
+          console.log('Start date:', startDate, 'Month:', month, 'Year:', year);
           
-          if (this.selectedMonth !== 0 && month !== this.selectedMonth) {
+          if (this.selectedMonth.toString() !== '0' && month.toString() !== this.selectedMonth.toString()) {
             return false;
           }
           
-          if (this.selectedYear !== 0 && year !== this.selectedYear) {
+          if (this.selectedYear.toString() !== '0' && year.toString() !== this.selectedYear.toString()) {
             return false;
           }
-        } else if (this.selectedMonth !== 0 || this.selectedYear !== 0) {
+        } else if (this.selectedMonth.toString() !== '0' || this.selectedYear.toString() !== '0') {
           // If month or year is selected and student has no start date, filter it out
           return false;
         }

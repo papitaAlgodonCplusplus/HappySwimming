@@ -2,6 +2,8 @@
   <a [routerLink]="['/']">
     <img src="/assets/happy-swimming-logo.png" alt="Happy Swimming Logo" class="logo">
   </a>
+  
+  <!-- Desktop Navigation -->
   <div class="navigation">
     <a [routerLink]="['/about']" class="nav-item">{{ 'aboutUs' | translate }}</a>
     <a [routerLink]="['/services']" class="nav-item">{{ 'services' | translate }}</a>
@@ -9,8 +11,8 @@
     
     <!-- Show these options when authenticated -->
     <ng-container *ngIf="isAuthenticated">
-      <a [routerLink]="['/homepage']" class="nav-item auth-link" style="cursor: pointer;">{{ 'home' | translate }}</a>
-      <a (click)="logout()" class="nav-item auth-link logout-link" style="cursor: pointer;">Logout</a>
+      <a [routerLink]="['/homepage']" class="nav-item auth-link">{{ 'home' | translate }}</a>
+      <a (click)="logout()" class="nav-item auth-link logout-link">Logout</a>
     </ng-container>
     
     <div class="language-selector">
@@ -24,6 +26,39 @@
         <img src="/assets/pr-flag.png" alt="Portuguese" [class.active]="currentLang === 'pr'">
       </a>
     </div>
+  </div>
+  
+  <!-- Mobile Menu Toggle Button -->
+  <button class="menu-toggle" (click)="toggleMobileMenu()">☰</button>
+</div>
+
+<!-- Mobile Navigation Menu -->
+<div class="mobile-nav" [class.active]="mobileMenuOpen">
+  <div class="mobile-nav-header">
+    <img src="/assets/happy-swimming-logo.png" alt="Happy Swimming Logo" class="logo">
+    <button class="close-btn" (click)="toggleMobileMenu()">×</button>
+  </div>
+  
+  <a [routerLink]="['/about']" class="mobile-nav-item" (click)="toggleMobileMenu()">{{ 'aboutUs' | translate }}</a>
+  <a [routerLink]="['/services']" class="mobile-nav-item" (click)="toggleMobileMenu()">{{ 'services' | translate }}</a>
+  <a href="javascript:void(0)" class="mobile-nav-item" (click)="openContactModalFromMobile()">{{ 'contactUs' | translate }}</a>
+  
+  <!-- Show these options when authenticated -->
+  <ng-container *ngIf="isAuthenticated">
+    <a [routerLink]="['/homepage']" class="mobile-nav-item" (click)="toggleMobileMenu()">{{ 'home' | translate }}</a>
+    <a (click)="logoutFromMobile()" class="mobile-nav-item">Logout</a>
+  </ng-container>
+  
+  <div class="mobile-language-selector">
+    <a href="javascript:void(0)" class="lang-flag" (click)="switchLanguageMobile('es')">
+      <img src="/assets/es-flag.png" alt="Spanish" [class.active]="currentLang === 'es'">
+    </a>
+    <a href="javascript:void(0)" class="lang-flag" (click)="switchLanguageMobile('en')">
+      <img src="/assets/en-flag.png" alt="English" [class.active]="currentLang === 'en'">
+    </a>
+    <a href="javascript:void(0)" class="lang-flag" (click)="switchLanguageMobile('pr')">
+      <img src="/assets/pr-flag.png" alt="Portuguese" [class.active]="currentLang === 'pr'">
+    </a>
   </div>
 </div>
 

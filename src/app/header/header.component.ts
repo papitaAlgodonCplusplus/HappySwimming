@@ -21,7 +21,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   isAuthenticated: boolean = false;
   userRole: string | null = null;
   userName: string = '';
-  
+  mobileMenuOpen: boolean = false;
+
   // Contact modal properties
   showContactModal: boolean = false;
   contactSubject: string = '';
@@ -29,11 +30,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
   isSubmitting: boolean = false;
   contactSuccess: boolean = false;
   contactError: string = '';
-  
+
   private langSubscription: Subscription | null = null;
   private loadedSubscription: Subscription | null = null;
   private authSubscription: Subscription | null = null;
-  
+
   // Use inject for dependency injection
   private translationService = inject(TranslationService);
   private authService = inject(AuthService);
@@ -56,7 +57,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges(); // Force immediate change detection
       }
     });
-    
+
     // Subscribe to auth state changes
     this.authSubscription = this.authService.getCurrentUser().subscribe(user => {
       this.isAuthenticated = !!user;
@@ -70,16 +71,16 @@ export class HeaderComponent implements OnInit, OnDestroy {
     console.log('Switching language to:', lang);
     this.translationService.setLanguage(lang);
   }
-  
+
   navigateToAuth(): void {
     this.router.navigate(['/auth']);
   }
-  
+
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/auth']);
   }
-  
+
   // Contact modal methods
   openContactModal(): void {
     this.showContactModal = true;
@@ -89,12 +90,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.contactError = '';
     this.cdr.detectChanges();
   }
-  
+
   closeContactModal(): void {
     this.showContactModal = false;
     this.cdr.detectChanges();
   }
-  
+
   submitContactForm(): void {
     // Validate form
     if (!this.contactSubject.trim() || !this.contactMessage.trim()) {
@@ -102,25 +103,25 @@ export class HeaderComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
       return;
     }
-    
+
     this.isSubmitting = true;
     this.contactError = '';
     this.cdr.detectChanges();
-    
+
     // Prepare contact data
     const contactData = {
       subject: this.contactSubject,
       message: this.contactMessage,
       email: this.isAuthenticated ? this.userName : 'Anonymous User'
     };
-    
+
     // Send email
     this.contactService.sendContactEmail(contactData).subscribe({
       next: () => {
         this.isSubmitting = false;
         this.contactSuccess = true;
         this.cdr.detectChanges();
-        
+
         // Close modal after some time
         setTimeout(() => {
           this.closeContactModal();
@@ -146,5 +147,44 @@ export class HeaderComponent implements OnInit, OnDestroy {
     if (this.authSubscription) {
       this.authSubscription.unsubscribe();
     }
+  }
+
+  /**
+ * Toggles the mobile menu
+ */
+  toggleMobileMenu(): void {
+    this.mobileMenuOpen = !this.mobileMenuOpen;
+    // When opening mobile menu, we need to allow body scrolling
+    if (this.mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Opens contact modal from mobile menu and closes the mobile menu
+   */
+  openContactModalFromMobile(): void {
+    this.toggleMobileMenu(); // Close mobile menu first
+    this.openContactModal(); // Then open contact modal
+  }
+
+  /**
+   * Switches language from mobile menu
+   */
+  switchLanguageMobile(lang: string): void {
+    this.switchLanguage(lang);
+    // Don't close the mobile menu when changing language
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Logs out and closes mobile menu
+   */
+  logoutFromMobile(): void {
+    this.toggleMobileMenu(); // Close mobile menu first
+    this.logout(); // Then perform logout
   }
 }

@@ -6,6 +6,17 @@
 <div class="auth-container">
   <div class="login-section">
     <h1 class="title">{{ 'login' | translate }}</h1>
+    
+    <!-- Add error message display -->
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+    
+    <!-- Add success message display -->
+    <div *ngIf="successMessage" class="success-message">
+      {{ successMessage }}
+    </div>
+    
     <div class="form-group">
       <label for="email">{{ 'email' | translate }}</label>
       <input type="email" id="email" [(ngModel)]="email" name="email" class="form-control" [disabled]="isLoading">
@@ -33,8 +44,7 @@
   <div class="image-section">
     <div class="buttons-container">
       <button class="user-btn client-btn" (click)="navigateToRegisterSelector()">{{ 'client' | translate }}</button>
-      <button class="user-btn professional-btn" (click)="navigateToFreeProfessional()">{{ 'professionals' | translate
-        }}</button>
+      <button class="user-btn professional-btn" (click)="navigateToFreeProfessional()">{{ 'professionals' | translate }}</button>
     </div>
 
     <div class="hero-content">

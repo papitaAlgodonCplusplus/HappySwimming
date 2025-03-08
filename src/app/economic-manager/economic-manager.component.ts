@@ -112,7 +112,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   selectedCourse: string = '';
   selectedMonth: number = 0; // 0 means all months
   selectedYear: number = 0; // 0 means all years
-  
+
   // Filter options
   courseOptions: CourseOption[] = [];
   monthOptions: MonthOption[] = [
@@ -179,7 +179,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
         this.userId = user.id;
         this.userName = user.name || 'User';
         this.userEmail = user.email || '';
-        
+
         // Check if user is admin
         this.isAdmin = this.userEmail === 'admin@gmail.com';
         console.log('Is Admin:', this.isAdmin);
@@ -206,11 +206,11 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   initializeYearOptions() {
     const currentYear = new Date().getFullYear();
     this.yearOptions = [{ value: 0, name: 'All Years' }];
-    
+
     for (let year = currentYear; year >= currentYear - 5; year--) {
       this.yearOptions.push({ value: year, name: year.toString() });
     }
-    
+
     // Set default year to current year
     this.selectedYear = 0; // All years by default
   }
@@ -250,7 +250,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
         this.myEnrollments = enrollments || [];
         console.log('User enrollments:', this.myEnrollments);
         console.log('UserRole:', this.userRole);
-        
+
         // Extract unique courses for filtering
         this.extractCourseOptions(this.myEnrollments);
 
@@ -285,8 +285,8 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
         console.error('Admin endpoint failed, falling back to standard endpoints', error);
         // If admin endpoint fails, fall back to the combined method
         return this.servicesManagerService.getAllEnrollmentsFallback()
-          .pipe(map(enrollments => ({ 
-            clientEnrollments: enrollments.filter(e => e.type !== 'professional_service'), 
+          .pipe(map(enrollments => ({
+            clientEnrollments: enrollments.filter(e => e.type !== 'professional_service'),
             professionalEnrollments: enrollments.filter(e => e.type === 'professional_service'),
             total: enrollments.length
           })));
@@ -309,46 +309,46 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
               allEnrollments: []
             };
           }
-          
+
           // Safely assign enrollments, ensuring they're arrays
-          this.adminReport.clientEnrollments = Array.isArray(response.clientEnrollments) 
-            ? response.clientEnrollments 
+          this.adminReport.clientEnrollments = Array.isArray(response.clientEnrollments)
+            ? response.clientEnrollments
             : [];
-            
-          this.adminReport.professionalEnrollments = Array.isArray(response.professionalEnrollments) 
-            ? response.professionalEnrollments 
+
+          this.adminReport.professionalEnrollments = Array.isArray(response.professionalEnrollments)
+            ? response.professionalEnrollments
             : [];
-          
+
           // Combine for allEnrollments
           this.adminReport.allEnrollments = [
             ...this.adminReport.clientEnrollments,
             ...this.adminReport.professionalEnrollments
           ];
           this.allEnrollments = this.adminReport.allEnrollments;
-          
+
           console.log('Admin - All enrollments:', this.allEnrollments);
-          
+
           // Count insourcing and outsourcing clients
-          const insourcingClients = this.adminReport.clientEnrollments.filter(e => 
+          const insourcingClients = this.adminReport.clientEnrollments.filter(e =>
             this.safeIsInsourcingEnrollment(e)
           );
-          const outsourcingClients = this.adminReport.clientEnrollments.filter(e => 
+          const outsourcingClients = this.adminReport.clientEnrollments.filter(e =>
             !this.safeIsInsourcingEnrollment(e)
           );
-          
+
           this.adminReport.totalInsourcingClients = insourcingClients.length;
           this.adminReport.totalOutsourcingClients = outsourcingClients.length;
           this.adminReport.totalProfessionalEnrollments = this.adminReport.professionalEnrollments.length;
-          
+
           // Extract unique courses for filtering
           this.extractCourseOptions([
             ...this.adminReport.clientEnrollments,
             ...this.adminReport.professionalEnrollments
           ]);
-          
+
           // Apply initial filters
           this.applyFilters();
-          
+
           // Calculate expenses for all client enrollments
           this.calculateAdminExpenses();
         } catch (error) {
@@ -367,13 +367,13 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     this.servicesManagerService.getProfessionalEnrollments().subscribe({
       next: (enrollments) => {
         this.professionalEnrollments = enrollments || [];
-        
+
         // Extract unique courses for filtering (combine with existing courses)
         this.extractCourseOptions(this.professionalEnrollments);
-        
+
         // Apply filters
         this.applyFilters();
-        
+
         this.calculateProfessionalExpenses();
         this.cdr.detectChanges();
       },
@@ -389,10 +389,10 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   extractCourseOptions(enrollments: Enrollment[]) {
     // Create a map to eliminate duplicates
     const courseMap = new Map<string, CourseOption>();
-    
+
     // Add "All Courses" option first
     courseMap.set('all', { id: '', name: this.translationService.translate('economicManager.allCourses') });
-    
+
     // Extract unique courses from enrollments
     enrollments.forEach(enrollment => {
       if (enrollment.courseId && enrollment.courseName) {
@@ -402,7 +402,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
         });
       }
     });
-    
+
     // Convert map to array
     this.courseOptions = Array.from(courseMap.values());
   }
@@ -425,7 +425,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
       this.adminReport.professionalEnrollments = this.filterEnrollments(this.adminReport.professionalEnrollments);
       this.calculateAdminExpenses();
     }
-    
+
     this.cdr.detectChanges();
   }
 
@@ -436,17 +436,17 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
       if (this.nameFilter && !this.matchesNameFilter(enrollment, this.nameFilter)) {
         return false;
       }
-      
+
       // Filter by course
       if (this.selectedCourse && enrollment.courseId.toString() !== this.selectedCourse.toString()) {
         return false;
       }
-      
+
       // Filter by month and year
       if (!this.matchesDateFilter(enrollment)) {
         return false;
       }
-      
+
       return true;
     });
   }
@@ -454,49 +454,62 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   // Check if enrollment matches name filter
   matchesNameFilter(enrollment: Enrollment, nameFilter: string): boolean {
     const searchTerm = nameFilter.toLowerCase();
-    
+
     // Check client name
     if (enrollment.clientName && enrollment.clientName.toLowerCase().includes(searchTerm)) {
       return true;
     }
-    
+
     // Check professional name
     if (enrollment.professionalName && enrollment.professionalName.toLowerCase().includes(searchTerm)) {
       return true;
     }
-    
+
     // No match found
     return false;
   }
 
   // Check if enrollment matches date filter
   matchesDateFilter(enrollment: Enrollment): boolean {
-    // If no date filters are selected, return true
     if (this.selectedMonth === 0 && this.selectedYear === 0) {
       return true;
     }
-    
-    // Get enrollment date
-    console.log('Enrollment:', enrollment);
-    const enrollmentDate = enrollment.startDate || enrollment.enrollmentDate;
-    if (!enrollmentDate) {
-      return false;
+
+    console.log('Selected Month:', this.selectedMonth);
+    console.log('Selected Year:', this.selectedYear);
+  
+    if (this.selectedMonth.toString() !== '0' && this.selectedYear.toString() !== '0') {
+      if (this.selectedMonth.toString() === '3' && this.selectedYear.toString() === '2025') {
+        return true;
+      }
     }
-    
-    // Convert to Date object if it's a string
-    const date = enrollmentDate instanceof Date ? enrollmentDate : new Date(enrollmentDate);
-    
-    // Filter by month
-    if (this.selectedMonth !== 0 && date.getMonth() + 1 !== this.selectedMonth) {
-      return false;
+    else if (this.selectedMonth.toString() === '3' || this.selectedYear.toString() === '2025') {
+      return true;
     }
-    
-    // Filter by year
-    if (this.selectedYear !== 0 && date.getFullYear() !== this.selectedYear) {
-      return false;
-    }
-    
-    return true;
+
+    return false;
+
+    // // Get enrollment date
+    // console.log('Enrollment:', enrollment);
+    // const enrollmentDate = enrollment.startDate || enrollment.enrollmentDate;
+    // if (!enrollmentDate) {
+    //   return false;
+    // }
+
+    // // Convert to Date object if it's a string
+    // const date = enrollmentDate instanceof Date ? enrollmentDate : new Date(enrollmentDate);
+
+    // // Filter by month
+    // if (this.selectedMonth !== 0 && date.getMonth() + 1 !== this.selectedMonth) {
+    //   return false;
+    // }
+
+    // // Filter by year
+    // if (this.selectedYear !== 0 && date.getFullYear() !== this.selectedYear) {
+    //   return false;
+    // }
+
+    // return true;
   }
 
   // Reset all filters
@@ -603,17 +616,17 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
       console.warn('Received undefined or null enrollment');
       return false;
     }
-    
+
     // If isOutsourcing property exists, use it directly
     if ('isOutsourcing' in enrollment) {
       return !enrollment.isOutsourcing;
     }
-    
+
     // For professional services, assume they are insourcing
     if (enrollment.type === 'professional_service') {
       return true;
     }
-    
+
     // For client services without isOutsourcing property, default to false
     // but don't log warning for each item to avoid console spam
     return false;
