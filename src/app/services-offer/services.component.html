@@ -11,30 +11,63 @@
         <h2 class="column-title">{{ 'clientServices.title' | translate }}</h2>
         <h3 class="column-subtitle">{{ 'clientServices.subtitle' | translate }}</h3>
         
+        <!-- Swim a Story - Age 3-6 -->
         <div class="service-box">
           <div class="box-content">
             <h3 class="box-title">{{ 'swimmingAbilities.titles.swimAStory' | translate }}</h3>
-            <p class="box-detail">{{ 'clientServices.children36.hours' | translate }}: 5 horas</p>
+            <p class="box-detail">{{ 'clientServices.hours' | translate }}: 5 {{ 'clientServices.horasText' | translate }}</p>
             <p class="box-detail">{{ 'clientServices.price' | translate }} €80</p>
             <p class="service-description">{{ 'swimmingAbilities.descriptions.children36' | translate }}</p>
           </div>
         </div>
         
+        <!-- Beginners and Development - Age 6-12 -->
         <div class="service-box">
           <div class="box-content">
             <h3 class="box-title">{{ 'swimmingAbilities.titles.children612' | translate }}</h3>
-            <p class="box-detail">{{ 'clientServices.children612.hours' | translate }}: 5 horas</p>
+            <p class="box-detail">{{ 'clientServices.hours' | translate }}: 5 {{ 'clientServices.horasText' | translate }}</p>
             <p class="box-detail">{{ 'clientServices.price' | translate }} €80</p>
-            <p class="service-description">{{ 'swimmingAbilities.descriptions.children612' | translate }}</p>
+            <p class="box-detail">{{ 'clientServices.throughFunAndPlay' | translate }}</p>
+            
+            <div class="levels-container">
+              <div class="level-box">
+                <h4 class="level-title">{{ 'clientServices.levels.beginners.title' | translate }}</h4>
+                <p class="level-desc">{{ 'clientServices.levels.beginners.description' | translate }}</p>
+              </div>
+              
+              <div class="level-box">
+                <h4 class="level-title">{{ 'clientServices.levels.intermediate.title' | translate }}</h4>
+                <p class="level-desc">{{ 'clientServices.levels.intermediate.description' | translate }}</p>
+              </div>
+              
+              <div class="level-box">
+                <h4 class="level-title">{{ 'clientServices.levels.confident.title' | translate }}</h4>
+                <p class="level-desc">{{ 'clientServices.levels.confident.description' | translate }}</p>
+              </div>
+            </div>
           </div>
         </div>
         
+        <!-- Teens and Adults -->
         <div class="service-box">
           <div class="box-content">
-            <h3 class="box-title">{{ 'swimmingAbilities.titles.anyAge' | translate }}</h3>
-            <p class="box-detail">{{ 'clientServices.anyAge.hours' | translate }}: 5 horas</p>
+            <h3 class="box-title">{{ 'swimmingAbilities.titles.teensAdults' | translate }}</h3>
+            <p class="box-detail">{{ 'clientServices.hours' | translate }}: 5 {{ 'clientServices.horasText' | translate }}</p>
             <p class="box-detail">{{ 'clientServices.price' | translate }} €80</p>
-            <p class="service-description">{{ 'swimmingAbilities.descriptions.anyAge' | translate }}</p>
+            
+            <div class="levels-container">
+              <div class="level-box">
+                <h4 class="level-title">{{ 'clientServices.levels.beginners.titleShort' | translate }}</h4>
+              </div>
+              
+              <div class="level-box">
+                <h4 class="level-title">{{ 'clientServices.levels.intermediate.titleShort' | translate }}</h4>
+              </div>
+              
+              <div class="level-box">
+                <h4 class="level-title">{{ 'clientServices.levels.improveTechnique' | translate }}</h4>
+              </div>
+            </div>
           </div>
         </div>
       </div>

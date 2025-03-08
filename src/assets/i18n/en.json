@@ -136,20 +136,29 @@
     },
     "clientServices": {
         "title": "OUR CLASSES FOR CLIENTS",
-        "subtitle": "SWIMMING LESSONS FOR ALL AGE GROUPS AND ABILITIES",
-        "children36": {
-            "title": "CHILDREN AGED 3 TO 6",
-            "hours": "HOURS"
-        },
-        "children612": {
-            "title": "CHILDREN AGED 6 to 12",
-            "hours": "HOURS"
-        },
-        "anyAge": {
-            "title": "ANY AGE AND ABILITY",
-            "hours": "HOURS"
-        },
-        "price": "PRICE"
+        "subtitle": "SWIMMING LESSON FOR ALL AGE GROUPS AND ABILITY",
+        "hours": "Hours",
+        "horasText": "horas",
+        "price": "Price",
+        "throughFunAndPlay": "Through fun and play",
+        "levels": {
+            "beginners": {
+                "title": "BEGINNERS",
+                "titleShort": "BEGINNERS",
+                "description": "To learn to control breathing and the fundamentals of the water skills"
+            },
+            "intermediate": {
+                "title": "INTERMEDIATE",
+                "titleShort": "INTERMEDIATE",
+                "description": "to start learning the fundamentals of the strokes"
+            },
+            "confident": {
+                "title": "CONFIDENT SWIMMERS",
+                "titleShort": "CONFIDENT",
+                "description": "To improve technique"
+            },
+            "improveTechnique": "IMPROVE TECHNIQUE"
+        }
     },
     "professionalServices": {
         "title": "OUR COURSES FOR PROFESSIONALS",
@@ -434,6 +443,7 @@
     "swimmingAbilities": {
         "title": "Swimming Level/Skills Description",
         "titles": {
+            "teensAdults": "TEENS AND ADULTS",
             "swimAStory": "\"SWIM A STORY\" AGE: 3 TO 6.",
             "children36": "\"SWIM A STORY\" AGE: 3 TO 6.",
             "children36Syntax": "SWIM A STORY",

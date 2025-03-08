@@ -170,19 +170,28 @@
     "clientServices": {
         "title": "NUESTRAS CLASES PARA CLIENTES",
         "subtitle": "LECCIONES DE NATACIÓN PARA TODOS LOS GRUPOS DE EDAD Y HABILIDADES",
-        "children36": {
-            "title": "NIÑOS DE 3 A 6 AÑOS",
-            "hours": "HORAS"
-        },
-        "children612": {
-            "title": "NIÑOS DE 6 A 12 AÑOS",
-            "hours": "HORAS"
-        },
-        "anyAge": {
-            "title": "CUALQUIER EDAD Y HABILIDAD",
-            "hours": "HORAS"
-        },
-        "price": "PRECIO"
+        "hours": "Horas",
+        "horasText": "horas",
+        "price": "PRECIO",
+        "throughFunAndPlay": "A través de la diversión y el juego",
+        "levels": {
+            "beginners": {
+                "title": "PRINCIPIANTES",
+                "titleShort": "PRINCIPIANTES",
+                "description": "Para aprender a controlar la respiración y los fundamentos de las habilidades acuáticas"
+            },
+            "intermediate": {
+                "title": "INTERMEDIO",
+                "titleShort": "INTERMEDIO",
+                "description": "Para comenzar a aprender los fundamentos de los estilos de natación"
+            },
+            "confident": {
+                "title": "NADADORES CONFIADOS",
+                "titleShort": "CONFIADO",
+                "description": "Para mejorar la técnica"
+            },
+            "improveTechnique": "MEJORAR TÉCNICA"
+        }
     },
     "professionalServices": {
         "title": "NUESTROS CURSOS PARA PROFESIONALES",
@@ -416,6 +425,7 @@
     },
     "swimmingAbilities": {
         "titles": {
+            "teensAdults": "ADOLESCENTES Y ADULTOS",
             "children36Syntax": "NADA UN CUENTO",
             "children612Syntax": "DE PRINCIPIANTES AL DESARROLLO",
             "anyAgeSyntax": "CUALQUIER EDAD Y HABILIDAD",

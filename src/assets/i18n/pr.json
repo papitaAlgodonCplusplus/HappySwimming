@@ -137,19 +137,28 @@
     "clientServices": {
         "title": "NOSSAS AULAS PARA CLIENTES",
         "subtitle": "AULAS DE NATAÇÃO PARA TODAS AS FAIXAS ETÁRIAS E HABILIDADES",
-        "children36": {
-            "title": "CRIANÇAS DE 3 A 6 ANOS",
-            "hours": "HORAS"
-        },
-        "children612": {
-            "title": "CRIANÇAS DE 6 A 12 ANOS",
-            "hours": "HORAS"
-        },
-        "anyAge": {
-            "title": "QUALQUER IDADE E HABILIDADE",
-            "hours": "HORAS"
-        },
-        "price": "PREÇO"
+        "hours": "Horas",
+        "horasText": "horas",
+        "price": "PREÇO",
+        "throughFunAndPlay": "Através de diversão e brincadeiras",
+        "levels": {
+            "beginners": {
+                "title": "INICIANTES",
+                "titleShort": "INICIANTES",
+                "description": "Para aprender a controlar a respiração e os fundamentos das habilidades aquáticas"
+            },
+            "intermediate": {
+                "title": "INTERMEDIÁRIO",
+                "titleShort": "INTERMEDIÁRIO",
+                "description": "Para começar a aprender os fundamentos dos estilos de natação"
+            },
+            "confident": {
+                "title": "NADADORES CONFIANTES",
+                "titleShort": "CONFIANTE",
+                "description": "Para melhorar a técnica"
+            },
+            "improveTechnique": "MELHORAR TÉCNICA"
+        }
     },
     "professionalServices": {
         "title": "NOSSOS CURSOS PARA PROFISSIONAIS",
@@ -434,6 +443,7 @@
     "swimmingAbilities": {
         "title": "Descrição do Nível/Habilidades de Natação",
         "titles": {
+            "teensAdults": "ADOLESCENTES E ADULTOS",
             "swimAStory": "\"NADAR UMA HISTÓRIA\" IDADE: 3 A 6.",
             "children36": "\"NADAR UMA HISTÓRIA\" IDADE: 3 A 6.",
             "children36Syntax": "NADAR UMA HISTÓRIA",
