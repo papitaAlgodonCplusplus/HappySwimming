@@ -347,6 +347,7 @@ app.post('/api/login', async (req, res) => {
     const userResult = await pool.query(userQuery, [email]);
 
     if (userResult.rows.length === 0) {
+      console.log('User not found:', email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -354,6 +355,7 @@ app.post('/api/login', async (req, res) => {
 
     // Check if the password_hash exists in the database
     if (!user.password_hash) {
+      console.log('User has no stored password hash:', email);
       console.error('User has no stored password hash:', email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -365,12 +367,14 @@ app.post('/api/login', async (req, res) => {
       //   return res.status(401).json({ error: 'Invalid credentials' });
       // }
     } catch (passwordError) {
+      console.log('Password comparison error:', password);
       console.error('Password comparison error:', passwordError);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Check if user is authorized - NEW CHECK
     if (!user.is_authorized && user.email !== 'admin@gmail.com') {
+      console.log('User is not authorized:', email);
       return res.status(403).json({
         error: 'Your account is pending authorization. Please wait for an administrator to approve your account.',
         authorizationPending: true
@@ -387,11 +391,13 @@ app.post('/api/login', async (req, res) => {
     // Get additional user details based on role
     let userData = { id: user.id, email: user.email, role: user.role };
 
+    console.log('User data:', user);
     if (user.role === 'client') {
       const clientQuery = 'SELECT * FROM clients WHERE user_id = $1';
       const clientResult = await pool.query(clientQuery, [user.id]);
 
       if (clientResult.rows.length > 0) {
+        console.log('Client data:', clientResult.rows[0]);
         const client = clientResult.rows[0];
         userData = {
           ...userData,
@@ -404,6 +410,7 @@ app.post('/api/login', async (req, res) => {
       const professionalResult = await pool.query(professionalQuery, [user.id]);
 
       if (professionalResult.rows.length > 0) {
+        console.log('Professional data:', professionalResult.rows[0]);
         const professional = professionalResult.rows[0];
         userData = {
           ...userData,
