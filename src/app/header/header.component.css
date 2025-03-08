@@ -9,6 +9,68 @@
   z-index: 1000;
   box-sizing: border-box;
 }
+/* Info fields styling */
+.info-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+  background-color: rgba(0, 74, 173, 0.1);
+  padding: 1rem;
+  border-radius: 5px;
+  border-left: 4px solid #004aad;
+}
+
+.info-field {
+  display: flex;
+  align-items: center;
+}
+
+.info-field label {
+  width: 100px;
+  font-weight: 400;
+  color: #204376;
+  z-index: 10;
+  margin-bottom: 0;
+}
+
+.info-value {
+  flex: 1;
+  background-color: transparent;
+  border: none;
+  font-family: 'Lexend Peta', sans-serif;
+  font-size: 0.95rem;
+  color: #004aad;
+  padding: 0.3rem 0;
+  cursor: default;
+}
+
+.info-value:focus {
+  outline: none;
+}
+
+/* Responsive adjustments for the info fields */
+@media (max-width: 412px), (max-height: 912px) and (max-width: 500px) {
+  .info-fields {
+    padding: 0.8rem;
+  }
+  
+  .info-field {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+  }
+  
+  .info-field label {
+    width: 100%;
+    font-size: 0.85rem;
+  }
+  
+  .info-value {
+    width: 100%;
+    font-size: 0.9rem;
+  }
+}
 
 * {
   overflow: hidden;

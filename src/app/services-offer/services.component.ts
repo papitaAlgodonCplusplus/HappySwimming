@@ -17,6 +17,9 @@ import { Subscription } from 'rxjs';
 export class ServicesComponent implements OnInit, OnDestroy {
   private langSubscription: Subscription | null = null;
   private loadedSubscription: Subscription | null = null;
+  
+  // Add a flag to track which content is currently displayed
+  showClientServices: boolean = true;
 
   constructor(
     private translationService: TranslationService,
@@ -37,6 +40,12 @@ export class ServicesComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges(); // Force immediate change detection
       }
     });
+  }
+
+  // Toggle between client and professional services
+  toggleServiceType(): void {
+    this.showClientServices = !this.showClientServices;
+    this.cdr.detectChanges();
   }
 
   ngOnDestroy(): void {

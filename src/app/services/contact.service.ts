@@ -69,7 +69,7 @@ export class ContactService {
   sendContactEmail(contactData: ContactData): Observable<any> {
     // Prepare the email data for SendGrid
     const emailData = {
-      to: 'info@digitalsolutionoffice.com',
+      to: 'monica@happyswimming.net',
       from: 'info@digitalsolutionoffice.com', // This should be a verified sender in SendGrid
       subject: `HappySwimming Contact: ${contactData.subject}`,
       text: `Message from ${contactData.email}:\n\n${contactData.message}`,

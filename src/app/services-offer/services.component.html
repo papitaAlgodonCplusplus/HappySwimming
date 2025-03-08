@@ -5,12 +5,41 @@
 <app-header></app-header>
 <div class="services-container">
   <div class="services-content" style="margin-top: 10vh;">
-    <div class="services-columns">
-      <!-- Left Column - Client Services -->
-      <div class="services-column">
-        <h2 class="column-title">{{ 'clientServices.title' | translate }}</h2>
-        <h3 class="column-subtitle">{{ 'clientServices.subtitle' | translate }}</h3>
-        
+    <!-- Single column layout with navigation arrows -->
+    <div class="services-column">
+      <div class="section-header">
+        <h2 class="column-title">
+          {{ showClientServices ? ('clientServices.title' | translate) : ('professionalServices.title' | translate) }}
+        </h2>
+        <h3 *ngIf="showClientServices" class="column-subtitle">{{ 'clientServices.subtitle' | translate }}</h3>
+      </div>
+
+      <!-- Navigation controls -->
+      <div class="navigation-controls">
+        <button 
+          [class.disabled]="showClientServices" 
+          class="nav-arrow left" 
+          (click)="showClientServices ? null : toggleServiceType()"
+          [disabled]="showClientServices"
+        >
+          &#8592; <!-- Left arrow -->
+        </button>
+        <div class="nav-indicator">
+          <span [class.active]="showClientServices" class="dot"></span>
+          <span [class.active]="!showClientServices" class="dot"></span>
+        </div>
+        <button 
+          [class.disabled]="!showClientServices" 
+          class="nav-arrow right" 
+          (click)="showClientServices ? toggleServiceType() : null"
+          [disabled]="!showClientServices"
+        >
+          &#8594; <!-- Right arrow -->
+        </button>
+      </div>
+      
+      <!-- CLIENT SERVICES SECTION -->
+      <div *ngIf="showClientServices" class="service-section">
         <!-- Swim a Story - Age 3-6 -->
         <div class="service-box">
           <div class="box-content">
@@ -72,10 +101,8 @@
         </div>
       </div>
       
-      <!-- Right Column - Professional Services -->
-      <div class="services-column">
-        <h2 class="column-title">{{ 'professionalServices.title' | translate }}</h2>
-        
+      <!-- PROFESSIONAL SERVICES SECTION -->
+      <div *ngIf="!showClientServices" class="service-section">
         <div class="service-box">
           <div class="box-content">
             <h3 class="box-title">{{ 'professionalServices.swimmingStoryTrainer.title' | translate }}</h3>

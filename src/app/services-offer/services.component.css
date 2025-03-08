@@ -11,22 +11,22 @@
   min-height: calc(100vh - 12vh);
 }
 
-.services-columns {
-  display: flex;
-  max-width: 1400px;
-  margin: 0 auto;
-  gap: 2rem;
-}
-
 .services-column {
-  flex: 1;
+  max-width: 1000px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  align-items: center;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  width: 100%;
 }
 
 .column-title {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: bold;
   text-align: center;
   color: white;
@@ -43,23 +43,78 @@
   font-weight: normal;
 }
 
+/* Navigation Controls */
+.navigation-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 2rem;
+  width: 100%;
+}
+
+.nav-arrow {
+  background-color: rgba(255, 255, 255, 0.25);
+  color: white;
+  border: 2px solid white;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.nav-arrow:hover:not(.disabled) {
+  background-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+}
+
+.nav-arrow.disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.nav-indicator {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.dot.active {
+  background-color: white;
+  transform: scale(1.25);
+}
+
+/* Service Sections */
+.service-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
 .service-box {
   background-color: #a1e3ff;
   border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 1.5rem;
+  width: 100%;
+  margin-bottom: 1rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Make left column boxes shorter */
-.services-column:first-child .service-box {
-  min-height: 20vh;
-  flex-grow: 0;
-}
-
-/* Right column boxes can grow to fill space */
-.services-column:last-child .service-box {
-  flex-grow: 1;
+.service-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
 .box-content {
@@ -96,7 +151,7 @@
   padding-left: 1.5rem;
 }
 
-/* New styles for levels */
+/* Levels container */
 .levels-container {
   display: flex;
   flex-wrap: wrap;
@@ -130,22 +185,23 @@
   line-height: 1.3;
 }
 
-/* Responsive adjustments */
-@media (max-width: 992px) {
-  .services-columns {
-    flex-direction: column;
+/* Animation for section transitions */
+.service-section {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
-  
-  .services-column {
-    width: 100%;
-  }
-  
-  .column-title {
-    font-size: 1.6rem;
-    margin-top: 1.5rem;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
+/* Responsive adjustments */
 @media (max-width: 768px) {
   .column-title {
     font-size: 1.4rem;
@@ -173,5 +229,36 @@
   
   .level-box {
     width: 100%;
+  }
+  
+  .navigation-controls {
+    gap: 1rem;
+  }
+  
+  .nav-arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+}
+
+/* Additional responsiveness for very small screens */
+@media (max-width: 400px) {
+  .services-content {
+    padding: 1rem 0.5rem;
+  }
+  
+  .box-content {
+    padding: 1rem;
+  }
+  
+  .column-title {
+    font-size: 1.2rem;
+  }
+  
+  .nav-arrow {
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
   }
 }
