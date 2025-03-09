@@ -189,6 +189,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
 
   onSubmit() {
     if (!this.validateForm()) {
+      console.log('Form validation failed');
       this.cdr.detectChanges();
       return;
     }
@@ -198,6 +199,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
 
     // Get concatenated string of selected swimming abilities
     const abilities = this.getSelectedAbilities();
+    console.log('Selected swimming abilities:', abilities);
 
     const clientData = {
       email: this.email,
@@ -218,6 +220,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
       isOutsourcing: this.externalOption === 'outsourcing',
       abilities: abilities || undefined // Add the abilities string to the client data
     };
+    console.log('Client data:', clientData);
 
     this.authService.registerClient(clientData).subscribe({
       next: (response) => {

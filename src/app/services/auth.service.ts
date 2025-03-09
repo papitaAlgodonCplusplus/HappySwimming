@@ -177,6 +177,7 @@ export class AuthService {
   }
 
   registerClient(data: RegisterClientData): Observable<any> {
+    console.log('Registering client with data:', data);
     return this.http.post(`${this.apiUrl}/register/client`, data).pipe(
       catchError(this.handleError)
     );

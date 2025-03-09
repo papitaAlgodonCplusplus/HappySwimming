@@ -119,10 +119,10 @@ function authenticateToken(req, res, next) {
 
 // Register a new client
 app.post('/api/register/client', async (req, res) => {
+  console.log('Client registration request received:', req.body);
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    console.log('Client registration request received:', req.body);
 
     const {
       email,
