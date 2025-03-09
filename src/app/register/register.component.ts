@@ -155,6 +155,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
     if (!this.firstName || !this.lastName1 || !this.identificationNumber ||
       !this.address || !this.postalCode || !this.city || !this.country ||
       !this.phoneMobile || !this.email || !this.password || !this.confirmPassword) {
+      console.log('Required fields missing');
       this.errorMessage = this.translationService.translate('registration.errorRequiredFields');
       return false;
     }
@@ -162,24 +163,21 @@ export class RegisterComponent implements OnInit, OnDestroy {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(this.email)) {
+      console.log('Invalid email format');
       this.errorMessage = this.translationService.translate('registration.errorInvalidEmail');
       return false;
     }
 
     // Check if passwords match
     if (this.password !== this.confirmPassword) {
+      console.log('Passwords do not match');
       this.errorMessage = this.translationService.translate('registration.errorPasswordsMatch');
-      return false;
-    }
-
-    // Check password strength (at least 8 characters)
-    if (this.password.length < 8) {
-      this.errorMessage = this.translationService.translate('registration.errorPasswordLength');
       return false;
     }
 
     // Validate terms acceptance
     if (!this.acceptTerms) {
+      console.log('Terms not accepted');
       this.errorMessage = this.translationService.translate('registration.errorTerms');
       return false;
     }
