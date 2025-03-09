@@ -122,6 +122,7 @@ app.post('/api/register/client', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    console.log('Client registration request received:', req.body);
 
     const {
       email,
@@ -146,6 +147,7 @@ app.post('/api/register/client', async (req, res) => {
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
+    console.log('Password hash:', passwordHash);
 
     // Insert user
     const userResult = await client.query(
@@ -153,6 +155,7 @@ app.post('/api/register/client', async (req, res) => {
       [email, passwordHash, firstName, lastName1, lastName2 || null, 'client']
     );
 
+    console.log('User inserted:', userResult.rows[0]);
     const userId = userResult.rows[0].id;
 
     // Insert client with abilities field
@@ -164,6 +167,7 @@ app.post('/api/register/client', async (req, res) => {
     );
 
     await client.query('COMMIT');
+    console.log('Client registered successfully');
 
     res.status(201).json({ message: 'Client registered successfully' });
   } catch (error) {
