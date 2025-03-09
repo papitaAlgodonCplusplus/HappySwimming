@@ -213,15 +213,9 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
       this.errorMessage = 'Passwords do not match.';
       return false;
     }
-    
-    // Check password strength (at least 8 characters)
-    if (this.password.length < 8) {
-      this.errorMessage = 'Password must be at least 8 characters long.';
-      return false;
-    }
-    
+  
     // Validate file uploads
-    if (!this.idDocument || !this.curriculumVitae || !this.insuranceDocument) {
+    if (!this.idDocument || !this.curriculumVitae) {
       this.errorMessage = 'All document uploads are required.';
       return false;
     }
