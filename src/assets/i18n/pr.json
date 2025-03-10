@@ -69,6 +69,9 @@
     },
     "contact": {
         "title": "Contate-nos",
+        "userEmail": "Seu Email",
+        "emailPlaceholder": "Digite seu endereço de email",
+        "errorInvalidEmail": "Por favor, insira um endereço de email válido.",
         "subject": "Assunto",
         "message": "Mensagem",
         "send": "Enviar",
@@ -392,6 +395,10 @@
         }
     },
     "economicManager": {
+        "country": "País",
+        "clientName": "Nome do Cliente",
+        "allCountries": "Todos os Países",
+        "allClients": "Todos os Clientes",
         "title": "Gerenciador Econômico",
         "insourcingService": "SERVIÇO DE INSOURCING",
         "outsourcingService": "SERVIÇO DE OUTSOURCING",

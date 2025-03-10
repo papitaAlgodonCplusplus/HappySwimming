@@ -5,8 +5,9 @@
 <app-header></app-header>
 <div class="economic-manager-container">
   <div class="economic-manager-content">
-    <h1 class="title">{{ 'economicManager.title' | translate }} 
-      <span *ngIf="isAdmin" style="color: #cc0000; font-size: 0.8em;"> - {{ 'economicManager.adminView' | translate }}</span>
+    <h1 class="title">{{ 'economicManager.title' | translate }}
+      <span *ngIf="isAdmin" style="color: #cc0000; font-size: 0.8em;"> - {{ 'economicManager.adminView' | translate
+        }}</span>
     </h1>
 
     <div *ngIf="errorMessage" class="error-message">
@@ -26,61 +27,65 @@
         <!-- User Name Filter -->
         <div class="filter-group">
           <label for="nameFilter">{{ 'economicManager.userName' | translate }}</label>
-          <input 
-            type="text" 
-            id="nameFilter" 
-            class="filter-control" 
-            [(ngModel)]="nameFilter" 
-            (ngModelChange)="applyFilters()"
-            placeholder="{{ 'economicManager.filterByName' | translate }}"
-          >
+          <input type="text" id="nameFilter" class="filter-control" [(ngModel)]="nameFilter"
+            (ngModelChange)="applyFilters()" placeholder="{{ 'economicManager.filterByName' | translate }}">
         </div>
-        
+
+        <!-- Country Filter (Admin Only) -->
+        <div *ngIf="isAdmin" class="filter-group">
+          <label for="countryFilter">{{ 'economicManager.country' | translate }}</label>
+          <select id="countryFilter" class="filter-control" [(ngModel)]="selectedCountry"
+            (ngModelChange)="applyFilters()">
+            <option value="all">{{ 'economicManager.allCountries' | translate }}</option>
+            <option *ngFor="let country of countryOptions" [value]="country">
+              {{ country }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Client Name Filter (Admin Only) -->
+        <div *ngIf="isAdmin" class="filter-group">
+          <label for="clientNameFilter">{{ 'economicManager.clientName' | translate }}</label>
+          <select id="clientNameFilter" class="filter-control" [(ngModel)]="selectedClientName"
+            (ngModelChange)="applyFilters()">
+            <option value="all">{{ 'economicManager.allClients' | translate }}</option>
+            <option *ngFor="let client of clientNameOptions" [value]="client">
+              {{ client }}
+            </option>
+          </select>
+        </div>
+
         <!-- Course Filter -->
         <div class="filter-group">
           <label for="courseFilter">{{ 'economicManager.course' | translate }}</label>
-          <select 
-            id="courseFilter" 
-            class="filter-control" 
-            [(ngModel)]="selectedCourse" 
-            (ngModelChange)="applyFilters()"
-          >
+          <select id="courseFilter" class="filter-control" [(ngModel)]="selectedCourse"
+            (ngModelChange)="applyFilters()">
             <option *ngFor="let course of courseOptions" [value]="course.id">
               {{ course.name }}
             </option>
           </select>
         </div>
-        
+
         <!-- Month Filter -->
         <div class="filter-group">
           <label for="monthFilter">{{ 'economicManager.month' | translate }}</label>
-          <select 
-            id="monthFilter" 
-            class="filter-control" 
-            [(ngModel)]="selectedMonth" 
-            (ngModelChange)="applyFilters()"
-          >
+          <select id="monthFilter" class="filter-control" [(ngModel)]="selectedMonth" (ngModelChange)="applyFilters()">
             <option *ngFor="let month of monthOptions" [value]="month.value">
               {{ month.name }}
             </option>
           </select>
         </div>
-        
+
         <!-- Year Filter -->
         <div class="filter-group">
           <label for="yearFilter">{{ 'economicManager.year' | translate }}</label>
-          <select 
-            id="yearFilter" 
-            class="filter-control" 
-            [(ngModel)]="selectedYear" 
-            (ngModelChange)="applyFilters()"
-          >
+          <select id="yearFilter" class="filter-control" [(ngModel)]="selectedYear" (ngModelChange)="applyFilters()">
             <option *ngFor="let year of yearOptions" [value]="year.value">
               {{ year.name }}
             </option>
           </select>
         </div>
-        
+
         <!-- Reset Filters Button -->
         <div class="filter-group filter-actions">
           <button class="btn-reset-filters" (click)="resetFilters()">
@@ -89,11 +94,11 @@
         </div>
       </div>
     </div>
-
+    
     <!-- Admin Summary Section -->
     <div *ngIf="!isLoading && isAdmin" class="expenses-section">
       <h2 class="section-title">{{ 'economicManager.adminSummary' | translate }}</h2>
-      
+
       <div class="total-amount">
         <span class="label">{{ 'economicManager.totalInsourcingClients' | translate }}:</span>
         <span class="value">{{ adminReport.totalInsourcingClients }}</span>
@@ -119,7 +124,7 @@
       <!-- Insourcing Section -->
       <div class="expenses-section">
         <h2 class="section-title">{{ 'economicManager.insourcingService' | translate }}</h2>
-        
+
         <div class="total-amount">
           <span class="label">{{ 'economicManager.totalAmount' | translate }}:</span>
           <span class="value">€{{ insourcingExpenses.total.toFixed(2) }}</span>
@@ -155,7 +160,7 @@
       <!-- Outsourcing Section -->
       <div class="expenses-section">
         <h2 class="section-title">{{ 'economicManager.outsourcingService' | translate }}</h2>
-        
+
         <div class="total-amount">
           <span class="label">{{ 'economicManager.totalAmount' | translate }}:</span>
           <span class="value">€{{ outsourcingExpenses.total.toFixed(2) }}</span>
@@ -192,7 +197,7 @@
     <!-- Professional Enrollments table for Admin -->
     <div *ngIf="!isLoading && isAdmin" class="enrollments-section">
       <h2 class="section-title">{{ 'economicManager.professionalEnrollments' | translate }}</h2>
-      
+
       <div class="enrollments-table-container">
         <table class="enrollments-table" *ngIf="adminReport.professionalEnrollments.length > 0">
           <thead>
@@ -212,7 +217,7 @@
             </tr>
           </tbody>
         </table>
-        
+
         <div *ngIf="adminReport.professionalEnrollments.length === 0" class="no-data-message">
           {{ 'economicManager.noProfessionalEnrollmentsAdmin' | translate }}
         </div>
@@ -222,7 +227,7 @@
     <!-- Client Enrollments table for Admin -->
     <div *ngIf="!isLoading && isAdmin" class="enrollments-section">
       <h2 class="section-title">{{ 'economicManager.clientEnrollments' | translate }}</h2>
-      
+
       <div class="enrollments-table-container">
         <table class="enrollments-table" *ngIf="adminReport.clientEnrollments.length > 0">
           <thead>
@@ -246,7 +251,7 @@
             </tr>
           </tbody>
         </table>
-        
+
         <div *ngIf="adminReport.clientEnrollments.length === 0" class="no-data-message">
           {{ 'economicManager.noClientEnrollments' | translate }}
         </div>
@@ -256,7 +261,7 @@
     <!-- Enrollments table for regular users -->
     <div *ngIf="!isLoading && !isAdmin" class="enrollments-section">
       <h2 class="section-title">{{ 'economicManager.enrollmentDetails' | translate }}</h2>
-      
+
       <div *ngIf="userRole === 'client'" class="enrollments-table-container">
         <table class="enrollments-table" *ngIf="filteredClientEnrollments.length > 0">
           <thead>
@@ -276,12 +281,12 @@
             </tr>
           </tbody>
         </table>
-        
+
         <div *ngIf="filteredClientEnrollments.length === 0" class="no-data-message">
           {{ 'economicManager.noEnrollments' | translate }}
         </div>
       </div>
-      
+
       <div *ngIf="userRole === 'professional'" class="enrollments-table-container">
         <table class="enrollments-table" *ngIf="filteredProfessionalEnrollments.length > 0">
           <thead>
@@ -303,7 +308,7 @@
             </tr>
           </tbody>
         </table>
-        
+
         <div *ngIf="filteredProfessionalEnrollments.length === 0" class="no-data-message">
           {{ 'economicManager.noProfessionalEnrollments' | translate }}
         </div>

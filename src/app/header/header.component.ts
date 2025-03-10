@@ -27,6 +27,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   showContactModal: boolean = false;
   contactSubject: string = '';
   contactMessage: string = '';
+  userEmail: string = '';
   isSubmitting: boolean = false;
   contactSuccess: boolean = false;
   contactError: string = '';
@@ -85,6 +86,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   openContactModal(): void {
     this.showContactModal = true;
     this.contactSubject = '';
+    this.userEmail = '';
     this.contactMessage = '';
     this.contactSuccess = false;
     this.contactError = '';
@@ -98,8 +100,16 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   submitContactForm(): void {
     // Validate form
-    if (!this.contactSubject.trim() || !this.contactMessage.trim()) {
+    if (!this.contactSubject.trim() || !this.contactMessage.trim() || !this.userEmail.trim()) {
       this.contactError = this.translationService.translate('contact.errorRequiredFields');
+      this.cdr.detectChanges();
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(this.userEmail)) {
+      this.contactError = this.translationService.translate('contact.errorInvalidEmail');
       this.cdr.detectChanges();
       return;
     }
@@ -108,11 +118,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.contactError = '';
     this.cdr.detectChanges();
 
-    // Prepare contact data
+    // Prepare contact data with user email concatenated with the message
+    const messageWithEmail = `From: ${this.userEmail}\n\n${this.contactMessage}`;
     const contactData = {
       subject: this.contactSubject,
-      message: this.contactMessage,
-      email: this.isAuthenticated ? this.userName : 'Anonymous User'
+      message: messageWithEmail,
+      email: this.isAuthenticated ? this.userName : this.userEmail
     };
 
     // Send email

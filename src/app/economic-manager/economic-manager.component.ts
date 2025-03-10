@@ -13,6 +13,7 @@ import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError, map, finalize } from 'rxjs/operators';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
+// Updated Enrollment interface
 interface Enrollment {
   id: number | string;
   courseId: string;
@@ -30,6 +31,7 @@ interface Enrollment {
   clientName?: string;
   isOutsourcing?: boolean;
   notes?: string;
+  country?: string; // Added for country filtering
 }
 
 interface ServiceExpense {
@@ -103,15 +105,14 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   insourcingExpenses: ServiceExpense = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
   outsourcingExpenses: ServiceExpense = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
 
-  // UI state
-  isLoading: boolean = false;
-  errorMessage: string = '';
-
-  // New filter properties
+  // Admin-specific properties
+  // User filter properties
   nameFilter: string = '';
   selectedCourse: string = '';
   selectedMonth: number = 0; // 0 means all months
   selectedYear: number = 0; // 0 means all years
+  selectedCountry: string = 'all'; // For admin view only
+  selectedClientName: string = 'all'; // For admin view only
 
   // Filter options
   courseOptions: CourseOption[] = [];
@@ -131,6 +132,19 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     { value: 12, name: 'December' }
   ];
   yearOptions: YearOption[] = [];
+
+  // Common countries for filter
+  countryOptions: string[] = [
+    'Spain', 'Portugal', 'UK', 'Ireland', 'France', 'Germany',
+    'Italy', 'USA', 'Canada', 'Brazil', 'Mexico', 'Australia'
+  ];
+
+  // Client names for filter (will be populated from data)
+  clientNameOptions: string[] = [];
+
+  // UI state
+  isLoading: boolean = false;
+  errorMessage: string = '';
 
   // Percentages for expense distribution
   readonly INSOURCING_PERCENTAGES = {
@@ -355,6 +369,11 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
           console.error('Error processing admin data:', error);
           this.errorMessage = 'Error processing enrollment data. Please try again.';
         }
+
+        this.extractClientNames([
+          ...this.adminReport.clientEnrollments,
+          ...this.adminReport.professionalEnrollments
+        ]);
       },
       error: (error) => {
         console.error('Error loading admin data:', error);
@@ -429,28 +448,6 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // Filter enrollments based on selected filters
-  filterEnrollments(enrollments: Enrollment[]): Enrollment[] {
-    return enrollments.filter(enrollment => {
-      // Filter by name (case-insensitive)
-      if (this.nameFilter && !this.matchesNameFilter(enrollment, this.nameFilter)) {
-        return false;
-      }
-
-      // Filter by course
-      if (this.selectedCourse && enrollment.courseId.toString() !== this.selectedCourse.toString()) {
-        return false;
-      }
-
-      // Filter by month and year
-      if (!this.matchesDateFilter(enrollment)) {
-        return false;
-      }
-
-      return true;
-    });
-  }
-
   // Check if enrollment matches name filter
   matchesNameFilter(enrollment: Enrollment, nameFilter: string): boolean {
     const searchTerm = nameFilter.toLowerCase();
@@ -477,7 +474,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
 
     console.log('Selected Month:', this.selectedMonth);
     console.log('Selected Year:', this.selectedYear);
-  
+
     if (this.selectedMonth.toString() !== '0' && this.selectedYear.toString() !== '0') {
       if (this.selectedMonth.toString() === '3' && this.selectedYear.toString() === '2025') {
         return true;
@@ -510,16 +507,6 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     // }
 
     // return true;
-  }
-
-  // Reset all filters
-  resetFilters() {
-    this.nameFilter = '';
-    this.selectedCourse = '';
-    this.selectedMonth = 0;
-    this.selectedYear = 0;
-    this.applyFilters();
-    window.location.reload();
   }
 
   calculateClientExpenses() {
@@ -648,5 +635,81 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     if (this.authSubscription) {
       this.authSubscription.unsubscribe();
     }
+  }
+
+  extractClientNames(enrollments: Enrollment[]) {
+    // Create a set to eliminate duplicates
+    const clientNamesSet = new Set<string>();
+    
+    // Add "All Clients" option first
+    // (This will be handled by having 'all' as the default value in the selectedClientName)
+    
+    // Extract unique client names from enrollments
+    enrollments.forEach(enrollment => {
+      if (enrollment.clientName) {
+        clientNamesSet.add(enrollment.clientName);
+      } else if (enrollment.userId) {
+        // If no client name but has userId, use a generic name
+        clientNamesSet.add(`User ${enrollment.userId}`);
+      }
+    });
+    
+    // Convert set to array and sort alphabetically
+    this.clientNameOptions = Array.from(clientNamesSet).sort();
+  }
+  
+  // Filter enrollments based on all criteria
+  filterEnrollments(enrollments: Enrollment[]): Enrollment[] {
+    return enrollments.filter(enrollment => {
+      // Filter by name (case-insensitive)
+      if (this.nameFilter && !this.matchesNameFilter(enrollment, this.nameFilter)) {
+        return false;
+      }
+      
+      // Admin-only filters
+      if (this.isAdmin) {
+        // Filter by country (if admin and country selected)
+        if (this.selectedCountry !== 'all' && enrollment.country !== this.selectedCountry) {
+          return false;
+        }
+        
+        // Filter by client name (if admin and client name selected)
+        if (this.selectedClientName !== 'all') {
+          const clientName = enrollment.clientName || `User ${enrollment.userId}`;
+          if (clientName !== this.selectedClientName) {
+            return false;
+          }
+        }
+      }
+  
+      // Filter by course
+      if (this.selectedCourse && enrollment.courseId.toString() !== this.selectedCourse.toString()) {
+        return false;
+      }
+  
+      // Filter by month and year
+      if (!this.matchesDateFilter(enrollment)) {
+        return false;
+      }
+  
+      return true;
+    });
+  }
+  
+  // Reset all filters
+  resetFilters() {
+    this.nameFilter = '';
+    this.selectedCourse = '';
+    this.selectedMonth = 0;
+    this.selectedYear = 0;
+    
+    // Reset admin-only filters
+    if (this.isAdmin) {
+      this.selectedCountry = 'all';
+      this.selectedClientName = 'all';
+    }
+    
+    this.applyFilters();
+    window.location.reload();
   }
 }

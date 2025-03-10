@@ -4,8 +4,7 @@
   </a>
 
   <div class="navigation">
-    <a *ngIf="isAuthenticated" [routerLink]="['/homepage']" class="nav-item auth-link home-link">{{ 'home' | translate
-      }}</a>
+    <a [routerLink]="isAuthenticated ? ['/homepage'] : ['/auth']" class="nav-item auth-link home-link">{{ 'home' | translate }}</a>
     <a [routerLink]="['/about']" class="nav-item">{{ 'aboutUs' | translate }}</a>
     <a [routerLink]="['/services']" class="nav-item">{{ 'services' | translate }}</a>
     <a href="javascript:void(0)" class="nav-item" (click)="openContactModal()">{{ 'contactUs' | translate }}</a>
@@ -86,12 +85,18 @@
           <input type="text" value="monica@happyswimming.net" readonly class="info-value">
         </div>
         <div class="info-field">
-            <label>{{ 'phone' | translate }}:</label>
+          <label>{{ 'phone' | translate }}:</label>
           <input type="text" value="+353860665764" readonly class="info-value">
         </div>
       </div>
 
       <div *ngIf="!contactSuccess">
+        <div class="form-group">
+          <label for="userEmail">{{ 'contact.userEmail' | translate }}</label>
+          <input type="email" id="userEmail" [(ngModel)]="userEmail" class="form-control" [disabled]="isSubmitting"
+            placeholder="{{ 'contact.emailPlaceholder' | translate }}">
+        </div>
+
         <div class="form-group">
           <label for="contactSubject">{{ 'contact.subject' | translate }}</label>
           <input type="text" id="contactSubject" [(ngModel)]="contactSubject" class="form-control"

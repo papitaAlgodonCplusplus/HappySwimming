@@ -28,6 +28,9 @@
         "notAssigned": "No Asignado"
     },
     "contact": {
+        "userEmail": "Tu Email",
+        "emailPlaceholder": "Introduce tu dirección de email",
+        "errorInvalidEmail": "Por favor, introduce una dirección de email válida.",
         "title": "Contáctanos",
         "subject": "Asunto",
         "message": "Mensaje",
@@ -293,6 +296,10 @@
     "economicManagerTitle": "Gestor Económico",
     "economicManagerDesc": "Administra distribución de ingresos y gastos",
     "economicManager": {
+        "country": "País",
+        "clientName": "Nombre del Cliente",
+        "allCountries": "Todos los Países",
+        "allClients": "Todos los Clientes",
         "title": "Gestor Económico",
         "insourcingService": "SERVICIO INSOURCING",
         "outsourcingService": "SERVICIO OUTSOURCING",
@@ -436,7 +443,7 @@
             "anyAge": "CUALQUIER EDAD Y HABILIDAD"
         },
         "descriptions": {
-            "children36": "Para principiantes y niños con confianza para aprender las habilidades fundamentales del agua que los mantendrán seguros en el agua",
+            "children36": "Para principiantes y niños ya familiarizados con el agua, para aprender las habilidades fundamentales del agua que los mantendrán seguros en el agua",
             "children612": "Para niños con confianza y habilidad que comienzan a aprender las bases de los estilos que los llevarán a ser nadadores seguros, a través de la diversión y el juego",
             "anyAge": "Desde principiante completo hasta nadadores con confianza que quieren mejorar su técnica"
         },

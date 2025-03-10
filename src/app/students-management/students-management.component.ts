@@ -11,6 +11,7 @@ import { Subscription } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 import { of } from 'rxjs';
 
+// Update to Student interface to include country
 interface Student {
   id: number;
   firstName?: string;
@@ -34,6 +35,16 @@ interface Student {
   type?: string; // Added to differentiate between client_service and professional_service
   country?: string; // Added for filtering
 }
+
+// Updated FilterOptions interface
+interface FilterOptions {
+  countries: string[];
+  clientNames: string[];
+  courseIds: { id: string, name: string }[]; // Updated to include course name
+  months: number[];
+  years: number[];
+}
+
 
 interface Course {
   id: string;
@@ -75,7 +86,13 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   selectedCourse: string = 'all';
   selectedMonth: number = 0; // 0 means all months
   selectedYear: number = 0; // 0 means all years
-  
+
+  // Common countries for country filter
+  readonly COMMON_COUNTRIES: string[] = [
+    'Spain', 'Portugal', 'UK', 'Ireland', 'France', 'Germany',
+    'Italy', 'USA', 'Canada', 'Brazil', 'Mexico', 'Australia'
+  ];
+
   // Filter options
   filterOptions: FilterOptions = {
     countries: [],
@@ -87,7 +104,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
 
   // Original data (unfiltered)
   originalCourses: Course[] = [];
-  
+
   // Courses with students
   courses: Course[] = [];
 
@@ -173,7 +190,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
         }
       }
     });
-    
+
     // Initialize years for filter (last 5 years)
     const currentYear = new Date().getFullYear();
     for (let i = 0; i < 5; i++) {
@@ -233,39 +250,47 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
 
   // Extract filter options from student data
   extractFilterOptions(students: Student[]) {
-    // Extract unique countries, client names, and course data
-    const countries = new Set<string>();
-    const clientNames = new Set<string>();
-    const coursesMap = new Map<string, { id: string, name: string }>();
-    
+    // For countries: Use both extracted countries and common countries
+    const countriesSet = new Set<string>();
+
+    // Add common countries first
+    this.COMMON_COUNTRIES.forEach(country => countriesSet.add(country));
+
+    // Then add countries from student data
     students.forEach(student => {
       if (student.country) {
-        countries.add(student.country);
+        countriesSet.add(student.country);
       }
-      
+    });
+
+    // Extract unique client names and course data as before
+    const clientNames = new Set<string>();
+    const coursesMap = new Map<string, { id: string, name: string }>();
+
+    students.forEach(student => {
       if (student.name) {
         clientNames.add(student.name);
       } else if (student.firstName) {
         clientNames.add(student.firstName + ' ' + (student.lastName || ''));
       }
-      
+
       if (student.courseId && student.courseName) {
         // Use courseId as the key to avoid duplicates
-        coursesMap.set(student.courseId, { 
-          id: student.courseId, 
-          name: student.courseName 
+        coursesMap.set(student.courseId, {
+          id: student.courseId,
+          name: student.courseName
         });
       }
     });
-    
+
     // Update filter options
-    this.filterOptions.countries = Array.from(countries).sort();
+    this.filterOptions.countries = Array.from(countriesSet).sort();
     this.filterOptions.clientNames = Array.from(clientNames).sort();
-    
+
     // Transform the courses map into an array with both id and title
     this.filterOptions.courseIds = Array.from(coursesMap.values())
       .sort((a, b) => a.name.localeCompare(b.name));
-    
+
     this.cdr.detectChanges();
   }
 
@@ -278,10 +303,10 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       month: this.selectedMonth,
       year: this.selectedYear
     });
-    
+
     // Clone the original courses
     const filteredCourses = JSON.parse(JSON.stringify(this.originalCourses)) as Course[];
-    
+
     // For each course, filter its students
     filteredCourses.forEach(course => {
       course.students = course.students.filter(student => {
@@ -289,7 +314,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
         if (this.selectedCountry !== 'all' && student.country !== this.selectedCountry) {
           return false;
         }
-        
+
         // Filter by client name
         if (this.selectedClientName !== 'all') {
           const fullName = student.name || (student.firstName + ' ' + (student.lastName || ''));
@@ -297,45 +322,43 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
             return false;
           }
         }
-        
+
         // Filter by course
         if (this.selectedCourse !== 'all' && student.courseId.toString() !== this.selectedCourse.toString()) {
           return false;
         }
-        
+
         // Filter by month and year
         if (student.startDate) {
           const startDate = new Date(student.startDate);
           const month = startDate.getMonth() + 1; // getMonth() returns 0-11
           const year = startDate.getFullYear();
 
-          console.log('Start date:', startDate, 'Month:', month, 'Year:', year);
-          
-          if (this.selectedMonth.toString() !== '0' && month.toString() !== this.selectedMonth.toString()) {
+          if (this.selectedMonth !== 0 && month !== this.selectedMonth) {
             return false;
           }
-          
-          if (this.selectedYear.toString() !== '0' && year.toString() !== this.selectedYear.toString()) {
+
+          if (this.selectedYear !== 0 && year !== this.selectedYear) {
             return false;
           }
-        } else if (this.selectedMonth.toString() !== '0' || this.selectedYear.toString() !== '0') {
+        } else if (this.selectedMonth !== 0 || this.selectedYear !== 0) {
           // If month or year is selected and student has no start date, filter it out
           return false;
         }
-        
+
         return true;
       });
-      
+
       // Update student count
       course.studentCount = course.students.length;
     });
-    
+
     // Remove courses with no students
     this.courses = filteredCourses.filter(course => course.studentCount > 0);
-    
+
     this.cdr.detectChanges();
   }
-  
+
   // Reset all filters
   resetFilters() {
     this.selectedCountry = 'all';
@@ -343,15 +366,12 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     this.selectedCourse = 'all';
     this.selectedMonth = 0;
     this.selectedYear = 0;
-    
+
     // Restore original data
     this.courses = JSON.parse(JSON.stringify(this.originalCourses)) as Course[];
-    
+
     this.cdr.detectChanges();
   }
-
-  // Update the course type detection in processStudents method
-  // This section should replace the existing courseMap creation block in processStudents method
 
   processStudents(students: Student[]) {
     console.log('Processing students:', students);
@@ -426,10 +446,11 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       this.courses = Array.from(courseMap.values())
         .sort((a, b) => a.name.localeCompare(b.name));
     }
-    
+
     // Store the original unfiltered data
     this.originalCourses = JSON.parse(JSON.stringify(this.courses)) as Course[];
 
+    this.extractFilterOptions(students);
     this.cdr.detectChanges();
   }
 
@@ -471,7 +492,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   getLocalizedStatus(status: string): string {
     return this.translationService.translate(`studentsManagement.status.${status}`);
   }
-  
+
   // Get localized month name
   getMonthName(month: number): string {
     return this.monthNames.find(m => m.value === month)?.name || '';

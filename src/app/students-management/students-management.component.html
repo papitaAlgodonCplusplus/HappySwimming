@@ -26,7 +26,7 @@
     <!-- New Filters Section - Show when not loading and originalCourses exist -->
     <div *ngIf="!isLoading && originalCourses.length > 0" class="filters-section">
       <h2 class="filters-title">{{ 'studentsManagement.filters' | translate }}</h2>
-      
+
       <div class="filters-container">
         <!-- Country Filter -->
         <div class="filter-group">
@@ -36,16 +36,17 @@
             <option *ngFor="let country of filterOptions.countries" [value]="country">{{ country }}</option>
           </select>
         </div>
-        
+
         <!-- Client Name Filter -->
         <div class="filter-group">
           <label for="clientNameFilter">{{ 'studentsManagement.clientNameFilter' | translate }}</label>
-          <select id="clientNameFilter" [(ngModel)]="selectedClientName" (change)="applyFilters()" class="filter-control">
+          <select id="clientNameFilter" [(ngModel)]="selectedClientName" (change)="applyFilters()"
+            class="filter-control">
             <option value="all">{{ 'studentsManagement.allClients' | translate }}</option>
             <option *ngFor="let clientName of filterOptions.clientNames" [value]="clientName">{{ clientName }}</option>
           </select>
         </div>
-        
+
         <!-- Course Filter - Updated to display course names instead of IDs -->
         <div class="filter-group">
           <label for="courseFilter">{{ 'studentsManagement.courseFilter' | translate }}</label>
@@ -56,7 +57,7 @@
             </option>
           </select>
         </div>
-        
+
         <!-- Month Filter -->
         <div class="filter-group">
           <label for="monthFilter">{{ 'studentsManagement.monthFilter' | translate }}</label>
@@ -65,7 +66,7 @@
             <option *ngFor="let month of monthNames" [value]="month.value">{{ month.name }}</option>
           </select>
         </div>
-        
+
         <!-- Year Filter -->
         <div class="filter-group">
           <label for="yearFilter">{{ 'studentsManagement.yearFilter' | translate }}</label>
@@ -74,7 +75,7 @@
             <option *ngFor="let year of filterOptions.years" [value]="year">{{ year }}</option>
           </select>
         </div>
-        
+
         <!-- Reset Filters Button -->
         <div class="filter-group filter-buttons">
           <button class="btn btn-reset-filters" (click)="resetFilters()">
@@ -188,7 +189,8 @@
 
     <!-- No students at all message - Only show when there are no originalCourses -->
     <div *ngIf="!isLoading && originalCourses.length === 0" class="no-students-message">
-      <p>{{ isAdmin ? ('studentsManagement.noStudentsAdmin' | translate) : ('studentsManagement.noStudents' | translate) }}</p>
+      <p>{{ isAdmin ? ('studentsManagement.noStudentsAdmin' | translate) : ('studentsManagement.noStudents' | translate)
+        }}</p>
     </div>
 
     <!-- Edit Student Modal -->
