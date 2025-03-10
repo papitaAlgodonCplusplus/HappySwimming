@@ -4,7 +4,8 @@
   </a>
 
   <div class="navigation">
-    <a [routerLink]="isAuthenticated ? ['/homepage'] : ['/auth']" class="nav-item auth-link home-link">{{ 'home' | translate }}</a>
+    <a [routerLink]="isAuthenticated ? ['/homepage'] : ['/auth']" class="nav-item auth-link home-link">{{ 'home' |
+      translate }}</a>
     <a [routerLink]="['/about']" class="nav-item">{{ 'aboutUs' | translate }}</a>
     <a [routerLink]="['/services']" class="nav-item">{{ 'services' | translate }}</a>
     <a href="javascript:void(0)" class="nav-item" (click)="openContactModal()">{{ 'contactUs' | translate }}</a>
@@ -38,6 +39,7 @@
     <button class="close-btn" (click)="toggleMobileMenu()">×</button>
   </div>
 
+  <a [routerLink]="isAuthenticated ? ['/homepage'] : ['/auth']" class="mobile-nav-item auth-link home-link" (click)="toggleMobileMenu()">{{ 'home' | translate }}</a>
   <a [routerLink]="['/about']" class="mobile-nav-item" (click)="toggleMobileMenu()">{{ 'aboutUs' | translate }}</a>
   <a [routerLink]="['/services']" class="mobile-nav-item" (click)="toggleMobileMenu()">{{ 'services' | translate }}</a>
   <a href="javascript:void(0)" class="mobile-nav-item" (click)="openContactModalFromMobile()">{{ 'contactUs' | translate
