@@ -59,9 +59,9 @@ interface AdminEnrollmentResponse {
 export class ServicesManagerService {
   // DEVELOPMENT mode is determined by the current host
   private isDevelopment = window.location.hostname === 'localhost';
-  
+
   // API URL is dynamically set based on environment
-  private apiUrl = this.isDevelopment 
+  private apiUrl = this.isDevelopment
     ? 'http://localhost:10000/api'     // Development URL
     : 'https://happyswimming.onrender.com/api';   // Production URL
 
@@ -97,7 +97,7 @@ export class ServicesManagerService {
       }
       return throwError(() => new Error('Cannot connect to the server. Please ensure the backend is running.'));
     }
-    
+
     if (error.status === 401) {
       // Unauthorized - token might be expired
       console.error('Authentication error:', error);
@@ -105,13 +105,13 @@ export class ServicesManagerService {
       this.router.navigate(['/auth']);
       return throwError(() => new Error('Your session has expired. Please log in again.'));
     }
-    
+
     if (error.status === 403) {
       // Forbidden - user doesn't have permission
       console.error('Permission error:', error);
       return throwError(() => new Error('You do not have permission to access this resource.'));
     }
-    
+
     // Server error or other error
     console.error('API error:', error);
     return throwError(() => new Error('An error occurred. Please try again later.'));
@@ -145,7 +145,7 @@ export class ServicesManagerService {
       })
     );
   }
-  
+
   // Get enrollments where current user is the professional
   getProfessionalEnrollments(): Observable<Enrollment[]> {
     return this.http.get<Enrollment[]>(`${this.apiUrl}/enrollments/professional`, {
@@ -230,7 +230,7 @@ export class ServicesManagerService {
       console.error('Attempted to create enrollment without userId');
       return throwError(() => new Error('User ID is required for enrollment'));
     }
-    
+
     console.log('Enrollment data:', enrollmentData);
     return this.http.post(`${this.apiUrl}/enrollments`, enrollmentData, {
       headers: this.getHeaders()
@@ -248,7 +248,7 @@ export class ServicesManagerService {
       console.error('Attempted to cancel enrollment without enrollmentId');
       return throwError(() => new Error('Enrollment ID is required for cancellation'));
     }
-    
+
     return this.http.put(`${this.apiUrl}/enrollments/${enrollmentId}/cancel`, {}, {
       headers: this.getHeaders()
     }).pipe(
@@ -276,6 +276,19 @@ export class ServicesManagerService {
       }),
       tap(services => {
         console.log('Professional services data received:', services);
+      })
+    );
+  }
+
+  // Add this method to ServicesManagerService
+  getCountryOfUser(professionalId: number): Observable<{ id: number, country: string }> {
+    return this.http.get<{ country: string }>(`${this.apiUrl}/country/${professionalId}`, {
+      headers: this.getHeaders()
+    }).pipe(
+      map(response => ({ id: professionalId, country: response.country })),
+      catchError(error => {
+        console.error('Error getting country:', error);
+        return of({ id: professionalId, country: 'Unknown' });
       })
     );
   }

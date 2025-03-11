@@ -526,6 +526,7 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
 // GET: Get enrollments where the user is the professional
 app.get('/api/enrollments/professional', authenticateToken, async (req, res) => {
   try {
+    console.log('Fetching enrollments for professional:', req.user);
     const userId = req.user.id;
 
     // Verify the user is a professional
@@ -1482,6 +1483,7 @@ app.delete('/api/professional/students/:enrollmentId', authenticateToken, async 
 // Admin endpoint to get all enrollments from both client_services and professional_services
 app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
   try {
+    console.log('Fetching all enrollments for admin:', req.user);
     // Check if user is admin (using email as identifier)
     const userId = req.user.id;
     const userCheck = await pool.query(
@@ -2039,6 +2041,46 @@ app.post('/api/admin/assign-professional', authenticateToken, (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to assign professional to client' });
+  }
+});
+
+// Add this near the top of your server file to see all incoming requests
+app.use((req, res, next) => {
+  console.log(`Received ${req.method} request to ${req.path}`);
+  next();
+});
+
+// GET: Get country of professional by professional ID
+app.get('/api/country/:userId', authenticateToken, async (req, res) => {
+  console.log('Fetching country of professional:', req.params.userId);
+  try {
+    const userId = req.params.userId; // Correct parameter
+
+    // Query to get the country of the professional
+    const query = `
+      SELECT 
+        CASE
+          WHEN u.role = 'professional' THEN p.country
+          WHEN u.role = 'client' THEN c.country
+          ELSE NULL
+        END as country
+      FROM happyswimming.users u
+      LEFT JOIN happyswimming.professionals p ON u.id = p.user_id
+      LEFT JOIN happyswimming.clients c ON u.id = c.user_id
+      WHERE u.id = $1
+    `;
+
+    const result = await pool.query(query, [parseInt(userId)]);
+    console.log('Professional country:', result.rows);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Professional not found' });
+    }
+
+    res.json({ country: result.rows[0].country });
+  } catch (error) {
+    console.error('Error fetching country of professional:', error);
+    res.status(500).json({ error: 'Failed to fetch country of professional' });
   }
 });
 

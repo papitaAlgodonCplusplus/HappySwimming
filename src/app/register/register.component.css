@@ -9,6 +9,16 @@
     color: #204376;
 }
 
+.error-message {
+    background-color: rgba(255, 0, 0, 0.1);
+    color: #cc0000;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    border-left: 4px solid #cc0000;
+}
+
 .register-content {
     width: 90%;
     max-width: 1200px;

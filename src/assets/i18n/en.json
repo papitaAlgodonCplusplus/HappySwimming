@@ -312,13 +312,13 @@
     "economicManagerDesc": "Manage income and expense distribution",
     "professionalCourses": {
         "swimmingStoryTrainer": {
-            "description": "Course for Teacher Trainer/Technical Director (includes pedagogical material)"
+            "description": "Course for Teacher Trainer/Technical Director"
         },
         "swimmingStoryTeacher": {
             "description": "Course for becoming a Swimming Story Teacher"
         },
         "frontCrawl": {
-            "description": "Training for front-crawl spinning methodology (minimum 10 people)"
+            "description": "Training for front-crawl spinning methodology"
         },
         "aquagym": {
             "description": "Course for becoming an Aquagym instructor"

@@ -312,13 +312,13 @@
     "economicManagerDesc": "Gerenciar distribuição de receitas e despesas",
     "professionalCourses": {
         "swimmingStoryTrainer": {
-            "description": "Curso para Formador de Professores/Diretor Técnico (inclui material pedagógico)"
+            "description": "Curso para Formador de Professores/Diretor Técnico"
         },
         "swimmingStoryTeacher": {
             "description": "Curso para se tornar um Professor de Nadar uma História"
         },
         "frontCrawl": {
-            "description": "Treinamento para metodologia de nado crawl rotativo (mínimo 10 pessoas)"
+            "description": "Treinamento para metodologia de nado crawl rotativo"
         },
         "aquagym": {
             "description": "Curso para se tornar um instrutor de hidroginástica"

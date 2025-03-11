@@ -144,7 +144,7 @@
             </div>
             
             <div class="document-upload">
-                <label for="insuranceDocument">{{ 'registerFreeProfessional.insurance' | translate }}<span class="required">*</span></label>
+                <label for="insuranceDocument">{{ 'registerFreeProfessional.insurance' | translate }}</label>
                 <input type="file" id="insuranceDocument" (change)="onFileSelected($event, 'insurance')" class="file-input" [disabled]="isLoading">
                 <div class="file-name">{{ insuranceDocument?.name || 'No file selected' }}</div>
             </div>

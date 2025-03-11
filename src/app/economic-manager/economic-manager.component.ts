@@ -105,6 +105,9 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   insourcingExpenses: ServiceExpense = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
   outsourcingExpenses: ServiceExpense = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
 
+  // Map to store professional countries
+  professionalCountries: Map<number, string> = new Map();
+
   // Admin-specific properties
   // User filter properties
   nameFilter: string = '';
@@ -135,8 +138,14 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
 
   // Common countries for filter
   countryOptions: string[] = [
-    'Spain', 'Portugal', 'UK', 'Ireland', 'France', 'Germany',
-    'Italy', 'USA', 'Canada', 'Brazil', 'Mexico', 'Australia'
+    'Spain', 'Portugal', 'UK', 'Ireland', 'France', 'Germany', 'Italy', 'USA', 'Canada',
+    'Brazil', 'Mexico', 'Australia', 'Argentina', 'Chile', 'Colombia', 'Peru', 'Ecuador',
+    'Venezuela', 'Costa Rica', 'Panama', 'Guatemala', 'El Salvador', 'Honduras', 'Nicaragua',
+    'Bolivia', 'Paraguay', 'Uruguay', 'Dominican Republic', 'Cuba', 'Puerto Rico', 'Sweden',
+    'Norway', 'Denmark', 'Finland', 'Netherlands', 'Belgium', 'Switzerland', 'Austria',
+    'Poland', 'Czech Republic', 'Slovakia', 'Hungary', 'Greece', 'Turkey', 'Russia', 'Japan',
+    'South Korea', 'China', 'India', 'Indonesia', 'Philippines', 'Thailand', 'South Africa',
+    'New Zealand', 'Malaysia', 'Singapore', 'Egypt', 'Saudi Arabia', 'United Arab Emirates'
   ];
 
   // Client names for filter (will be populated from data)
@@ -304,10 +313,6 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
             professionalEnrollments: enrollments.filter(e => e.type === 'professional_service'),
             total: enrollments.length
           })));
-      }),
-      finalize(() => {
-        this.isLoading = false;
-        this.cdr.detectChanges();
       })
     ).subscribe({
       next: (response) => {
@@ -359,25 +364,82 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
             ...this.adminReport.clientEnrollments,
             ...this.adminReport.professionalEnrollments
           ]);
+          
+          // Extract client names for filtering
+          this.extractClientNames([
+            ...this.adminReport.clientEnrollments,
+            ...this.adminReport.professionalEnrollments
+          ]);
 
-          // Apply initial filters
-          this.applyFilters();
-
-          // Calculate expenses for all client enrollments
-          this.calculateAdminExpenses();
+          // Collect all unique professional IDs for country lookup
+          const professionalIds = new Set<number>();
+          
+          this.adminReport.allEnrollments.forEach(enrollment => {
+            if (enrollment.professionalId) {
+              professionalIds.add(enrollment.professionalId);
+            }
+          });
+          
+          // Create an array of observables for each professional's country
+          const countryRequests = Array.from(professionalIds).map(id => 
+            this.servicesManagerService.getCountryOfUser(id).pipe(
+              catchError(error => {
+                console.error(`Error fetching country for professional ${id}:`, error);
+                return of({ id, country: 'Unknown' });
+              })
+            )
+          );
+          
+          // If there are any professionals, fetch their countries
+          if (countryRequests.length > 0) {
+            forkJoin(countryRequests).subscribe({
+              next: (results) => {
+                console.log('Country results:', results);
+                // Store the country data in the Map for use in filtering
+                results.forEach(result => {
+                  console.log('Country result:', result, 'ID:', result.id, 'Country:', result.country);
+                  if (result && result.id && result.country) {
+                    this.professionalCountries.set(result.id, result.country);
+                  }
+                });
+                
+                // Now that we have all country data, apply filters
+                this.applyFilters();
+                
+                // Calculate expenses
+                this.calculateAdminExpenses();
+                
+                this.isLoading = false;
+                this.cdr.detectChanges();
+              },
+              error: (error) => {
+                console.error('Error fetching countries:', error);
+                this.isLoading = false;
+                this.applyFilters();
+                this.calculateAdminExpenses();
+                this.cdr.detectChanges();
+              }
+            });
+          } else {
+            // No professionals to fetch countries for
+            this.applyFilters();
+            this.calculateAdminExpenses();
+            this.isLoading = false;
+            this.cdr.detectChanges();
+          }
+          
         } catch (error) {
           console.error('Error processing admin data:', error);
           this.errorMessage = 'Error processing enrollment data. Please try again.';
+          this.isLoading = false;
+          this.cdr.detectChanges();
         }
-
-        this.extractClientNames([
-          ...this.adminReport.clientEnrollments,
-          ...this.adminReport.professionalEnrollments
-        ]);
       },
       error: (error) => {
         console.error('Error loading admin data:', error);
         this.errorMessage = 'Failed to load enrollment data for admin. Please try again.';
+        this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -448,6 +510,49 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  // Filter enrollments based on all criteria
+  filterEnrollments(enrollments: Enrollment[]): Enrollment[] {
+    return enrollments.filter(enrollment => {
+      // Filter by name (case-insensitive)
+      if (this.nameFilter && !this.matchesNameFilter(enrollment, this.nameFilter)) {
+        return false;
+      }
+
+      // Admin-only filters
+      if (this.isAdmin) {
+        // Filter by country (if admin and country selected)
+        if (this.selectedCountry !== 'all' && enrollment.professionalId) {
+          const professionalCountry = this.professionalCountries.get(enrollment.professionalId);
+          // If we don't have the country or it doesn't match, filter it out
+          console.log('Professional Country:', professionalCountry);
+          if (!professionalCountry || professionalCountry !== this.selectedCountry) {
+            return false;
+          }
+        }
+
+        // Filter by client name
+        if (this.selectedClientName !== 'all') {
+          const clientName = enrollment.clientName || `User ${enrollment.userId}`;
+          if (clientName !== this.selectedClientName) {
+            return false;
+          }
+        }
+      }
+
+      // Filter by course
+      if (this.selectedCourse && enrollment.courseId.toString() !== this.selectedCourse.toString()) {
+        return false;
+      }
+
+      // Filter by month and year
+      if (!this.matchesDateFilter(enrollment)) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
   // Check if enrollment matches name filter
   matchesNameFilter(enrollment: Enrollment, nameFilter: string): boolean {
     const searchTerm = nameFilter.toLowerCase();
@@ -507,6 +612,25 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     // }
 
     // return true;
+  }
+
+  // Extract unique client names from enrollments
+  extractClientNames(enrollments: Enrollment[]) {
+    // Create a set to eliminate duplicates
+    const clientNamesSet = new Set<string>();
+
+    // Extract unique client names from enrollments
+    enrollments.forEach(enrollment => {
+      if (enrollment.clientName) {
+        clientNamesSet.add(enrollment.clientName);
+      } else if (enrollment.userId) {
+        // If no client name but has userId, use a generic name
+        clientNamesSet.add(`User ${enrollment.userId}`);
+      }
+    });
+
+    // Convert set to array and sort alphabetically
+    this.clientNameOptions = Array.from(clientNamesSet).sort();
   }
 
   calculateClientExpenses() {
@@ -624,6 +748,22 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     return this.safeIsInsourcingEnrollment(enrollment);
   }
 
+  // Reset all filters
+  resetFilters() {
+    this.nameFilter = '';
+    this.selectedCourse = '';
+    this.selectedMonth = 0;
+    this.selectedYear = 0;
+
+    // Reset admin-only filters
+    if (this.isAdmin) {
+      this.selectedCountry = 'all';
+      this.selectedClientName = 'all';
+    }
+
+    this.applyFilters();
+  }
+
   ngOnDestroy(): void {
     // Clean up subscriptions
     if (this.langSubscription) {
@@ -635,81 +775,5 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     if (this.authSubscription) {
       this.authSubscription.unsubscribe();
     }
-  }
-
-  extractClientNames(enrollments: Enrollment[]) {
-    // Create a set to eliminate duplicates
-    const clientNamesSet = new Set<string>();
-    
-    // Add "All Clients" option first
-    // (This will be handled by having 'all' as the default value in the selectedClientName)
-    
-    // Extract unique client names from enrollments
-    enrollments.forEach(enrollment => {
-      if (enrollment.clientName) {
-        clientNamesSet.add(enrollment.clientName);
-      } else if (enrollment.userId) {
-        // If no client name but has userId, use a generic name
-        clientNamesSet.add(`User ${enrollment.userId}`);
-      }
-    });
-    
-    // Convert set to array and sort alphabetically
-    this.clientNameOptions = Array.from(clientNamesSet).sort();
-  }
-  
-  // Filter enrollments based on all criteria
-  filterEnrollments(enrollments: Enrollment[]): Enrollment[] {
-    return enrollments.filter(enrollment => {
-      // Filter by name (case-insensitive)
-      if (this.nameFilter && !this.matchesNameFilter(enrollment, this.nameFilter)) {
-        return false;
-      }
-      
-      // Admin-only filters
-      if (this.isAdmin) {
-        // Filter by country (if admin and country selected)
-        if (this.selectedCountry !== 'all' && enrollment.country !== this.selectedCountry) {
-          return false;
-        }
-        
-        // Filter by client name (if admin and client name selected)
-        if (this.selectedClientName !== 'all') {
-          const clientName = enrollment.clientName || `User ${enrollment.userId}`;
-          if (clientName !== this.selectedClientName) {
-            return false;
-          }
-        }
-      }
-  
-      // Filter by course
-      if (this.selectedCourse && enrollment.courseId.toString() !== this.selectedCourse.toString()) {
-        return false;
-      }
-  
-      // Filter by month and year
-      if (!this.matchesDateFilter(enrollment)) {
-        return false;
-      }
-  
-      return true;
-    });
-  }
-  
-  // Reset all filters
-  resetFilters() {
-    this.nameFilter = '';
-    this.selectedCourse = '';
-    this.selectedMonth = 0;
-    this.selectedYear = 0;
-    
-    // Reset admin-only filters
-    if (this.isAdmin) {
-      this.selectedCountry = 'all';
-      this.selectedClientName = 'all';
-    }
-    
-    this.applyFilters();
-    window.location.reload();
   }
 }
