@@ -139,8 +139,13 @@
         <div class="terms-container">
             <div class="terms-checkbox">
                 <input type="checkbox" id="acceptTerms" [(ngModel)]="acceptTerms" [disabled]="isLoading">
-                <label for="acceptTerms">{{ 'registration.acceptTerms' | translate }} <span class="lopd-text">{{
-                        'registration.lopd' | translate }}</span></label>
+                <label for="acceptTerms">
+                    <a *ngIf="translationService.getCurrentLang() | async as currentLang"
+                        [href]="currentLang === 'en' ? 'https://drive.google.com/file/d/1V8615nlybrEWnKBbxbvkzLCsxk8nLhZn/view?usp=drive_link' : 'https://drive.google.com/file/d/1QSK1gaSOpCf5J99aAjJVOcaHWDS2Cu3b/view?usp=drive_link'"
+                        target="_blank">
+                        {{ 'registration.acceptTerms' | translate }}
+                    </a>
+                </label>
             </div>
         </div>
 

@@ -47,15 +47,15 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
   confirmPassword: string = '';
   website: string = '';
   bankAccount: string = '';
-  
+
   // Job area options
   jobAreas = [
     { id: 'dt', name: 'DT Director Técnico' },
     { id: 'pr', name: 'PR Profesor' }
   ];
-  
+
   selectedJobArea: string = '';
-  
+
   // Courses available
   availableCourses: CourseOption[] = [
     {
@@ -102,30 +102,63 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
       }
     }
   ];
-  
+
   selectedCourse: string = '';
   selectedCourseDelivery: 'online' | 'inPerson' = 'online';
-  
+
   // Terms and conditions
   acceptTerms: boolean = false;
-  
+
   // Files
   idDocument: File | null = null;
   curriculumVitae: File | null = null;
   insuranceDocument: File | null = null;
-  
+
   // Status variables
   isLoading: boolean = false;
   errorMessage: string = '';
-  
+
   private langSubscription: Subscription | null = null;
   private loadedSubscription: Subscription | null = null;
-  
+
   // Use inject for dependency injection
-  private translationService = inject(TranslationService);
+  public translationService = inject(TranslationService);
   private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private router = inject(Router);
+
+  /**
+ * Returns the appropriate terms and conditions link based on language and job area
+ * @param language The current language code ('en', 'es', etc.)
+ * @param jobArea The selected job area ('dt' for Technical Director, 'pr' for Teacher)
+ * @returns URL to the appropriate terms document
+ */
+  getTermsLink(language: string, jobArea: string): string {
+    // Default link if none of the conditions match
+    let link = 'https://drive.google.com/file/d/1GNN6hzvTPs5bmCbSMf8yUmtMi6OshgaJ/view?usp=drive_link';
+
+    if (jobArea === 'dt') { // Technical Director
+      if (language === 'en') {
+        link = 'https://drive.google.com/file/d/1GNN6hzvTPs5bmCbSMf8yUmtMi6OshgaJ/view?usp=drive_link';
+      } else {
+        link = 'https://drive.google.com/file/d/1r99JiXiScgo0wCbRattbusE8DRgfCSsR/view?usp=drive_link';
+      }
+    } else if (jobArea === 'pr') { // Teacher
+      if (language === 'en') {
+        link = 'https://drive.google.com/file/d/1_l_4TSPncReiX_Sh28K93TtrHsnZkSk4/view?usp=drive_link';
+      } else {
+        link = 'https://drive.google.com/file/d/1jDv4XiGkl6AK863FwbO1TTysZbgwngxR/view?usp=drive_link';
+      }
+    } else {
+      if (language === 'en') {
+        link = 'https://drive.google.com/file/d/1GNN6hzvTPs5bmCbSMf8yUmtMi6OshgaJ/view?usp=drive_link';
+      } else {
+        link = 'https://drive.google.com/file/d/1r99JiXiScgo0wCbRattbusE8DRgfCSsR/view?usp=drive_link';
+      }
+    }
+
+    return link;
+  }
 
   ngOnInit() {
     // Subscribe to language changes to update view
@@ -142,16 +175,16 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
       }
     });
   }
-  
+
   getSelectedCourseDetail(): CourseOption | undefined {
     return this.availableCourses.find(c => c.id === this.selectedCourse);
   }
-  
+
   isCourseDeliveryAvailable(type: 'online' | 'inPerson'): boolean {
     const course = this.getSelectedCourseDetail();
     return course ? !!course[type] : false;
   }
-  
+
   onCourseChange(): void {
     // Reset delivery method if not available for the selected course
     if (this.selectedCourse) {
@@ -166,11 +199,11 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
     }
     this.cdr.detectChanges();
   }
-  
+
   onFileSelected(event: Event, fileType: 'id' | 'cv' | 'insurance'): void {
     const element = event.target as HTMLInputElement;
     const files = element.files;
-    
+
     if (files && files.length > 0) {
       const file = files[0];
       switch (fileType) {
@@ -186,58 +219,58 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
       }
     }
   }
-  
+
   validateForm(): boolean {
     // Reset error message
     this.errorMessage = '';
-    
+
     // Validate required fields
-    if (!this.firstName || !this.lastName1 || !this.identificationNumber || 
-        !this.address || !this.postalCode || !this.city || !this.country || 
-        !this.phoneMobile || !this.email || !this.selectedJobArea ||
-        !this.selectedCourse || !this.bankAccount ||
-        !this.password || !this.confirmPassword) {
+    if (!this.firstName || !this.lastName1 || !this.identificationNumber ||
+      !this.address || !this.postalCode || !this.city || !this.country ||
+      !this.phoneMobile || !this.email || !this.selectedJobArea ||
+      !this.selectedCourse || !this.bankAccount ||
+      !this.password || !this.confirmPassword) {
       this.errorMessage = 'Please fill in all required fields.';
       return false;
     }
-    
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(this.email)) {
       this.errorMessage = 'Please enter a valid email address.';
       return false;
     }
-    
+
     // Check if passwords match
     if (this.password !== this.confirmPassword) {
       this.errorMessage = 'Passwords do not match.';
       return false;
     }
-  
+
     // Validate file uploads
     if (!this.idDocument || !this.curriculumVitae) {
       this.errorMessage = 'All document uploads are required.';
       return false;
     }
-    
+
     // Validate terms acceptance
     if (!this.acceptTerms) {
       this.errorMessage = 'You must accept the terms and conditions.';
       return false;
     }
-    
+
     return true;
   }
-  
+
   onSubmit() {
     if (!this.validateForm()) {
       this.cdr.detectChanges();
       return;
     }
-    
+
     this.isLoading = true;
     this.cdr.detectChanges();
-    
+
     // Create FormData for file uploads
     const formData = new FormData();
     formData.append('identificationNumber', this.identificationNumber);
@@ -257,25 +290,25 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
     formData.append('jobArea', this.selectedJobArea);
     formData.append('courseId', this.selectedCourse);
     formData.append('courseDelivery', this.selectedCourseDelivery);
-    
+
     // Add the isInsourcing flag - required by the API
     formData.append('isInsourcing', 'true');
-    
+
     // Explicitly set role to professional
     formData.append('role', 'professional');
-    
+
     // Append files
     if (this.idDocument) formData.append('idDocument', this.idDocument);
     if (this.curriculumVitae) formData.append('curriculumVitae', this.curriculumVitae);
     if (this.insuranceDocument) formData.append('insuranceDocument', this.insuranceDocument);
-    
+
     console.log('Registering professional with form data');
-    
+
     // Log form data keys being sent (for debugging)
     for (const key of formData.keys()) {
       console.log(`Form contains key: ${key}`);
     }
-    
+
     // Call API service to register free professional
     this.authService.registerFreeProfessional(formData).subscribe({
       next: (response) => {
@@ -291,7 +324,7 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
       }
     });
   }
-  
+
   cancel() {
     this.router.navigate(['/auth']);
   }

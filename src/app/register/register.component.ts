@@ -68,7 +68,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
   private loadedSubscription: Subscription | null = null;
 
   // Use inject for dependency injection
-  private translationService = inject(TranslationService);
+  public translationService = inject(TranslationService);
   private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private router = inject(Router);

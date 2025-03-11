@@ -13,16 +13,20 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label for="identificationNumber">{{ 'registerFreeProfessional.identification' | translate }}<span class="required">*</span></label>
-                <input type="text" id="identificationNumber" [(ngModel)]="identificationNumber" class="form-control" [disabled]="isLoading">
+                <label for="identificationNumber">{{ 'registerFreeProfessional.identification' | translate }}<span
+                        class="required">*</span></label>
+                <input type="text" id="identificationNumber" [(ngModel)]="identificationNumber" class="form-control"
+                    [disabled]="isLoading">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="jobArea">{{ 'registerFreeProfessional.jobArea' | translate }}<span class="required">*</span></label>
+                <label for="jobArea">{{ 'registerFreeProfessional.jobArea' | translate }}<span
+                        class="required">*</span></label>
                 <select id="jobArea" [(ngModel)]="selectedJobArea" class="form-control" [disabled]="isLoading">
-                    <option value="" disabled selected>{{ 'registerFreeProfessional.selectJobArea' | translate }}</option>
+                    <option value="" disabled selected>{{ 'registerFreeProfessional.selectJobArea' | translate }}
+                    </option>
                     <option *ngFor="let area of jobAreas" [value]="area.id">{{ area.name }}</option>
                 </select>
             </div>
@@ -30,11 +34,13 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label for="firstName">{{ 'registerFreeProfessional.firstName' | translate }}<span class="required">*</span></label>
+                <label for="firstName">{{ 'registerFreeProfessional.firstName' | translate }}<span
+                        class="required">*</span></label>
                 <input type="text" id="firstName" [(ngModel)]="firstName" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
-                <label for="lastName1">{{ 'registerFreeProfessional.lastName1' | translate }}<span class="required">*</span></label>
+                <label for="lastName1">{{ 'registerFreeProfessional.lastName1' | translate }}<span
+                        class="required">*</span></label>
                 <input type="text" id="lastName1" [(ngModel)]="lastName1" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
@@ -45,37 +51,45 @@
 
         <div class="form-row">
             <div class="form-group wide">
-                <label for="address">{{ 'registerFreeProfessional.address' | translate }}<span class="required">*</span></label>
+                <label for="address">{{ 'registerFreeProfessional.address' | translate }}<span
+                        class="required">*</span></label>
                 <input type="text" id="address" [(ngModel)]="address" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
-                <label for="postalCode">{{ 'registerFreeProfessional.postalCode' | translate }}<span class="required">*</span></label>
+                <label for="postalCode">{{ 'registerFreeProfessional.postalCode' | translate }}<span
+                        class="required">*</span></label>
                 <input type="text" id="postalCode" [(ngModel)]="postalCode" class="form-control" [disabled]="isLoading">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="city">{{ 'registerFreeProfessional.city' | translate }}<span class="required">*</span></label>
+                <label for="city">{{ 'registerFreeProfessional.city' | translate }}<span
+                        class="required">*</span></label>
                 <input type="text" id="city" [(ngModel)]="city" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
-                <label for="country">{{ 'registerFreeProfessional.country' | translate }}<span class="required">*</span></label>
+                <label for="country">{{ 'registerFreeProfessional.country' | translate }}<span
+                        class="required">*</span></label>
                 <input type="text" id="country" [(ngModel)]="country" class="form-control" [disabled]="isLoading">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="phoneFixed">{{ 'registerFreeProfessional.phoneFixed' | translate }}<span class="optional">({{ 'registerFreeProfessional.optional' | translate }})</span></label>
+                <label for="phoneFixed">{{ 'registerFreeProfessional.phoneFixed' | translate }}<span
+                        class="optional">({{ 'registerFreeProfessional.optional' | translate }})</span></label>
                 <input type="tel" id="phoneFixed" [(ngModel)]="phoneFixed" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
-                <label for="phoneMobile">{{ 'registerFreeProfessional.phoneMobile' | translate }}<span class="required">*</span></label>
-                <input type="tel" id="phoneMobile" [(ngModel)]="phoneMobile" class="form-control" [disabled]="isLoading">
+                <label for="phoneMobile">{{ 'registerFreeProfessional.phoneMobile' | translate }}<span
+                        class="required">*</span></label>
+                <input type="tel" id="phoneMobile" [(ngModel)]="phoneMobile" class="form-control"
+                    [disabled]="isLoading">
             </div>
             <div class="form-group">
-                <label for="email">{{ 'registerFreeProfessional.email' | translate }}<span class="required">*</span></label>
+                <label for="email">{{ 'registerFreeProfessional.email' | translate }}<span
+                        class="required">*</span></label>
                 <input type="email" id="email" [(ngModel)]="email" class="form-control" [disabled]="isLoading">
             </div>
         </div>
@@ -86,42 +100,54 @@
                 <input type="password" id="password" [(ngModel)]="password" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group">
-                <label for="confirmPassword">{{ 'password' | translate }} ({{ 'confirm' | translate }})<span class="required">*</span></label>
-                <input type="password" id="confirmPassword" [(ngModel)]="confirmPassword" class="form-control" [disabled]="isLoading">
+                <label for="confirmPassword">{{ 'password' | translate }} ({{ 'confirm' | translate }})<span
+                        class="required">*</span></label>
+                <input type="password" id="confirmPassword" [(ngModel)]="confirmPassword" class="form-control"
+                    [disabled]="isLoading">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="website">{{ 'registerFreeProfessional.website' | translate }}<span class="optional">({{ 'registerFreeProfessional.optional' | translate }})</span></label>
+                <label for="website">{{ 'registerFreeProfessional.website' | translate }}<span class="optional">({{
+                        'registerFreeProfessional.optional' | translate }})</span></label>
                 <input type="url" id="website" [(ngModel)]="website" class="form-control" [disabled]="isLoading">
             </div>
             <div class="form-group wide">
-                <label for="bankAccount">{{ 'registerFreeProfessional.bankAccount' | translate }}<span class="required">*</span></label>
-                <input type="text" id="bankAccount" [(ngModel)]="bankAccount" class="form-control" [disabled]="isLoading">
+                <label for="bankAccount">{{ 'registerFreeProfessional.bankAccount' | translate }}<span
+                        class="required">*</span></label>
+                <input type="text" id="bankAccount" [(ngModel)]="bankAccount" class="form-control"
+                    [disabled]="isLoading">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="course">{{ 'registerFreeProfessional.course' | translate }}<span class="required">*</span></label>
-                <select id="course" [(ngModel)]="selectedCourse" (change)="onCourseChange()" class="form-control" [disabled]="isLoading">
-                    <option value="" disabled selected>{{ 'registerFreeProfessional.selectCourse' | translate }}</option>
-                    <option *ngFor="let course of availableCourses" [value]="course.id">{{ course.id }}) {{ course.name }}</option>
+                <label for="course">{{ 'registerFreeProfessional.course' | translate }}<span
+                        class="required">*</span></label>
+                <select id="course" [(ngModel)]="selectedCourse" (change)="onCourseChange()" class="form-control"
+                    [disabled]="isLoading">
+                    <option value="" disabled selected>{{ 'registerFreeProfessional.selectCourse' | translate }}
+                    </option>
+                    <option *ngFor="let course of availableCourses" [value]="course.id">{{ course.id }}) {{ course.name
+                        }}</option>
                 </select>
             </div>
         </div>
 
         <div *ngIf="selectedCourse" class="form-row">
             <div class="form-group">
-                <label for="courseDelivery">{{ 'registerFreeProfessional.courseDelivery' | translate }}<span class="required">*</span></label>
+                <label for="courseDelivery">{{ 'registerFreeProfessional.courseDelivery' | translate }}<span
+                        class="required">*</span></label>
                 <div class="radio-group">
                     <div class="radio-option" *ngIf="isCourseDeliveryAvailable('online')">
-                        <input type="radio" id="online" name="courseDelivery" [value]="'online'" [(ngModel)]="selectedCourseDelivery" [disabled]="isLoading">
+                        <input type="radio" id="online" name="courseDelivery" [value]="'online'"
+                            [(ngModel)]="selectedCourseDelivery" [disabled]="isLoading">
                         <label for="online">{{ 'registerFreeProfessional.online' | translate }}</label>
                     </div>
                     <div class="radio-option" *ngIf="isCourseDeliveryAvailable('inPerson')">
-                        <input type="radio" id="inPerson" name="courseDelivery" [value]="'inPerson'" [(ngModel)]="selectedCourseDelivery" [disabled]="isLoading">
+                        <input type="radio" id="inPerson" name="courseDelivery" [value]="'inPerson'"
+                            [(ngModel)]="selectedCourseDelivery" [disabled]="isLoading">
                         <label for="inPerson">{{ 'registerFreeProfessional.inPerson' | translate }}</label>
                     </div>
                 </div>
@@ -129,36 +155,46 @@
         </div>
 
         <div class="form-row documents-section">
-            <h3 class="documents-title">{{ 'registerFreeProfessional.requiredDocuments' | translate }}<span class="required">*</span></h3>
-            
+            <h3 class="documents-title">{{ 'registerFreeProfessional.requiredDocuments' | translate }}<span
+                    class="required">*</span></h3>
+
             <div class="document-upload">
-                <label for="idDocument">{{ 'registerFreeProfessional.idDocument' | translate }}<span class="required">*</span></label>
-                <input type="file" id="idDocument" (change)="onFileSelected($event, 'id')" class="file-input" [disabled]="isLoading">
+                <label for="idDocument">{{ 'registerFreeProfessional.idDocument' | translate }}<span
+                        class="required">*</span></label>
+                <input type="file" id="idDocument" (change)="onFileSelected($event, 'id')" class="file-input"
+                    [disabled]="isLoading">
                 <div class="file-name">{{ idDocument?.name || 'No file selected' }}</div>
             </div>
-            
+
             <div class="document-upload">
-                <label for="curriculumVitae">{{ 'registerFreeProfessional.curriculumVitae' | translate }}<span class="required">*</span></label>
-                <input type="file" id="curriculumVitae" (change)="onFileSelected($event, 'cv')" class="file-input" [disabled]="isLoading">
+                <label for="curriculumVitae">{{ 'registerFreeProfessional.curriculumVitae' | translate }}<span
+                        class="required">*</span></label>
+                <input type="file" id="curriculumVitae" (change)="onFileSelected($event, 'cv')" class="file-input"
+                    [disabled]="isLoading">
                 <div class="file-name">{{ curriculumVitae?.name || 'No file selected' }}</div>
             </div>
-            
+
             <div class="document-upload">
                 <label for="insuranceDocument">{{ 'registerFreeProfessional.insurance' | translate }}</label>
-                <input type="file" id="insuranceDocument" (change)="onFileSelected($event, 'insurance')" class="file-input" [disabled]="isLoading">
+                <input type="file" id="insuranceDocument" (change)="onFileSelected($event, 'insurance')"
+                    class="file-input" [disabled]="isLoading">
                 <div class="file-name">{{ insuranceDocument?.name || 'No file selected' }}</div>
             </div>
         </div>
 
-        <div class="terms-container">
-            <div class="terms-checkbox">
-                <input type="checkbox" id="acceptTerms" [(ngModel)]="acceptTerms" [disabled]="isLoading">
-                <label for="acceptTerms">{{ 'registerFreeProfessional.acceptTerms' | translate }} <span class="terms-text">{{ 'registerFreeProfessional.termsText' | translate }}</span></label>
-            </div>
+        <div class="terms-checkbox">
+            <input type="checkbox" id="acceptTerms" [(ngModel)]="acceptTerms" [disabled]="isLoading">
+            <label for="acceptTerms">
+                <a *ngIf="translationService.getCurrentLang() | async as currentLang"
+                    [href]="getTermsLink(currentLang, selectedJobArea)" target="_blank">
+                    {{ 'registration.acceptTerms' | translate }}
+                </a>
+            </label>
         </div>
 
         <div class="button-container">
-            <button class="btn btn-cancel" (click)="cancel()" [disabled]="isLoading">{{ 'registerFreeProfessional.cancel' | translate }}</button>
+            <button class="btn btn-cancel" (click)="cancel()" [disabled]="isLoading">{{
+                'registerFreeProfessional.cancel' | translate }}</button>
             <button class="btn btn-register" (click)="onSubmit()" [disabled]="isLoading">
                 <span *ngIf="!isLoading">{{ 'registerFreeProfessional.register' | translate }}</span>
                 <span *ngIf="isLoading">{{ 'registerFreeProfessional.processing' | translate }}</span>
