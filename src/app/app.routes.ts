@@ -47,6 +47,10 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'password-recover',
+    loadComponent: () => import('./password-recover/password-recover.component').then(c => c.PasswordRecoverComponent)
+  },
+  {
     path: 'assign-professional',
     loadComponent: () => import('./assign-pl-to-cl/assign-pl-to-cl.component').then(c => c.AssignPLToCLComponent),
     canActivate: [authGuard]

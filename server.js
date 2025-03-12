@@ -2084,6 +2084,193 @@ app.get('/api/country/:userId', authenticateToken, async (req, res) => {
   }
 });
 
+// Add these routes to your server.js file
+
+// In-memory storage for recovery codes (in production, use Redis or a database)
+// Format: { email: { code: string, expiresAt: Date, attempts: number } }
+const recoveryCodes = {};
+
+// Utility to generate a random 6-digit code
+function generateRecoveryCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+app.post('/api/password-reset/request', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+    
+    // Check if the email exists in your database using pool
+    const userResult = await pool.query(
+      'SELECT * FROM happyswimming.users WHERE email = $1',
+      [email]
+    );
+    
+    // Check if user exists
+    if (userResult.rows.length === 0) {
+      // For security reasons, don't reveal that the email doesn't exist
+      // Instead, pretend we sent an email
+      return res.json({ message: 'If your email exists in our system, you will receive a recovery code' });
+    }
+    
+    // Generate a new recovery code
+    const code = generateRecoveryCode();
+    
+    // Store the code with expiration (30 minutes from now)
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30);
+    
+    recoveryCodes[email] = {
+      code,
+      expiresAt,
+      attempts: 0
+    };
+    
+    // Send an email with the code using SendGrid
+    await sendEmail(email, 'Password Recovery Code', `Your recovery code is: ${code}. It will expire in 30 minutes.`);
+    
+    return res.json({ message: 'Recovery code sent to your email address' });
+    
+  } catch (error) {
+    console.error('Error requesting password reset:', error);
+    return res.status(500).json({ error: 'Failed to send recovery code' });
+  }
+});
+
+// Utility function to send emails using SendGrid
+async function sendEmail(to, subject, message) {
+  try {
+    // Create email object
+    const msg = {
+      to: to,
+      from: "info@digitalsolutionoffice.com", // Use the verified sender
+      subject: subject,
+      text: message,
+      html: message.replace(/\n/g, '<br>')  // Simple HTML conversion for line breaks
+    };
+    
+    // Send email using SendGrid
+    await sgMail.send(msg);
+    
+    console.log(`Email sent to ${to}: ${subject}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending email:', error);
+    // Log more detailed error if available
+    if (error.response) {
+      console.error('SendGrid error details:', error.response.body);
+    }
+    return false;
+  }
+}
+
+/**
+ * Verify the recovery code sent to the user's email
+ * POST /api/password-reset/verify-code
+ */
+app.post('/api/password-reset/verify-code', (req, res) => {
+  try {
+    const { email, code } = req.body;
+    
+    if (!email || !code) {
+      return res.status(400).json({ error: 'Email and code are required' });
+    }
+    
+    // Check if a code exists for this email
+    const recoveryData = recoveryCodes[email];
+    
+    if (!recoveryData) {
+      return res.status(400).json({ error: 'No recovery code found for this email' });
+    }
+    
+    // Check if the code has expired
+    if (new Date() > new Date(recoveryData.expiresAt)) {
+      delete recoveryCodes[email];
+      return res.status(400).json({ error: 'Recovery code has expired' });
+    }
+    
+    // Increment attempts
+    recoveryData.attempts += 1;
+    
+    // Check if too many attempts (for security)
+    if (recoveryData.attempts > 5) {
+      delete recoveryCodes[email];
+      return res.status(400).json({ error: 'Too many failed attempts. Please request a new code.' });
+    }
+    
+    // Check if the code matches
+    if (recoveryData.code !== code) {
+      return res.status(400).json({ error: 'Invalid recovery code' });
+    }
+    
+    // Code is valid
+    return res.json({ message: 'Code verified successfully' });
+    
+  } catch (error) {
+    console.error('Error verifying recovery code:', error);
+    return res.status(500).json({ error: 'Failed to verify recovery code' });
+  }
+});
+
+/**
+ * Reset the user's password using the verified recovery code
+ * POST /api/password-reset/reset
+ */
+app.post('/api/password-reset/reset', async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+    
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ error: 'Email, code, and new password are required' });
+    }
+    
+    // Check if a code exists for this email
+    const recoveryData = recoveryCodes[email];
+    
+    if (!recoveryData) {
+      return res.status(400).json({ error: 'No recovery code found for this email' });
+    }
+    
+    // Check if the code has expired
+    if (new Date() > new Date(recoveryData.expiresAt)) {
+      delete recoveryCodes[email];
+      return res.status(400).json({ error: 'Recovery code has expired' });
+    }
+    
+    // Check if the code matches
+    if (recoveryData.code !== code) {
+      return res.status(400).json({ error: 'Invalid recovery code' });
+    }
+    
+    // Password validation
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+    
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    
+    // Update the password in the database using pool
+    await pool.query(
+      'UPDATE happyswimming.users SET password_hash = $1 WHERE email = $2',
+      [hashedPassword, email]
+    );
+    
+    // Remove the used recovery code
+    delete recoveryCodes[email];
+    
+    return res.json({ message: 'Password has been reset successfully' });
+    
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    return res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });

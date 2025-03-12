@@ -381,4 +381,41 @@ export class AuthService {
       })
     );
   }
+
+
+  /**
+   * Request a password reset by sending a recovery code to the user's email
+   * @param email The email address to send the recovery code to
+   */
+  requestPasswordReset(email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/password-reset/request`, { email })
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Verify the recovery code sent to the user's email
+   * @param email The user's email address
+   * @param code The recovery code to verify
+   */
+  verifyRecoveryCode(email: string, code: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/password-reset/verify-code`, { email, code })
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Reset the user's password using the verified recovery code
+   * @param email The user's email address
+   * @param code The verified recovery code
+   * @param newPassword The new password to set
+   */
+  resetPassword(email: string, code: string, newPassword: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/password-reset/reset`, { email, code, newPassword })
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
 }
