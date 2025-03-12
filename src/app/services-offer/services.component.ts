@@ -17,7 +17,8 @@ import { Subscription } from 'rxjs';
 export class ServicesComponent implements OnInit, OnDestroy {
   private langSubscription: Subscription | null = null;
   private loadedSubscription: Subscription | null = null;
-  
+  window = window;
+
   // Add a flag to track which content is currently displayed
   showClientServices: boolean = true;
 

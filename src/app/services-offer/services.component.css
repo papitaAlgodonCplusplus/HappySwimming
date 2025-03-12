@@ -227,8 +227,13 @@
   }
   
   .box-detail, .service-description {
-    font-size: 0.9rem;
+    font-size: 0.7rem;
   }
+  
+  .box-detail2 {
+    font-size: 0.65rem;
+  }
+  
   
   .service-box {
     padding: 1rem;
