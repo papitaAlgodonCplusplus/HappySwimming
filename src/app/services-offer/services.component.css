@@ -142,11 +142,9 @@
   color: #204376;
 }
 
-.box-detail2 {
-  font-size: 1rem;
-  margin-bottom: 0.5rem;
-  font-weight: normal;
-  color: #204376;
+/* Indentation for professional service details */
+.indent {
+  padding-left: 1.5rem;
 }
 
 .service-description {
@@ -156,10 +154,6 @@
   margin-top: 0.5rem;
   font-style: italic;
   line-height: 1.4;
-}
-
-.indent {
-  padding-left: 1.5rem;
 }
 
 /* Levels container */
@@ -223,20 +217,32 @@
   }
   
   .box-title {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
   }
   
-  .box-detail, .service-description {
-    font-size: 0.7rem;
+  .box-detail {
+    font-size: 0.8rem;
+    text-align: center;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
   
-  .box-detail2 {
-    font-size: 0.65rem;
+  .indent {
+    padding-left: 0;
+    text-align: center;
   }
   
+  .service-description {
+    font-size: 0.8rem;
+  }
   
   .service-box {
+    padding: 0.5rem;
+  }
+  
+  .box-content {
     padding: 1rem;
+    text-align: center;
   }
   
   .levels-container {
@@ -256,17 +262,17 @@
     height: 40px;
     font-size: 1.2rem;
   }
+  
+  /* Hide the "minimum 10 people" text on mobile */
+  .min-people {
+    display: none;
+  }
 }
 
 /* Additional responsiveness for very small screens */
 @media (max-width: 400px) {
   .services-content {
     padding: 1rem 0.5rem;
-  }
-  
-  .box-content {
-    text-align: center;
-    padding: 1rem;
   }
   
   .column-title {

@@ -217,9 +217,7 @@ app-header {
     text-align: center;
   }
   
-  .hero-content {
-    bottom: 10%;
-  }
+  /* Remove bottom position as we're switching to relative positioning */
   
   .hero-title {
     font-size: 1.6rem;
@@ -235,6 +233,12 @@ app-header {
     height: auto;
     gap: 0.5rem;
     padding: 1rem;
+  }
+  
+  .hero-content {
+    bottom: 10%;
+    margin-top: 4vh; /* Fixed space after buttons regardless of language */
+    position: relative; /* Change from absolute to relative positioning */
   }
   
   .user-btn {

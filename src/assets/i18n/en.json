@@ -138,7 +138,7 @@
     "insourcing": "INSOURCING",
     "selectClient": "Select Outsourcing",
     "selectProfessional": "Select Insourcing",
-    "backToLogin": "Back to Login",
+    "backToLogin": "Back",
     "registration": {
         "title": "Registration",
         "clientTitle": "Client Registration",

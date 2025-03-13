@@ -104,7 +104,7 @@
     "insourcing": "INSOURCING",
     "selectClient": "Selecionar Outsourcing",
     "selectProfessional": "Selecionar Insourcing",
-    "backToLogin": "Voltar ao Login",
+    "backToLogin": "Voltar",
     "registration": {
         "title": "Registro",
         "clientTitle": "Registro de Cliente",
