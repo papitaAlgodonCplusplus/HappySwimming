@@ -41,7 +41,7 @@ app.use(express.json());
 
 // Database connection PROD
 const pool = new Pool({
-  connectionString: 'postgres://happyswimming_qjpe_user:SGCYBKnV6fp9WthlelqYVsVjRS9qaf4q@dpg-cvao8e5umphs73ag8b30-a.oregon-postgres.render.com:5432/happyswimming',
+  connectionString: 'postgres://happyswimming_qjpe_user:SGCYBKnV6fp9WthlelqYVsVjRS9qaf4q@dpg-cvao8e5umphs73ag8b30-a.oregon-postgres.render.com:5432/happyswimming_qjpe',
   ssl: { rejectUnauthorized: false }
 });
 
