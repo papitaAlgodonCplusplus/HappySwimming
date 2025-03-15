@@ -40,14 +40,21 @@ app.use(express.json());
 // });
 
 // Database connection PROD
+const { Pool } = require('pg');
 const pool = new Pool({
-  host: 'happyswimming.cxqii6e0qkzu.us-east-1.rds.amazonaws.com',
-  port: 5432,
-  database: 'happyswimming',
-  user: 'postgres',
-  password: 'PwT.398!',
+  connectionString: 'postgres://happyswimming_qjpe_user:SGCYBKnV6fp9WthlelqYVsVjRS9qaf4q@dpg-cvao8e5umphs73ag8b30-a.oregon-postgres.render.com:5432/happyswimming',
   ssl: { rejectUnauthorized: false }
 });
+
+
+// const pool = new Pool({
+//   host: 'happyswimming.cxqii6e0qkzu.us-east-1.rds.amazonaws.com',
+//   port: 5432,
+//   database: 'happyswimming',
+//   user: 'postgres',
+//   password: 'PwT.398!',
+//   ssl: { rejectUnauthorized: false }
+// });
 
 // Test database connection
 pool.connect((err, client, done) => {
