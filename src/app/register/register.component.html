@@ -141,7 +141,7 @@
                 <input type="checkbox" id="acceptTerms" [(ngModel)]="acceptTerms" [disabled]="isLoading">
                 <label for="acceptTerms">
                     <a *ngIf="translationService.getCurrentLang() | async as currentLang"
-                        [href]="currentLang === 'en' ? 'https://drive.google.com/file/d/1V8615nlybrEWnKBbxbvkzLCsxk8nLhZn/view?usp=drive_link' : 'https://drive.google.com/file/d/1QSK1gaSOpCf5J99aAjJVOcaHWDS2Cu3b/view?usp=drive_link'"
+                        [href]="currentLang === 'en' ? 'https://www.canva.com/design/DAGg9Aal_9k/8UCNkISYZJU-0pIMMjWARA/view?utm_content=DAGg9Aal_9k&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h38e6792e40' : 'https://www.canva.com/design/DAGhCdYoTAs/HIlbAjYdZdojOv-lz_o4LQ/view?utm_content=DAGhCdYoTAs&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h32bf1a202c'"
                         target="_blank">
                         {{ 'registration.acceptTerms' | translate }}
                     </a>
