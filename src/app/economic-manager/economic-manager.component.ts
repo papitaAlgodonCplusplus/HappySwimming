@@ -1,5 +1,3 @@
-// First let's add the filtering functionality to the economic-manager.component.ts file
-
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -81,6 +79,17 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   userName: string = '';
   userEmail: string = '';
   isAdmin: boolean = false;
+
+  // Course translation mappings
+  courseTranslationMap: { [key: string]: string } = {
+    '5': 'swimmingAbilities.titles.children36',
+    '6': 'swimmingAbilities.titles.children612',
+    '7': 'swimmingAbilities.titles.anyAge',
+    '1': 'professionalServices.swimmingStoryTrainer.title',
+    '2': 'professionalServices.swimmingStoryTeacher.title',
+    '3': 'professionalServices.frontCrawl.title',
+    '4': 'professionalServices.aquagym.title'
+  };
 
   // Enrollments data
   myEnrollments: Enrollment[] = [];
@@ -180,9 +189,43 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   private http = inject(HttpClient);
   private cdr = inject(ChangeDetectorRef);
 
+  currentLanguage: string = 'es';
+
+  // Function to translate time preference notes
+  translateTimePreference(note: string | undefined): string {
+    if (!note) return '';
+
+    // Check if the note contains preferred time information
+    if (note.includes('Preferred time:')) {
+      const timePart = note.split('Preferred time:')[1].trim().toLowerCase();
+
+      // Translate the preference label
+      const preferredLabel = this.translationService.translate('servicesManager.preferredTime');
+
+      // Translate the time value
+      let translatedTime = '';
+      if (timePart.includes('morning')) {
+        translatedTime = this.translationService.translate('servicesManager.morning');
+      } else if (timePart.includes('afternoon')) {
+        translatedTime = this.translationService.translate('servicesManager.afternoon');
+      } else if (timePart.includes('evening')) {
+        translatedTime = this.translationService.translate('servicesManager.evening');
+      } else {
+        translatedTime = timePart; // If unknown, keep as is
+      }
+
+      // Return the translated note
+      return `${preferredLabel}: ${translatedTime}`;
+    }
+
+    // If not a time preference note, return as is
+    return note;
+  }
+
   ngOnInit() {
     // Subscribe to language changes
-    this.langSubscription = this.translationService.getCurrentLang().subscribe(() => {
+    this.langSubscription = this.translationService.getCurrentLang().subscribe(lang => {
+      this.currentLanguage = lang;
       this.updateMonthNames();
       this.cdr.detectChanges();
     });
@@ -364,7 +407,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
             ...this.adminReport.clientEnrollments,
             ...this.adminReport.professionalEnrollments
           ]);
-          
+
           // Extract client names for filtering
           this.extractClientNames([
             ...this.adminReport.clientEnrollments,
@@ -373,15 +416,15 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
 
           // Collect all unique professional IDs for country lookup
           const professionalIds = new Set<number>();
-          
+
           this.adminReport.allEnrollments.forEach(enrollment => {
             if (enrollment.professionalId) {
               professionalIds.add(enrollment.professionalId);
             }
           });
-          
+
           // Create an array of observables for each professional's country
-          const countryRequests = Array.from(professionalIds).map(id => 
+          const countryRequests = Array.from(professionalIds).map(id =>
             this.servicesManagerService.getCountryOfUser(id).pipe(
               catchError(error => {
                 console.error(`Error fetching country for professional ${id}:`, error);
@@ -389,7 +432,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
               })
             )
           );
-          
+
           // If there are any professionals, fetch their countries
           if (countryRequests.length > 0) {
             forkJoin(countryRequests).subscribe({
@@ -402,13 +445,13 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
                     this.professionalCountries.set(result.id, result.country);
                   }
                 });
-                
+
                 // Now that we have all country data, apply filters
                 this.applyFilters();
-                
+
                 // Calculate expenses
                 this.calculateAdminExpenses();
-                
+
                 this.isLoading = false;
                 this.cdr.detectChanges();
               },
@@ -427,7 +470,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
             this.isLoading = false;
             this.cdr.detectChanges();
           }
-          
+
         } catch (error) {
           console.error('Error processing admin data:', error);
           this.errorMessage = 'Error processing enrollment data. Please try again.';
@@ -477,15 +520,72 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     // Extract unique courses from enrollments
     enrollments.forEach(enrollment => {
       if (enrollment.courseId && enrollment.courseName) {
+        // Check if we have a translation key for this course
+        const translatedName = this.getTranslatedCourseName(enrollment.courseId, enrollment.courseName);
+
         courseMap.set(enrollment.courseId, {
           id: enrollment.courseId,
-          name: enrollment.courseName
+          name: translatedName
         });
       }
     });
 
     // Convert map to array
     this.courseOptions = Array.from(courseMap.values());
+  }
+
+  getLocalizedStatus(status: string): string {
+    // Check if the status exists in translations
+    console.log('Status:', status);
+    const translationKey = `servicesManager.${status}`;
+    return this.translationService.translate(translationKey);
+  }
+
+  getTranslatedCourseName(courseId: string, defaultName: string): string {
+    // If we have a translation key for this course ID, use it
+    if (courseId && this.courseTranslationMap[courseId]) {
+      const translationKey = this.courseTranslationMap[courseId];
+      console.log('Translation key for course ID', courseId, ':', translationKey);
+
+      // Get the translation directly from the service
+      const translatedName = this.translationService.translate(translationKey);
+      console.log('Translated Course:', courseId, 'Key:', translationKey, 'Result:', translatedName);
+
+      // Only return the translated name if it's not the same as the key (which happens when a translation is missing)
+      if (translatedName && translatedName !== translationKey) {
+        return translatedName;
+      }
+
+      // Special case handling for professional courses that might need direct mapping
+      if (courseId === '4') {
+        let currentLang = 'en'; // default language
+        this.translationService.getCurrentLang().subscribe(lang => currentLang = lang);
+        if (currentLang === 'es') return 'Curso de instructor de aquagym';
+        if (currentLang === 'pr') return 'Curso de instrutor de hidroginástica';
+        return 'Aquagym instructor course';
+      }
+      else if (courseId === '3') {
+        let currentLang = 'en'; // default language
+        this.translationService.getCurrentLang().subscribe(lang => currentLang = lang); if (currentLang === 'es') return 'Metodología de enseñanza de crol con giro';
+        if (currentLang === 'pr') return 'Metodologia de nado crawl rotativo';
+        return 'Front-crawl spinning methodology teacher course';
+      }
+      else if (courseId === '2') {
+        let currentLang = 'en'; // default language
+        this.translationService.getCurrentLang().subscribe(lang => currentLang = lang); if (currentLang === 'es') return 'Curso para Profesor "Nada un cuento"';
+        if (currentLang === 'pr') return 'Curso de Professor "Nadar uma história"';
+        return '"Swimming a story" Teacher course';
+      }
+      else if (courseId === '1') {
+        let currentLang = 'en'; // default language
+        this.translationService.getCurrentLang().subscribe(lang => currentLang = lang); if (currentLang === 'es') return 'Curso "Nada un cuento" para Formador de Profesores/Director Técnico';
+        if (currentLang === 'pr') return 'Curso "Nadar uma história" para Formador de Professores/Diretor Técnico';
+        return '"Swimming a story" Course for Teacher Trainer/Technical Director';
+      }
+    }
+
+    // Otherwise return the original name
+    return defaultName;
   }
 
   // Apply filters to enrollments
@@ -590,28 +690,6 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     }
 
     return false;
-
-    // // Get enrollment date
-    // console.log('Enrollment:', enrollment);
-    // const enrollmentDate = enrollment.startDate || enrollment.enrollmentDate;
-    // if (!enrollmentDate) {
-    //   return false;
-    // }
-
-    // // Convert to Date object if it's a string
-    // const date = enrollmentDate instanceof Date ? enrollmentDate : new Date(enrollmentDate);
-
-    // // Filter by month
-    // if (this.selectedMonth !== 0 && date.getMonth() + 1 !== this.selectedMonth) {
-    //   return false;
-    // }
-
-    // // Filter by year
-    // if (this.selectedYear !== 0 && date.getFullYear() !== this.selectedYear) {
-    //   return false;
-    // }
-
-    // return true;
   }
 
   // Extract unique client names from enrollments
@@ -739,7 +817,6 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     }
 
     // For client services without isOutsourcing property, default to false
-    // but don't log warning for each item to avoid console spam
     return false;
   }
 

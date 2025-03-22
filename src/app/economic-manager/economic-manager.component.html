@@ -94,7 +94,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Admin Summary Section -->
     <div *ngIf="!isLoading && isAdmin" class="expenses-section">
       <h2 class="section-title">{{ 'economicManager.adminSummary' | translate }}</h2>
@@ -210,10 +210,10 @@
           </thead>
           <tbody>
             <tr *ngFor="let enrollment of adminReport.professionalEnrollments">
-              <td>{{ enrollment.courseName }}</td>
+              <td>{{ getTranslatedCourseName(enrollment.courseId, enrollment.courseName) }}</td>
               <td>{{ enrollment.professionalName }}</td>
               <td>€{{ enrollment.price.toFixed(2) }}</td>
-              <td>{{ enrollment.notes || 'economicManager.noNotes' | translate }}</td>
+              <td>{{ translateTimePreference(enrollment.notes) || ('economicManager.noNotes' | translate) }}</td>
             </tr>
           </tbody>
         </table>
@@ -242,12 +242,12 @@
           </thead>
           <tbody>
             <tr *ngFor="let enrollment of adminReport.clientEnrollments">
-              <td>{{ enrollment.courseName }}</td>
+              <td>{{ getTranslatedCourseName(enrollment.courseId, enrollment.courseName) }}</td>
               <td>{{ enrollment.clientName || 'User ' + enrollment.userId }}</td>
-              <td>{{ enrollment.professionalName || 'economicManager.notAssigned' | translate }}</td>
-              <td>{{ enrollment.status }}</td>
+              <td>{{ enrollment.professionalName || ('economicManager.notAssigned' | translate) }}</td>
+              <td>{{ getLocalizedStatus(enrollment.status) }}</td>
               <td>€{{ enrollment.price.toFixed(2) }}</td>
-              <td>{{ isInsourcingEnrollment(enrollment) ? 'Insourcing' : 'Outsourcing' }}</td>
+              <td>{{ isInsourcingEnrollment(enrollment) ? ('insourcing' | translate) : ('outsourcing' | translate) }}</td>
             </tr>
           </tbody>
         </table>
@@ -262,6 +262,7 @@
     <div *ngIf="!isLoading && !isAdmin" class="enrollments-section">
       <h2 class="section-title">{{ 'economicManager.enrollmentDetails' | translate }}</h2>
 
+      <!-- Client view -->
       <div *ngIf="userRole === 'client'" class="enrollments-table-container">
         <table class="enrollments-table" *ngIf="filteredClientEnrollments.length > 0">
           <thead>
@@ -274,10 +275,10 @@
           </thead>
           <tbody>
             <tr *ngFor="let enrollment of filteredClientEnrollments">
-              <td>{{ enrollment.courseName }}</td>
-              <td>{{ enrollment.status }}</td>
+              <td>{{ getTranslatedCourseName(enrollment.courseId, enrollment.courseName) }}</td>
+              <td>{{ getLocalizedStatus(enrollment.status) }}</td>
               <td>€{{ enrollment.price.toFixed(2) }}</td>
-              <td>{{ isInsourcingEnrollment(enrollment) ? 'Insourcing' : 'Outsourcing' }}</td>
+              <td>{{ isInsourcingEnrollment(enrollment) ? ('escuelaCliente' | translate) : ('externalization' | translate) }}</td>
             </tr>
           </tbody>
         </table>
@@ -287,6 +288,7 @@
         </div>
       </div>
 
+      <!-- Professional view -->
       <div *ngIf="userRole === 'professional'" class="enrollments-table-container">
         <table class="enrollments-table" *ngIf="filteredProfessionalEnrollments.length > 0">
           <thead>
@@ -300,11 +302,11 @@
           </thead>
           <tbody>
             <tr *ngFor="let enrollment of filteredProfessionalEnrollments">
-              <td>{{ enrollment.courseName }}</td>
+              <td>{{ getTranslatedCourseName(enrollment.courseId, enrollment.courseName) }}</td>
               <td>{{ enrollment.clientName || 'User ' + enrollment.userId }}</td>
-              <td>{{ enrollment.status }}</td>
+              <td>{{ getLocalizedStatus(enrollment.status) }}</td>
               <td>€{{ enrollment.price.toFixed(2) }}</td>
-              <td>{{ isInsourcingEnrollment(enrollment) ? 'Insourcing' : 'Outsourcing' }}</td>
+              <td>{{ isInsourcingEnrollment(enrollment) ? ('escuelaCliente' | translate) : ('externalization' | translate) }}</td>
             </tr>
           </tbody>
         </table>

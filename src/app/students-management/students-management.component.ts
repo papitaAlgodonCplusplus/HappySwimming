@@ -90,7 +90,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   selectedCourse: string = 'all';
   selectedMonth: number = 0; // 0 means all months
   selectedYear: number = 0; // 0 means all years
-  
+
   // Filter options
   filterOptions: FilterOptions = {
     countries: [],
@@ -102,7 +102,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
 
   // Original data (unfiltered)
   originalCourses: Course[] = [];
-  
+
   // Courses with students
   courses: Course[] = [];
 
@@ -195,7 +195,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
         }
       }
     });
-    
+
     // Initialize years for filter (last 5 years)
     const currentYear = new Date().getFullYear();
     for (let i = 0; i < 5; i++) {
@@ -249,7 +249,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   processStudentsAndFetchCountries(students: Student[]) {
     // First, collect all unique professional IDs
     const professionalIds = new Set<number>();
-    
+
     students.forEach(student => {
       if (student.professionalId) {
         professionalIds.add(student.professionalId);
@@ -259,7 +259,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     // If there are professionals, fetch their countries
     if (professionalIds.size > 0) {
       // Create an array of observables for each professional's country
-      const countryRequests = Array.from(professionalIds).map(id => 
+      const countryRequests = Array.from(professionalIds).map(id =>
         this.servicesManagerService.getCountryOfUser(id).pipe(
           catchError(error => {
             console.error(`Error fetching country for professional ${id}:`, error);
@@ -308,7 +308,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     const countries = new Set<string>();
     const clientNames = new Set<string>();
     const coursesMap = new Map<string, { id: string, name: string }>();
-    
+
     students.forEach(student => {
       // Add country from professionalId if available
       if (student.professionalId) {
@@ -317,29 +317,29 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
           countries.add(country);
         }
       }
-      
+
       if (student.name) {
         clientNames.add(student.name);
       } else if (student.firstName) {
         clientNames.add(student.firstName + ' ' + (student.lastName || ''));
       }
-      
+
       if (student.courseId && student.courseName) {
         // Use courseId as the key to avoid duplicates
-        coursesMap.set(student.courseId, { 
-          id: student.courseId, 
-          name: student.courseName 
+        coursesMap.set(student.courseId, {
+          id: student.courseId,
+          name: student.courseName
         });
       }
     });
-    
+
     // Update filter options
     this.filterOptions.clientNames = Array.from(clientNames).sort();
-    
+
     // Transform the courses map into an array with both id and title
     this.filterOptions.courseIds = Array.from(coursesMap.values())
       .sort((a, b) => a.name.localeCompare(b.name));
-    
+
     this.cdr.detectChanges();
   }
 
@@ -352,10 +352,10 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       month: this.selectedMonth,
       year: this.selectedYear
     });
-    
+
     // Clone the original courses
     const filteredCourses = JSON.parse(JSON.stringify(this.originalCourses)) as Course[];
-    
+
     // For each course, filter its students
     filteredCourses.forEach(course => {
       course.students = course.students.filter(student => {
@@ -366,7 +366,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
             return false;
           }
         }
-        
+
         // Filter by client name
         if (this.selectedClientName !== 'all') {
           const fullName = student.name || (student.firstName + ' ' + (student.lastName || ''));
@@ -374,22 +374,22 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
             return false;
           }
         }
-        
+
         // Filter by course
         if (this.selectedCourse !== 'all' && student.courseId.toString() !== this.selectedCourse.toString()) {
           return false;
         }
-        
+
         // Filter by month and year
         if (student.startDate) {
           const startDate = new Date(student.startDate);
           const month = startDate.getMonth() + 1; // getMonth() returns 0-11
           const year = startDate.getFullYear();
-          
+
           if (this.selectedMonth !== 0 && month !== this.selectedMonth) {
             return false;
           }
-          
+
           if (this.selectedYear !== 0 && year !== this.selectedYear) {
             return false;
           }
@@ -397,20 +397,20 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
           // If month or year is selected and student has no start date, filter it out
           return false;
         }
-        
+
         return true;
       });
-      
+
       // Update student count
       course.studentCount = course.students.length;
     });
-    
+
     // Remove courses with no students
     this.courses = filteredCourses.filter(course => course.studentCount > 0);
-    
+
     this.cdr.detectChanges();
   }
-  
+
   // Reset all filters
   resetFilters() {
     this.selectedCountry = 'all';
@@ -418,14 +418,14 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     this.selectedCourse = 'all';
     this.selectedMonth = 0;
     this.selectedYear = 0;
-    
+
     // Restore original data
     this.courses = JSON.parse(JSON.stringify(this.originalCourses)) as Course[];
-    
+
     this.cdr.detectChanges();
   }
 
-  // Update the course type detection in processStudents method
+  // Process students and properly assign translation keys for both client and professional courses
   processStudents(students: Student[]) {
     console.log('Processing students:', students);
     // Group students by course
@@ -440,9 +440,9 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
         let translationKey: string | undefined = undefined;
         let courseType = student.type || 'client_service';
 
-        // Only try to match translation keys for client courses
+        // Check for translation keys for both client and professional courses
         if (courseType === 'client_service') {
-          // Check for specific course names or patterns to map to translation keys
+          // Client courses
           if (student.courseName.includes('3 TO 6') ||
             student.courseName.includes('3-6') ||
             student.courseName.includes('3 to 6') ||
@@ -462,6 +462,30 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
             student.courseName.toLowerCase().includes('cualquier edad') ||
             student.courseId === '7') {
             translationKey = 'swimmingAbilities.titles.anyAgeSyntax';
+          }
+        }
+        else if (courseType === 'professional_service') {
+          // Professional courses
+          if (student.courseId === '1' ||
+            (student.courseName.toLowerCase().includes('swimming story') &&
+              student.courseName.toLowerCase().includes('trainer'))) {
+            translationKey = 'professionalServices.swimmingStoryTrainer.title';
+          }
+          else if (student.courseId === '2' ||
+            (student.courseName.toLowerCase().includes('swimming story') &&
+              student.courseName.toLowerCase().includes('teacher'))) {
+            translationKey = 'professionalServices.swimmingStoryTeacher.title';
+          }
+          else if (student.courseId === '3' ||
+            student.courseName.toLowerCase().includes('front-crawl')) {
+            translationKey = 'professionalServices.frontCrawl.title';
+          }
+          else if (student.courseId === '4' ||
+            student.courseName.toLowerCase().includes('aquagym')) {
+            translationKey = 'professionalServices.aquagym.title';
+          }
+          else {
+            translationKey = 'professionalServices.swimmingStoryTeacher.title';
           }
         }
 
@@ -499,7 +523,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       this.courses = Array.from(courseMap.values())
         .sort((a, b) => a.name.localeCompare(b.name));
     }
-    
+
     // Store the original unfiltered data
     this.originalCourses = JSON.parse(JSON.stringify(this.courses)) as Course[];
 
@@ -544,7 +568,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   getLocalizedStatus(status: string): string {
     return this.translationService.translate(`studentsManagement.status.${status}`);
   }
-  
+
   // Get localized month name
   getMonthName(month: number): string {
     return this.monthNames.find(m => m.value === month)?.name || '';

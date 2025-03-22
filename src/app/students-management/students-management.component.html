@@ -7,7 +7,7 @@
   <div class="students-management-content">
     <h1 class="title">
       {{ isAdmin ? ('studentsManagement.adminTitle' | translate) : ('studentsManagement.title' | translate) }}
-      <span *ngIf="isAdmin" style="color: #cc0000; font-size: 0.8em;"> - Admin View</span>
+      <span *ngIf="isAdmin" style="color: #cc0000; font-size: 0.8em;"> - {{ 'studentsManagement.adminView' | translate }}</span>
     </h1>
 
     <div *ngIf="successMessage" class="success-message">
@@ -91,7 +91,9 @@
         [ngClass]="isProfessionalCourse(course) ? 'professional-course' : 'client-course'">
         <div class="course-header" (click)="toggleCourseExpansion(course)">
           <div class="course-header-content">
-            <h2 class="course-title">{{ course.translationKey ? (course.translationKey | translate) : course.name }}
+            <h2 class="course-title">
+              <!-- Use translation pipe for all courses with a translationKey -->
+              {{ course.translationKey ? (course.translationKey | translate) : course.name }}
             </h2>
             <span *ngIf="isAdmin" class="course-type-badge"
               [ngClass]="course.type === 'professional_service' ? 'professional-badge' : 'client-badge'">
@@ -166,8 +168,8 @@
                   </span>
                 </td>
                 <td class="actions-cell">
-                  <!-- Removed the condition hiding the Edit button for professional courses -->
-                  <button *ngIf="student.status !== 'cancelled' && course.type !== 'professional_service' && !isAdmin"
+                  <!-- Allow editing for both client and professional courses for admin -->
+                  <button *ngIf="student.status !== 'cancelled' && (isAdmin || (course.type !== 'professional_service' && !isAdmin))"
                     class="btn btn-edit" (click)="openEditModal(student)">
                     {{ 'studentsManagement.edit' | translate }}
                   </button>
