@@ -142,9 +142,29 @@
   color: #204376;
 }
 
-.box-detail2 {
-  font-size: 1rem;
-  margin-bottom: 0.5rem;
+/* New styles for professional services detail groups */
+.detail-group {
+  display: flex;
+  margin-bottom: 1rem;
+  margin-left: 18rem;
+}
+
+.detail-label {
+  min-width: 80px;
+  margin: 0;
+  padding-right: 10px;
+  font-weight: normal;
+  color: #204376;
+}
+
+.detail-content {
+  flex: 1;
+}
+
+.detail-item {
+  margin: 0 0 0.5rem;
+  padding-left: 0;
+  text-align: left;
   font-weight: normal;
   color: #204376;
 }
@@ -156,10 +176,6 @@
   margin-top: 0.5rem;
   font-style: italic;
   line-height: 1.4;
-}
-
-.indent {
-  padding-left: 1.5rem;
 }
 
 /* Levels container */
@@ -212,13 +228,6 @@
   }
 }
 
-/* Add display rule for min-people on larger screens */
-@media (min-width: 769px) {
-  .min-people {
-    display: inline-block;
-  }
-}
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .column-title {
@@ -233,16 +242,21 @@
     font-size: 1.1rem;
   }
   
-  .box-detail, .box-detail2 {
+  .box-detail {
     font-size: 0.9rem;
+  }
+  
+  .detail-group {
+    flex-direction: column;
+  }
+  
+  .detail-label {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
   }
   
   .service-description {
     font-size: 0.85rem;
-  }
-  
-  .service-box {
-    padding: 1rem;
   }
   
   .levels-container {
@@ -262,6 +276,12 @@
     height: 40px;
     font-size: 1.2rem;
   }
+  
+  .min-people {
+    display: block;
+    font-size: 0.8rem;
+    font-style: italic;
+  }
 }
 
 /* Additional responsiveness for very small screens */
@@ -271,7 +291,6 @@
   }
   
   .box-content {
-    text-align: center;
     padding: 1rem;
   }
   
@@ -283,7 +302,9 @@
     font-size: 0.9rem;
   }
   
-  .box-detail, .box-detail2 {
+  .box-detail, 
+  .detail-label,
+  .detail-item {
     font-size: 0.8rem;
   }
   
@@ -291,17 +312,9 @@
     font-size: 0.75rem;
   }
   
-  .indent {
-    padding-left: 0;
-  }
-  
   .nav-arrow {
     width: 35px;
     height: 35px;
     font-size: 1rem;
-  }
-  
-  .min-people {
-    display: none; /* Hide on very small screens */
   }
 }

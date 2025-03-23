@@ -45,15 +45,6 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// const pool = new Pool({
-//   host: 'happyswimming.cxqii6e0qkzu.us-east-1.rds.amazonaws.com',
-//   port: 5432,
-//   database: 'happyswimming',
-//   user: 'postgres',
-//   password: 'PwT.398!',
-//   ssl: { rejectUnauthorized: false }
-// });
-
 // Test database connection
 pool.connect((err, client, done) => {
   if (err) {
