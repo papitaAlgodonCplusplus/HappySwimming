@@ -141,8 +141,8 @@
       <!-- Assign Professionals to Clients (admin only) -->
       <div *ngIf="isAdmin" class="grid-item assign-professional" (click)="navigateTo('/assign-professional')">
         <div class="item-content">
-          <h2 class="item-title">Assign Professionals</h2>
-          <p class="item-description">Assign professionals to clients in the system</p>
+          <h2 class="item-title">{{ 'assignProfessional_title' | translate }}</h2>
+          <p class="item-description"> {{ 'assignProfessional_desc' | translate }}</p>
           <div class="icon-container">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

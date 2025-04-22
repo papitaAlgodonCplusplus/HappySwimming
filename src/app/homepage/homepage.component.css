@@ -22,7 +22,7 @@
   
   .grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 2rem;
     justify-content: center;
     margin-top: 3rem;
@@ -31,6 +31,7 @@
   .grid-item {
     height: 280px;
     border-radius: 15px;
+    text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
@@ -64,7 +65,7 @@
   }
   
   .item-title {
-    font-size: 1.8rem;
+    font-size: 1.2rem;
     margin-bottom: 1rem;
     font-weight: 600;
   }

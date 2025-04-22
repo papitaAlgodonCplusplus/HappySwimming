@@ -15,11 +15,12 @@ import { AuthService } from '../services/auth.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomepageComponent implements OnInit {
-  userName: string = 'Usuario';
+  userName: string = 'User';
   userRole: string = '';
   userEmail: string = '';
   isAdmin: boolean = false;
-  
+  noUserName: boolean = false;
+
   // Use inject to get services in standalone components
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -33,18 +34,19 @@ export class HomepageComponent implements OnInit {
         this.router.navigate(['/auth']);
         return;
       }
-      
-      this.userName = user.name || 'Usuario';
+
+      this.noUserName = !user.name;
+      this.userName = user.name || this.translationService.translate('User');
       this.userRole = this.translateRole(user.role);
       this.userEmail = user.email || '';
-      
+
       // Check if user is admin (admin@gmail.com)
       this.isAdmin = this.userEmail === 'admin@gmail.com';
-      
+
       console.log('User role:', this.userRole, 'Is Admin:', this.isAdmin);
       this.cdr.detectChanges();
     });
-    
+
     // Subscribe to language changes to update view
     this.translationService.getCurrentLang().subscribe(() => {
       this.cdr.detectChanges();
@@ -54,19 +56,22 @@ export class HomepageComponent implements OnInit {
     this.translationService.isTranslationsLoaded().subscribe(loaded => {
       if (loaded) {
         this.cdr.detectChanges();
+        if (this.noUserName) {
+          this.userName =  this.translationService.translate('User');
+        }
       }
     });
   }
-  
+
   translateRole(role: string): string {
-    switch(role) {
+    switch (role) {
       case 'client': return 'Cliente';
       case 'professional': return 'Profesional';
       case 'admin': return 'Administrador';
       default: return role;
     }
   }
-  
+
   navigateTo(route: string): void {
     this.router.navigate([route]);
   }

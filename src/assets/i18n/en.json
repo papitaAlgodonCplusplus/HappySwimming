@@ -114,7 +114,10 @@
         "codeSentAgain": "Recovery code has been sent again."
     },
     "back": "Back",
+    "User": "User",
     "aboutUs": "ABOUT US",
+    "assignProfessional_title": "Assign Professional",
+    "assignProfessional_desc": "Assign professionals to clients",
     "services": "SERVICES",
     "contactUs": "CONTACT US",
     "login": "ACCESS",
