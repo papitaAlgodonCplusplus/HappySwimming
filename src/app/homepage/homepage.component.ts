@@ -49,6 +49,9 @@ export class HomepageComponent implements OnInit {
 
     // Subscribe to language changes to update view
     this.translationService.getCurrentLang().subscribe(() => {
+      if (this.noUserName) {
+        this.userName =  this.translationService.translate('User');
+      }
       this.cdr.detectChanges();
     });
 
@@ -56,9 +59,6 @@ export class HomepageComponent implements OnInit {
     this.translationService.isTranslationsLoaded().subscribe(loaded => {
       if (loaded) {
         this.cdr.detectChanges();
-        if (this.noUserName) {
-          this.userName =  this.translationService.translate('User');
-        }
       }
     });
   }
