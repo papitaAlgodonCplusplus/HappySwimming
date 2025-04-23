@@ -45,6 +45,10 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+app.use(cors({
+  origin: 'https://happyswimming.onrender.com'
+}));
+
 // Test database connection
 pool.connect((err, client, done) => {
   if (err) {
