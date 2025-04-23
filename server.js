@@ -25,8 +25,7 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // limit file size to 5MB
   }
 });
-// Middleware
-app.use(cors());
+
 app.use(express.json());
 
 // Database connection DEV
@@ -45,9 +44,31 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-app.use(cors({
-  origin: 'https://happyswimming.onrender.com, https://www.happyswimming.net'
-}));
+const corsOptions = {
+  origin: function(origin, callback) {
+    // Allow requests from these origins
+    const allowedOrigins = [
+      'https://www.happyswimming.net',
+      'https://happyswimming.onrender.com',
+      'http://localhost:4200'
+    ];
+    
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+  credentials: true,
+  optionsSuccessStatus: 204
+};
+
+app.use(cors(corsOptions));
+
+// Additionally, for handling preflight requests explicitly:
+app.options('*', cors(corsOptions));
 
 // Test database connection
 pool.connect((err, client, done) => {
