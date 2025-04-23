@@ -46,7 +46,7 @@ const pool = new Pool({
 });
 
 app.use(cors({
-  origin: 'https://happyswimming.onrender.com'
+  origin: 'https://happyswimming.onrender.com, https://www.happyswimming.net'
 }));
 
 // Test database connection
