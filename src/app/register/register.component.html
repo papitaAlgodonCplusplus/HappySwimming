@@ -122,20 +122,6 @@
             </div>
         </div>
 
-        <!-- Swimming Abilities Section -->
-        <div class="abilities-section">
-            <h3 class="section-title">{{ 'swimmingAbilities.title' | translate }}</h3>
-            <div class="abilities-checkboxes">
-                <div class="ability-item" *ngFor="let ability of swimmingAbilities; let i = index">
-                    <label>
-                        <input type="checkbox" [checked]="ability.selected" (change)="toggleAbility(i)"
-                            [disabled]="isLoading">
-                        {{ 'swimmingAbilities.abilities.' + i | translate }}
-                    </label>
-                </div>
-            </div>
-        </div>
-
         <div class="terms-container">
             <div class="terms-checkbox">
                 <input type="checkbox" id="acceptTerms" [(ngModel)]="acceptTerms" [disabled]="isLoading">

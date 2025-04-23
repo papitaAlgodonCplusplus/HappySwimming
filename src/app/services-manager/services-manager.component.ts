@@ -22,6 +22,11 @@ interface Course {
   translationKey?: string; // Added for translation support
 }
 
+interface SwimmingAbility {
+  description: string;
+  selected: boolean;
+}
+
 interface Professional {
   id: number | string;
   name: string;
@@ -144,6 +149,20 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   // Professional services (for professionals)
   professionalServices: ProfessionalService[] = [];
+
+
+  // Swimming abilities
+  swimmingAbilities: SwimmingAbility[] = [
+    { description: 'no puedo poner la cabeza debajo del agua, ni controlar la respiración', selected: false },
+    { description: 'puedo poner la cabeza debajo del agua y soplar burbujas por naziz o boca', selected: false },
+    { description: 'puedo poner la cabeza debajo del agua y soplar burbujas flotando por naziz y boca de frente y de espalda', selected: false },
+    { description: 'puedo desplazarse en el agua de frente y de espalda con movimientos de brazos y piernas sin control de la respiración', selected: false },
+    { description: 'puedo dar un giro de 360 grados en mi eje longitudinal', selected: false },
+    { description: 'puedo dar una voltereta en el agua', selected: false },
+    { description: 'necesito mejorar la técnica en el estilo de crol', selected: false },
+    { description: 'quiero mejora la técnica en todos los estilos con virajes', selected: false },
+    { description: 'tengo miedo al agua', selected: false }
+  ];
 
   // Form data
   selectedCourse: string = '';
@@ -493,6 +512,11 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   getLocalizedStatus(status: string): string {
     return this.translationService.translate(`servicesManager.${status}`);
+  }
+
+    toggleAbility(index: number): void {
+    this.swimmingAbilities[index].selected = !this.swimmingAbilities[index].selected;
+    this.cdr.detectChanges();
   }
 
   cancelEnrollment(enrollmentId: any) {

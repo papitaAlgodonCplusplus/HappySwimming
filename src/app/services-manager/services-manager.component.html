@@ -115,6 +115,20 @@
                     </select>
                 </div>
 
+                <!-- Swimming Abilities Section (only for client users) -->
+                <div *ngIf="userRole === 'client'" class="abilities-section">
+                    <h3 class="section-title">{{ 'swimmingAbilities.title' | translate }}</h3>
+                    <div class="abilities-checkboxes">
+                        <div class="ability-item" *ngFor="let ability of swimmingAbilities; let i = index">
+                            <label>
+                                <input type="checkbox" [checked]="ability.selected" (change)="toggleAbility(i)"
+                                    [disabled]="isLoading">
+                                {{ 'swimmingAbilities.abilities.' + i | translate }}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Submit Button -->
                 <div class="button-container">
                     <button class="btn btn-submit" (click)="onSubmit()" [disabled]="isLoading">
