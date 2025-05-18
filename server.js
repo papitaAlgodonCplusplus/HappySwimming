@@ -284,42 +284,6 @@ app.post('/api/register/professional',
         Object.keys(req.files).forEach(fieldName => {
           console.log(`- ${fieldName} received: ${req.files[fieldName][0].originalname}`);
         });
-
-        // We're not actually saving the files to disk, just acknowledging their presence
-        // You could store metadata about the files in your database if needed
-
-        // Example of checking if documents table exists before trying to insert
-        try {
-          const tableCheck = await client.query(
-            "SELECT EXISTS (SELECT FROM happyswimming.information_schema.tables WHERE table_name = 'documents')"
-          );
-
-          if (tableCheck.rows[0].exists) {
-            // Documents table exists, we can insert mock records
-            await client.query(
-              `INSERT INTO happyswimming.documents (professional_id, type, file_name, mime_type) 
-              VALUES ($1, 'id', 'mock-id-document.pdf', 'application/pdf')`,
-              [professionalId]
-            );
-
-            await client.query(
-              `INSERT INTO happyswimming.documents (professional_id, type, file_name, mime_type) 
-              VALUES ($1, 'cv', 'mock-cv.pdf', 'application/pdf')`,
-              [professionalId]
-            );
-
-            await client.query(
-              `INSERT INTO happyswimming.documents (professional_id, type, file_name, mime_type) 
-              VALUES ($1, 'insurance', 'mock-insurance.pdf', 'application/pdf')`,
-              [professionalId]
-            );
-          } else {
-            console.log('Documents table does not exist - skipping document references');
-          }
-        } catch (error) {
-          console.log('Error checking for documents table, skipping document insertion:', error.message);
-          // Continue with registration even if document storage fails
-        }
       }
 
       // Process specialties if provided
