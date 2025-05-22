@@ -45,14 +45,14 @@ const pool = new Pool({
 });
 
 const corsOptions = {
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
     // Allow requests from these origins
     const allowedOrigins = [
       'https://www.happyswimming.net',
       'https://happyswimming.onrender.com',
       'http://localhost:4200'
     ];
-    
+
     // Allow requests with no origin (like mobile apps, curl, etc.)
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -639,15 +639,9 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
 
   try {
     await client.query('BEGIN');
-    const { courseId, professionalId, startDate, preferredTime } = req.body;
+    const { kidName, motherContact, courseId, professionalId, startDate, preferredTime } = req.body;
     const userId = req.user.id;
     const userRole = req.user.role;
-
-    // Validate required fields
-    if (!courseId || !startDate) {
-      console.log('Missing required fields:', req.body);
-      return res.status(400).json({ error: 'Course ID and start date are required' });
-    }
 
     // Get the user's client/professional ID based on role
     let userTypeId;
@@ -688,8 +682,8 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
       // For clients
       enrollmentQuery = `
       INSERT INTO happyswimming.client_services 
-      (client_id, service_id, professional_id, start_date, price, status, notes, start_time, end_time)
-      VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8)
+      (client_id, service_id, professional_id, start_date, price, status, notes, start_time, end_time, kid_name, mother_contact)
+      VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, $9, $10)
       RETURNING id
       `;
 
@@ -705,7 +699,9 @@ app.post('/api/enrollments', authenticateToken, async (req, res) => {
         servicePrice,
         preferredTime ? `Preferred time: ${preferredTime}` : null,
         defaultStartTime,
-        defaultEndTime
+        defaultEndTime,
+        kidName,
+        motherContact,
       ];
     } else if (userRole === 'professional') {
       // For professionals enrolling in training courses
@@ -1485,7 +1481,7 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
     const clientServicesQuery = `
       SELECT cs.id, cs.client_id, cs.service_id, cs.professional_id, 
         cs.start_date, cs.end_date, cs.day_of_week, cs.start_time, cs.end_time,
-        cs.price, cs.status, cs.notes, cs.created_at, cs.calification, cs.assistance,
+        cs.price, cs.status, cs.notes, cs.created_at, cs.calification, cs.assistance, cs.kid_name, cs.mother_contact,
         s.name as service_name,
         c.user_id, c.is_outsourcing,
         CONCAT(cu.first_name, ' ', cu.last_name1) as client_name,
@@ -1535,7 +1531,9 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
       isOutsourcing: row.is_outsourcing,
       notes: row.notes,
       calification: row.calification !== null ? parseFloat(row.calification) : undefined,
-      assistance: row.assistance
+      assistance: row.assistance,
+      kid_name: row.kid_name,
+      mother_contact: row.mother_contact,
     }));
 
     // Format professional enrollments
@@ -1874,12 +1872,12 @@ sgMail.setApiKey(GRID);
 app.post('/api/contact/send-email', async (req, res) => {
   try {
     const { to, from, subject, text, html } = req.body;
-    
+
     // Validate required fields
     if (!to || !from || !subject || !text) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-    
+
     // Prepare email message
     const msg = {
       to,
@@ -1888,27 +1886,27 @@ app.post('/api/contact/send-email', async (req, res) => {
       text,
       html: html || text
     };
-    
+
     // Send email
     await sgMail.send(msg);
-    
+
     // Log successful sending
     console.log(`Email sent to ${to}`);
-    
+
     // Return success response
     res.status(200).json({ message: 'Email sent successfully' });
   } catch (error) {
     console.error('Error sending email:', error);
-    
+
     // Return error response
     if (error.response) {
       // SendGrid API error
-      return res.status(500).json({ 
-        error: 'Failed to send email', 
-        details: error.response.body 
+      return res.status(500).json({
+        error: 'Failed to send email',
+        details: error.response.body
       });
     }
-    
+
     // Generic error
     res.status(500).json({ error: 'An unexpected error occurred' });
   }
@@ -1971,7 +1969,7 @@ app.get('/api/admin/available-professionals', authenticateToken, (req, res) => {
         console.error('Error fetching available professionals:', error);
         return res.status(500).json({ error: 'Failed to fetch available professionals' });
       }
-      
+
       res.json(results.rows);
     });
   } catch (error) {
@@ -1984,15 +1982,15 @@ app.get('/api/admin/available-professionals', authenticateToken, (req, res) => {
 app.post('/api/admin/assign-professional', authenticateToken, (req, res) => {
   try {
     const { clientId, professionalId } = req.body;
-    
+
     // Validation
     if (!clientId || !professionalId) {
       return res.status(400).json({ error: 'Client ID and Professional ID are required' });
     }
-    
+
     // Since there's no direct assignment table, this is a placeholder
     // In a real scenario, you might want to add a new table or column to track assignments
-    res.json({ 
+    res.json({
       message: 'Professional assignment is not currently supported in the database schema',
       clientId,
       professionalId
@@ -2007,19 +2005,19 @@ app.post('/api/admin/assign-professional', authenticateToken, (req, res) => {
 app.post('/api/admin/assign-professional', authenticateToken, (req, res) => {
   try {
     const { clientId, professionalId } = req.body;
-    
+
     // Validation
     if (!clientId || !professionalId) {
       return res.status(400).json({ error: 'Client ID and Professional ID are required' });
     }
-    
+
     // Update database to assign professional to client
     // This would typically involve:
     // 1. Checking if the client and professional exist
     // 2. Checking if the professional is available
     // 3. Updating the client record with the professional's ID
-    
-    res.json({ 
+
+    res.json({
       message: 'Professional successfully assigned to client',
       clientId,
       professionalId
@@ -2083,42 +2081,42 @@ function generateRecoveryCode() {
 app.post('/api/password-reset/request', async (req, res) => {
   try {
     const { email } = req.body;
-    
+
     if (!email) {
       return res.status(400).json({ error: 'Email is required' });
     }
-    
+
     // Check if the email exists in your database using pool
     const userResult = await pool.query(
       'SELECT * FROM happyswimming.users WHERE email = $1',
       [email]
     );
-    
+
     // Check if user exists
     if (userResult.rows.length === 0) {
       // For security reasons, don't reveal that the email doesn't exist
       // Instead, pretend we sent an email
       return res.json({ message: 'If your email exists in our system, you will receive a recovery code' });
     }
-    
+
     // Generate a new recovery code
     const code = generateRecoveryCode();
-    
+
     // Store the code with expiration (30 minutes from now)
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 30);
-    
+
     recoveryCodes[email] = {
       code,
       expiresAt,
       attempts: 0
     };
-    
+
     // Send an email with the code using SendGrid
     await sendEmail(email, 'Password Recovery Code', `Your recovery code is: ${code}. It will expire in 30 minutes.`);
-    
+
     return res.json({ message: 'Recovery code sent to your email address' });
-    
+
   } catch (error) {
     console.error('Error requesting password reset:', error);
     return res.status(500).json({ error: 'Failed to send recovery code' });
@@ -2136,10 +2134,10 @@ async function sendEmail(to, subject, message) {
       text: message,
       html: message.replace(/\n/g, '<br>')  // Simple HTML conversion for line breaks
     };
-    
+
     // Send email using SendGrid
     await sgMail.send(msg);
-    
+
     console.log(`Email sent to ${to}: ${subject}`);
     return true;
   } catch (error) {
@@ -2159,41 +2157,41 @@ async function sendEmail(to, subject, message) {
 app.post('/api/password-reset/verify-code', (req, res) => {
   try {
     const { email, code } = req.body;
-    
+
     if (!email || !code) {
       return res.status(400).json({ error: 'Email and code are required' });
     }
-    
+
     // Check if a code exists for this email
     const recoveryData = recoveryCodes[email];
-    
+
     if (!recoveryData) {
       return res.status(400).json({ error: 'No recovery code found for this email' });
     }
-    
+
     // Check if the code has expired
     if (new Date() > new Date(recoveryData.expiresAt)) {
       delete recoveryCodes[email];
       return res.status(400).json({ error: 'Recovery code has expired' });
     }
-    
+
     // Increment attempts
     recoveryData.attempts += 1;
-    
+
     // Check if too many attempts (for security)
     if (recoveryData.attempts > 5) {
       delete recoveryCodes[email];
       return res.status(400).json({ error: 'Too many failed attempts. Please request a new code.' });
     }
-    
+
     // Check if the code matches
     if (recoveryData.code !== code) {
       return res.status(400).json({ error: 'Invalid recovery code' });
     }
-    
+
     // Code is valid
     return res.json({ message: 'Code verified successfully' });
-    
+
   } catch (error) {
     console.error('Error verifying recovery code:', error);
     return res.status(500).json({ error: 'Failed to verify recovery code' });
@@ -2207,49 +2205,49 @@ app.post('/api/password-reset/verify-code', (req, res) => {
 app.post('/api/password-reset/reset', async (req, res) => {
   try {
     const { email, code, newPassword } = req.body;
-    
+
     if (!email || !code || !newPassword) {
       return res.status(400).json({ error: 'Email, code, and new password are required' });
     }
-    
+
     // Check if a code exists for this email
     const recoveryData = recoveryCodes[email];
-    
+
     if (!recoveryData) {
       return res.status(400).json({ error: 'No recovery code found for this email' });
     }
-    
+
     // Check if the code has expired
     if (new Date() > new Date(recoveryData.expiresAt)) {
       delete recoveryCodes[email];
       return res.status(400).json({ error: 'Recovery code has expired' });
     }
-    
+
     // Check if the code matches
     if (recoveryData.code !== code) {
       return res.status(400).json({ error: 'Invalid recovery code' });
     }
-    
+
     // Password validation
     if (newPassword.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters long' });
     }
-    
+
     // Hash the new password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
-    
+
     // Update the password in the database using pool
     await pool.query(
       'UPDATE happyswimming.users SET password_hash = $1 WHERE email = $2',
       [hashedPassword, email]
     );
-    
+
     // Remove the used recovery code
     delete recoveryCodes[email];
-    
+
     return res.json({ message: 'Password has been reset successfully' });
-    
+
   } catch (error) {
     console.error('Error resetting password:', error);
     return res.status(500).json({ error: 'Failed to reset password' });

@@ -141,7 +141,9 @@ export class StudentsManagementService {
           notes: enrollment.notes,
           professionalName: enrollment.professionalName,
           professionalId: enrollment.professionalId,
-          type: 'client_service'
+          type: 'client_service',
+          kid_name: enrollment.kid_name,
+          mother_contact: enrollment.mother_contact,
         }));
 
         // Process professional enrollments

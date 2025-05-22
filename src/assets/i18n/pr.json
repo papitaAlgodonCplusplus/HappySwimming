@@ -221,6 +221,13 @@
     },
     "welcome": "Bem-vindo,",
     "servicesManager": {
+        "kidName": "Nome da Criança",
+        "kidNamePlaceholder": "Digite o nome da criança",
+        "motherContact": "Telefone de contato da mãe",
+        "motherContactPlaceholder": "Digite o telefone de contato da mãe",
+        "errorRequiredKidName": "O nome da criança é obrigatório",
+        "errorRequiredMotherContact": "O telefone de contato da mãe é obrigatório",
+        "errorInvalidPhone": "O telefone de contato da mãe não é válido",
         "myCertifications": "Minhas Certificações",
         "certification": "Certificação",
         "certified": "Certificado",
@@ -502,15 +509,15 @@
             "anyAge": "De iniciantes completos a nadadores confiantes que querem melhorar a técnica"
         },
         "abilities": {
-            "0": "Não consigo colocar minha cabeça debaixo d'água, nem controlar minha respiração",
-            "1": "Posso colocar minha cabeça debaixo d'água e soltar bolhas pelo nariz ou boca",
-            "2": "Posso colocar minha cabeça debaixo d'água e soltar bolhas enquanto flutuo de frente e de costas",
-            "3": "Posso me mover na água de frente e de costas com movimentos de braços e pernas sem controle de respiração",
-            "4": "Posso fazer uma volta de 360 graus no meu eixo longitudinal",
-            "5": "Posso dar um salto mortal na água",
-            "6": "Preciso melhorar minha técnica de nado crawl",
-            "7": "Quero melhorar minha técnica em todos os estilos com viradas",
-            "8": "Tenho medo de água"
+            "0": "Não consige colocar minha cabeça debaixo d'água, nem controlar minha respiração",
+            "1": "Posse colocar minha cabeça debaixo d'água e soltar bolhas pelo nariz ou boca",
+            "2": "Posse colocar minha cabeça debaixo d'água e soltar bolhas enquanto flutuo de frente e de costas",
+            "3": "Posse me mover na água de frente e de costas com movimentos de braços e pernas sem controle de respiração",
+            "4": "Posse fazer uma volta de 360 graus no meu eixo longitudinal",
+            "5": "Posse dar um salto mortal na água",
+            "6": "Precise melhorar minha técnica de nado crawl",
+            "7": "Quere melhorar minha técnica em todos os estilos com viradas",
+            "8": "Tenhe medo de água"
         }
     }
 }

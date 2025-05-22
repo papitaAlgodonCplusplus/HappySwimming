@@ -255,6 +255,13 @@
     },
     "welcome": "Welcome,",
     "servicesManager": {
+        "kidName": "Name of the Kid",
+        "kidNamePlaceholder": "Enter the child's name",
+        "motherContact": "Contact of the Mother",
+        "motherContactPlaceholder": "Enter phone number",
+        "errorRequiredKidName": "Kid's name is required",
+        "errorRequiredMotherContact": "Mother's contact is required",
+        "errorInvalidPhone": "Please enter a valid phone number",
         "myCertifications": "My Certifications",
         "certification": "Certification",
         "certified": "Certified",
@@ -503,15 +510,15 @@
             "anyAge": "From complete beginner to confident swimmers that want to improve technique"
         },
         "abilities": {
-            "0": "I cannot put my head under water, nor control my breathing",
-            "1": "I can put my head under water and blow bubbles through nose or mouth",
-            "2": "I can put my head under water and blow bubbles while floating on front and back",
-            "3": "I can move in water on front and back with arm and leg movements without breathing control",
-            "4": "I can do a 360-degree turn on my longitudinal axis",
-            "5": "I can do a somersault in the water",
-            "6": "I need to improve my front crawl technique",
-            "7": "I want to improve my technique in all strokes with turns",
-            "8": "I am afraid of water"
+            "0": "They cannot put my head under water, nor control my breathing",
+            "1": "They can put my head under water and blow bubbles through nose or mouth",
+            "2": "They can put my head under water and blow bubbles while floating on front and back",
+            "3": "They can move in water on front and back with arm and leg movements without breathing control",
+            "4": "They can do a 360-degree turn on my longitudinal axis",
+            "5": "They can do a somersault in the water",
+            "6": "They need to improve my front crawl technique",
+            "7": "They want to improve my technique in all strokes with turns",
+            "8": "They am afraid of water"
         }
     }
 }

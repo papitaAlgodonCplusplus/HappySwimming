@@ -127,6 +127,7 @@
             <thead>
               <tr>
                 <th>{{ 'studentsManagement.studentName' | translate }}</th>
+                <th>{{ 'servicesManager.motherContact' | translate }}</th>
                 <!-- Only show professional name in admin view for client courses -->
                 <th *ngIf="isAdmin && course.type !== 'professional_service'">{{ 'servicesManager.professional' |
                   translate }}</th>
@@ -142,7 +143,8 @@
             </thead>
             <tbody>
               <tr *ngFor="let student of course.students">
-                <td>{{ student.name || student.firstName }}</td>
+                <td>{{ student.kid_name || student.name }}</td>
+                <td>{{ student.mother_contact || 'NA' }}</td>
                 <!-- Professional name for client courses in admin view -->
                 <td *ngIf="isAdmin && course.type !== 'professional_service'">
                   {{ student.professionalName || ('servicesManager.notAssigned' | translate) }}

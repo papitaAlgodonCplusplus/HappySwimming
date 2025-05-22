@@ -165,6 +165,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   ];
 
   // Form data
+  kidName: string = '';
+  motherContact: string = '';
   selectedCourse: string = '';
   selectedProfessional: number | null = null;
   startDate: string = '';
@@ -401,6 +403,16 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   validateForm(): boolean {
     this.errorMessage = '';
 
+    if (!this.kidName.trim()) {
+      this.errorMessage = this.translationService.translate('servicesManager.errorRequiredKidName');
+      return false;
+    }
+
+    if (!this.motherContact.trim()) {
+      this.errorMessage = this.translationService.translate('servicesManager.errorRequiredMotherContact');
+      return false;
+    }
+
     if (!this.selectedCourse) {
       this.errorMessage = this.translationService.translate('servicesManager.errorRequiredCourse');
       return false;
@@ -439,6 +451,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
 
     const enrollmentData = {
+      kidName: this.kidName.trim(),
+      motherContact: this.motherContact.trim(),
       courseId: this.selectedCourse,
       userId: this.userId,
       professionalId: this.selectedProfessional,
@@ -514,7 +528,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return this.translationService.translate(`servicesManager.${status}`);
   }
 
-    toggleAbility(index: number): void {
+  toggleAbility(index: number): void {
     this.swimmingAbilities[index].selected = !this.swimmingAbilities[index].selected;
     this.cdr.detectChanges();
   }

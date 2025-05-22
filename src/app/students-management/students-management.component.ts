@@ -13,6 +13,8 @@ import { catchError, finalize } from 'rxjs/operators';
 
 interface Student {
   id: number;
+  kid_name?: string;
+  mother_contact?: string;
   firstName?: string;
   lastName?: string;
   userId: number;
@@ -250,7 +252,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     // First, collect all unique professional IDs
     const professionalIds = new Set<number>();
 
-    students.forEach(student => {
+    students.forEach(student => {;
       if (student.professionalId) {
         professionalIds.add(student.professionalId);
       }
