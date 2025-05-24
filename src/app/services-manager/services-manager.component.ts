@@ -14,12 +14,14 @@ import { of } from 'rxjs';
 interface Course {
   id: string;
   name: string;
-  descriptionKey?: string; // Added for translation support
+  descriptionKey?: string;
   type: 'client' | 'professional';
   price: number;
   duration: number;
   description?: string;
-  translationKey?: string; // Added for translation support
+  translationKey?: string;
+  deliveryMode?: 'online' | 'in_person';
+  minParticipants?: number;
 }
 
 interface SwimmingAbility {
@@ -103,41 +105,72 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   ];
 
   professionalCourses: Course[] = [
+    // Swimming Story Course for Teacher Trainer/Technical Director
     {
       id: '1',
-      name: 'Swimming Story Course for Teacher Trainer',
+      name: 'Swimming Story Course for Teacher Trainer/Technical Director (Online)',
       type: 'professional',
       price: 200,
       duration: 10,
       description: 'Online course for Teacher Trainer/Technical Director (includes pedagogical material)',
-      descriptionKey: 'professionalCourses.swimmingStoryTrainer.description'
+      descriptionKey: 'professionalCourses.swimmingStoryTrainer.descriptionOnline',
+      deliveryMode: 'online'
     },
     {
+      id: '1',
+      name: 'Swimming Story Course for Teacher Trainer/Technical Director (In Person)',
+      type: 'professional',
+      price: 2000,
+      duration: 10,
+      description: 'In-person course for Teacher Trainer/Technical Director (includes pedagogical material) - Minimum 10 people',
+      descriptionKey: 'professionalCourses.swimmingStoryTrainer.descriptionInPerson',
+      deliveryMode: 'in_person',
+      minParticipants: 10
+    },
+    // Swimming Story Teacher Course
+    {
       id: '2',
-      name: 'Swimming Story Teacher Course',
+      name: 'Swimming Story Teacher Course (Online)',
       type: 'professional',
       price: 90,
       duration: 8,
       description: 'Online course for becoming a Swimming Story Teacher',
-      descriptionKey: 'professionalCourses.swimmingStoryTeacher.description'
+      descriptionKey: 'professionalCourses.swimmingStoryTeacher.descriptionOnline',
+      deliveryMode: 'online'
     },
+    {
+      id: '2',
+      name: 'Swimming Story Teacher Course (In Person)',
+      type: 'professional',
+      price: 1500,
+      duration: 10,
+      description: 'In-person course for becoming a Swimming Story Teacher - Minimum 10 people',
+      descriptionKey: 'professionalCourses.swimmingStoryTeacher.descriptionInPerson',
+      deliveryMode: 'in_person',
+      minParticipants: 10
+    },
+    // Aquagym Instructor Course
     {
       id: '3',
-      name: 'Front-crawl Spinning Methodology',
-      type: 'professional',
-      price: 850,
-      duration: 4,
-      description: 'In-person training for front-crawl spinning methodology (minimum 10 people)',
-      descriptionKey: 'professionalCourses.frontCrawl.description'
-    },
-    {
-      id: '4',
-      name: 'Aquagym Instructor Course',
+      name: 'Aquagym Instructor Course (Online)',
       type: 'professional',
       price: 45,
       duration: 4,
       description: 'Online course for becoming an Aquagym instructor',
-      descriptionKey: 'professionalCourses.aquagym.description'
+      descriptionKey: 'professionalCourses.aquagym.description',
+      deliveryMode: 'online'
+    },
+    // Front-crawl Spinning Methodology
+    {
+      id: '4',
+      name: 'Front-crawl Spinning Methodology Teacher Course (In Person)',
+      type: 'professional',
+      price: 850,
+      duration: 4,
+      description: 'In-person training for front-crawl spinning methodology - Minimum 10 people',
+      descriptionKey: 'professionalCourses.frontCrawl.description',
+      deliveryMode: 'in_person',
+      minParticipants: 10
     }
   ];
 
@@ -149,7 +182,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   // Professional services (for professionals)
   professionalServices: ProfessionalService[] = [];
-
 
   // Swimming abilities
   swimmingAbilities: SwimmingAbility[] = [
@@ -210,6 +242,12 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         console.log('User authenticated:', user.role);
         this.userRole = user.role;
         this.userId = user.id;
+
+        // Set default values for professionals
+        if (this.userRole === 'professional') {
+          this.kidName = 'NaN';
+          this.motherContact = 'NaN';
+        }
 
         // Only load data if we have a valid user ID
         if (this.userId) {
@@ -403,14 +441,17 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   validateForm(): boolean {
     this.errorMessage = '';
 
-    if (!this.kidName.trim()) {
-      this.errorMessage = this.translationService.translate('servicesManager.errorRequiredKidName');
-      return false;
-    }
+    // For professionals, skip kid name and mother contact validation as they are defaulted to "NaN"
+    if (this.userRole === 'client') {
+      if (!this.kidName.trim()) {
+        this.errorMessage = this.translationService.translate('servicesManager.errorRequiredKidName');
+        return false;
+      }
 
-    if (!this.motherContact.trim()) {
-      this.errorMessage = this.translationService.translate('servicesManager.errorRequiredMotherContact');
-      return false;
+      if (!this.motherContact.trim()) {
+        this.errorMessage = this.translationService.translate('servicesManager.errorRequiredMotherContact');
+        return false;
+      }
     }
 
     if (!this.selectedCourse) {
@@ -484,11 +525,16 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
             this.errorMessage = '';
             this.isLoading = false;
 
-            // Reset form
+            // Reset form (but keep defaults for professionals)
             this.selectedCourse = '';
             this.selectedProfessional = null;
             this.startDate = '';
             this.preferredTime = '';
+            
+            if (this.userRole === 'client') {
+              this.kidName = '';
+              this.motherContact = '';
+            }
 
             // Reload enrollments
             this.loadInitialData();

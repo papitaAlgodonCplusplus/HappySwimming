@@ -178,7 +178,7 @@
         "title": "OUR CLASSES FOR CLIENTS",
         "subtitle": "SWIMMING LESSON FOR ALL AGE GROUPS AND ABILITY",
         "hours": "Hours",
-        "horasText": "horas",
+        "horasText": "hours",
         "price": "Price",
         "throughFunAndPlay": "Through fun and play",
         "levels": {
@@ -257,10 +257,10 @@
     "servicesManager": {
         "kidName": "Name of the Kid",
         "kidNamePlaceholder": "Enter the child's name",
-        "motherContact": "Contact of the Mother",
-        "motherContactPlaceholder": "Enter phone number",
+        "motherContact": "Phone / Email",
+        "motherContactPlaceholder": "Enter contact information",
         "errorRequiredKidName": "Kid's name is required",
-        "errorRequiredMotherContact": "Mother's contact is required",
+        "errorRequiredMotherContact": "Contact is required",
         "errorInvalidPhone": "Please enter a valid phone number",
         "myCertifications": "My Certifications",
         "certification": "Certification",

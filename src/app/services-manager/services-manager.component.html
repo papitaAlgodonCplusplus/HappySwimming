@@ -51,16 +51,16 @@
             <h2 class="section-title">{{ 'servicesManager.newEnrollment' | translate }}</h2>
 
             <div class="form-container">
-                <!-- Name of the Kid -->
-                <div class="form-group">
+                <!-- Name of the Kid (hidden for professionals) -->
+                <div *ngIf="userRole === 'client'" class="form-group">
                     <label for="kidName">{{ 'servicesManager.kidName' | translate }}<span
                             class="required">*</span></label>
                     <input type="text" id="kidName" [(ngModel)]="kidName" class="form-control" [disabled]="isLoading"
                         placeholder="{{ 'servicesManager.kidNamePlaceholder' | translate }}">
                 </div>
 
-                <!-- Contact of the Mother -->
-                <div class="form-group">
+                <!-- Contact of the Mother (hidden for professionals) -->
+                <div *ngIf="userRole === 'client'" class="form-group">
                     <label for="motherContact">{{ 'servicesManager.motherContact' | translate }}<span
                             class="required">*</span></label>
                     <input type="tel" id="motherContact" [(ngModel)]="motherContact" class="form-control"
@@ -83,18 +83,33 @@
                             </option>
                         </ng-container>
                         <ng-container *ngIf="userRole === 'professional'">
-                            <option *ngFor="let course of professionalCourses" [value]="course.id">
-                                {{ course.name }} (€{{ course.price }})
-                            </option>
+                            <optgroup label="Swimming Story Course for Teacher Trainer/Technical Director">
+                                <option value="1">Online - Duration: 10 hours</option>
+                                <option value="1">In Person - Duration: 10 hours (Minimum 10 people)</option>
+                            </optgroup>
+                            <optgroup label="Swimming Story Teacher Course">
+                                <option value="2">Online - Duration: 8 hours</option>
+                                <option value="2">In Person - Duration: 10 hours (Minimum 10 people)</option>
+                            </optgroup>
+                            <optgroup label="Aquagym Instructor Course">
+                                <option value="3">Online - Duration: 4 hours</option>
+                            </optgroup>
+                            <optgroup label="Front-crawl Spinning Methodology Teacher Course">
+                                <option value="4">In Person - Duration: 4 hours (Minimum 10 people)</option>
+                            </optgroup>
                         </ng-container>
                     </select>
                 </div>
 
                 <!-- Course Description (if selected) -->
-                <div *ngIf="getSelectedCourseDetails()?.descriptionKey" class="course-description">
-                    {{ getSelectedCourseDetails()?.descriptionKey || '' | translate }}
+                <div *ngIf="getSelectedCourseDetails()?.description" class="course-description">
+                    {{ getSelectedCourseDetails()?.description }}
                 </div>
 
+                <!-- Minimum participants notice (for in-person courses) -->
+                <div *ngIf="getSelectedCourseDetails()?.minParticipants" class="course-notice">
+                    <strong>Note:</strong> This course requires a minimum of {{ getSelectedCourseDetails()?.minParticipants }} participants.
+                </div>
 
                 <!-- Professional Selection (Client only) -->
                 <div *ngIf="userRole === 'client'" class="form-group">
