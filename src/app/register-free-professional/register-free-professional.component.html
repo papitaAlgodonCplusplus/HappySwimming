@@ -27,7 +27,7 @@
                 <select id="jobArea" [(ngModel)]="selectedJobArea" class="form-control" [disabled]="isLoading">
                     <option value="" disabled selected>{{ 'registerFreeProfessional.selectJobArea' | translate }}
                     </option>
-                    <option *ngFor="let area of jobAreas" [value]="area.id">{{ area.name }}</option>
+                    <option *ngFor="let area of jobAreas" [value]="area.id">{{ area.name | translate }}</option>
                 </select>
             </div>
         </div>

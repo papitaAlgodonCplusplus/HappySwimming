@@ -363,9 +363,10 @@
   background-color: white;
   border-radius: 10px;
   width: 90%;
+  height: 90%;
   max-width: 500px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
+  overflow: scroll;
 }
 
 .delete-modal {

@@ -1,4 +1,6 @@
 {
+    "DT Director Técnico": "Diretor Técnico",
+    "PR Profesor": "Professor",
     "assignProfessional": {
         "title": "Atribuir Profissionais a Clientes",
         "adminView": "Visão de Administrador",

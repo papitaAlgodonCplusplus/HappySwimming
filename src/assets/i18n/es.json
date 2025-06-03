@@ -1,4 +1,6 @@
 {
+    "DT Director Técnico": "DT Director Técnico",
+    "PR Profesor": "PR Profesor",
     "assignProfessional": {
         "title": "Asignar Profesionales a Clientes",
         "adminView": "Vista de Administrador",
@@ -498,9 +500,9 @@
             "3": "Puede desplazarme en el agua de frente y de espalda con movimientos de brazos y piernas sin control de la respiración",
             "4": "Puede dar un giro de 360 grados en mi eje longitudinal",
             "5": "Puede dar una voltereta en el agua",
-            "6": "Necesito mejorar la técnica en el estilo de crol",
-            "7": "Quiero mejorar la técnica en todos los estilos con virajes",
-            "8": "Tengo miedo al agua"
+            "6": "Necesita mejorar la técnica en el estilo de crol",
+            "7": "Quiere mejorar la técnica en todos los estilos con virajes",
+            "8": "Tiene miedo al agua"
         }
     },
     "currentPasswordRequired": "Se requiere la contraseña actual",
