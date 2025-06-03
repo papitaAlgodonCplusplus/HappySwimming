@@ -1697,8 +1697,7 @@ app.put('/api/admin/authorize/:userId', authenticateToken, isAdmin, async (req, 
     res.status(500).json({ error: 'An error occurred while authorizing the user' });
   }
 });
-
-// Delete a user (admin only)
+// Delete a user (admin only) - CASCADE delete all related data
 app.delete('/api/admin/users/:userId', authenticateToken, isAdmin, async (req, res) => {
   const userId = req.params.userId;
 
@@ -1707,7 +1706,6 @@ app.delete('/api/admin/users/:userId', authenticateToken, isAdmin, async (req, r
     return res.status(400).json({ error: 'Invalid user ID' });
   }
 
-  // Start a transaction to ensure all related data is deleted
   const client = await pool.connect();
 
   try {
@@ -1724,33 +1722,47 @@ app.delete('/api/admin/users/:userId', authenticateToken, isAdmin, async (req, r
 
     const userRole = userResult.rows[0].role;
 
-    // Delete client or professional data based on role
-    if (userRole === 'client') {
-      // Delete from clients table
-      await client.query('DELETE FROM clients WHERE user_id = $1', [userId]);
+    // Delete all related data in cascade
+    // 1. Delete from tables referencing client or professional
+    // 2. Delete from client/professional tables
+    // 3. Delete from users table
 
-      // Delete client enrollments
-      await client.query('DELETE FROM client_services WHERE client_id IN (SELECT id FROM clients WHERE user_id = $1)', [userId]);
-    } else if (userRole === 'professional') {
-      // Delete from professionals table
-      await client.query('DELETE FROM professionals WHERE user_id = $1', [userId]);
+    // Delete from client_services (by client_id and professional_id)
+    await client.query(`
+      DELETE FROM client_services 
+      WHERE client_id IN (SELECT id FROM clients WHERE user_id = $1)
+         OR professional_id IN (SELECT id FROM professionals WHERE user_id = $1)
+    `, [userId]);
 
-      // Delete professional services
-      await client.query('DELETE FROM professional_services WHERE professional_id IN (SELECT id FROM professionals WHERE user_id = $1)', [userId]);
-    }
+    // Delete from professional_services
+    await client.query(`
+      DELETE FROM professional_services 
+      WHERE professional_id IN (SELECT id FROM professionals WHERE user_id = $1)
+    `, [userId]);
 
-    // Finally, delete the user record
+    // Delete from professional_specialties
+    await client.query(`
+      DELETE FROM professional_specialties 
+      WHERE professional_id IN (SELECT id FROM professionals WHERE user_id = $1)
+    `, [userId]);
+
+    // Delete from clients
+    await client.query('DELETE FROM clients WHERE user_id = $1', [userId]);
+
+    // Delete from professionals
+    await client.query('DELETE FROM professionals WHERE user_id = $1', [userId]);
+
+    // Delete from users
     const deleteQuery = 'DELETE FROM users WHERE id = $1 RETURNING id';
     const result = await client.query(deleteQuery, [userId]);
 
     await client.query('COMMIT');
 
-    // Return success
-    res.json({ success: true, message: 'User deleted successfully', userId: userId });
+    res.json({ success: true, message: 'User and all related data deleted successfully', userId: userId });
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error deleting user:', error);
-    res.status(500).json({ error: 'An error occurred while deleting the user' });
+    res.status(500).json({ error: 'An error occurred while deleting the user and related data' });
   } finally {
     client.release();
   }
