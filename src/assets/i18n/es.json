@@ -257,6 +257,10 @@
     "welcome": "¡Bienvenido,",
     "servicesManager": {
         "kidName": "Nombre del Niño",
+        "kidAge": "Edad del Niño",
+        "kidAgePlaceholder": "Introduce la edad del niño",
+        "extraComments": "Comentarios Adicionales (opcional)",
+        "extraCommentsPlaceholder": "Introduce comentarios adicionales",
         "kidNamePlaceholder": "Introduce el nombre del niño",
         "motherContact": "Teléfono / Email",
         "motherContactPlaceholder": "Introduce forma de contacto",

@@ -198,6 +198,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   // Form data
   kidName: string = '';
+  kidAge: number | null = null; // Not used in the current implementation
+  extraComments: string = '';
   motherContact: string = '';
   selectedCourse: string = '';
   selectedProfessional: number | null = null;
@@ -247,6 +249,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         if (this.userRole === 'professional') {
           this.kidName = 'NaN';
           this.motherContact = 'NaN';
+          this.kidAge = null; // Not used for professionals
+          this.extraComments = 'Nan';
         }
 
         // Only load data if we have a valid user ID
@@ -448,6 +452,11 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         return false;
       }
 
+      if (!this.kidAge || this.kidAge <= 0) {
+        this.errorMessage = this.translationService.translate('servicesManager.errorRequiredKidAge');
+        return false;
+      }
+
       if (!this.motherContact.trim()) {
         this.errorMessage = this.translationService.translate('servicesManager.errorRequiredMotherContact');
         return false;
@@ -494,6 +503,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     const enrollmentData = {
       kidName: this.kidName.trim(),
       motherContact: this.motherContact.trim(),
+      // kidAge: this.kidAge,
+      // extraComments: this.extraComments.trim(),
       courseId: this.selectedCourse,
       userId: this.userId,
       professionalId: this.selectedProfessional,
@@ -534,6 +545,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
             if (this.userRole === 'client') {
               this.kidName = '';
               this.motherContact = '';
+              this.kidAge = null; // Reset kid age for clients
+              this.extraComments = '';
             }
 
             // Reload enrollments

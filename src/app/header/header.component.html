@@ -47,7 +47,6 @@
 
   <!-- Show these options when authenticated -->
   <ng-container *ngIf="isAuthenticated">
-    <a [routerLink]="['/homepage']" class="mobile-nav-item" (click)="toggleMobileMenu()">{{ 'home' | translate }}</a>
     <a (click)="logoutFromMobile()" class="mobile-nav-item">Logout</a>
   </ng-container>
 

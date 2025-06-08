@@ -258,6 +258,10 @@
     "welcome": "Welcome,",
     "servicesManager": {
         "kidName": "Name of the Kid",
+        "kidAge": "Kid's Age",
+        "kidAgePlaceholder": "Enter the kid's age",
+        "extraCommentsPlaceholder": "Enter any additional comments or information",
+        "extraComments": "Additional Comments (optional)",
         "kidNamePlaceholder": "Enter the child's name",
         "motherContact": "Phone / Email",
         "motherContactPlaceholder": "Enter contact information",
