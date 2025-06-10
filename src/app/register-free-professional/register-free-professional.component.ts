@@ -135,25 +135,25 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
  */
   getTermsLink(language: string, jobArea: string): string {
     // Default link if none of the conditions match
-    let link = 'https://www.canva.com/design/DAGhb4hPTrU/gkDsFKPSqhSfPfvx3AWlGw/view?utm_content=DAGhb4hPTrU&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h5ab7c55f34';
+    let link = 'https://drive.google.com/file/d/1xZQoIss3amWRcEfst9xoZ_R282U4T7eg/view?usp=sharing';
 
     if (jobArea === 'dt') { // Technical Director
       if (language === 'en') {
-        link = 'https://www.canva.com/design/DAGhbN3Fbk0/JHn6wcIYq6dAiqikgTjgOg/view?utm_content=DAGhbN3Fbk0&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h429b1bf328';
+        link = 'https://drive.google.com/file/d/1xZQoIss3amWRcEfst9xoZ_R282U4T7eg/view?usp=sharing';
       } else {
-        link = 'https://www.canva.com/design/DAGhaT5qhHk/xiwgIMyCXJb2EVsj75Fj0w/view?utm_content=DAGhaT5qhHk&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hba5645545e';
+        link = 'https://drive.google.com/file/d/1Cvub8QSqhdEXJN0RV7Db7UXrn801kyMy/view?usp=sharing';
       }
     } else if (jobArea === 'pr') { // Teacher
       if (language === 'en') {
-        link = 'https://www.canva.com/design/DAGhb4hPTrU/gkDsFKPSqhSfPfvx3AWlGw/view?utm_content=DAGhb4hPTrU&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h5ab7c55f34';
+        link = 'https://drive.google.com/file/d/1xZQoIss3amWRcEfst9xoZ_R282U4T7eg/view?usp=sharing';
       } else {
-        link = 'https://www.canva.com/design/DAGhb_uWDco/SZLaN34gcx7e6cd2bu_xrA/view?utm_content=DAGhb_uWDco&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h789c5ccd3b';
+        link = 'https://drive.google.com/file/d/1Cvub8QSqhdEXJN0RV7Db7UXrn801kyMy/view?usp=sharing';
       }
     } else {
       if (language === 'en') {
-        link = 'https://www.canva.com/design/DAGhb4hPTrU/gkDsFKPSqhSfPfvx3AWlGw/view?utm_content=DAGhb4hPTrU&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h5ab7c55f34';
+        link = 'https://drive.google.com/file/d/1xZQoIss3amWRcEfst9xoZ_R282U4T7eg/view?usp=sharing';
       } else {
-        link = 'https://www.canva.com/design/DAGhb_uWDco/SZLaN34gcx7e6cd2bu_xrA/view?utm_content=DAGhb_uWDco&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h789c5ccd3b';
+        link = 'https://drive.google.com/file/d/1Cvub8QSqhdEXJN0RV7Db7UXrn801kyMy/view?usp=sharing';
       }
     }
 
