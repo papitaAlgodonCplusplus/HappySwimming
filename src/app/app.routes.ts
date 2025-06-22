@@ -51,6 +51,11 @@ export const routes: Routes = [
     loadComponent: () => import('./password-recover/password-recover.component').then(c => c.PasswordRecoverComponent)
   },
   {
+    path: 'admin-course-management',
+    loadComponent: () => import('./admin-course-management/admin-course-management.component').then(c => c.AdminCourseManagementComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: 'assign-professional',
     loadComponent: () => import('./assign-pl-to-cl/assign-pl-to-cl.component').then(c => c.AssignPLToCLComponent),
     canActivate: [authGuard]

@@ -1,0 +1,315 @@
+<!-- src/app/admin-course-management/admin-course-management.component.html -->
+<app-header></app-header>
+
+<div class="course-management-container">
+  <div class="page-header">
+    <h1 class="page-title">{{ 'adminCourseManagement.title' | translate }}</h1>
+    <p class="page-subtitle">{{ 'adminCourseManagement.subtitle' | translate }}</p>
+  </div>
+
+  <!-- Error and Success Messages -->
+  <div *ngIf="error" class="alert alert-error">
+    <span class="alert-icon">⚠️</span>
+    <span class="alert-message">{{ error }}</span>
+    <button class="alert-close" (click)="clearMessages()">×</button>
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success">
+    <span class="alert-icon">✅</span>
+    <span class="alert-message">{{ successMessage }}</span>
+    <button class="alert-close" (click)="clearMessages()">×</button>
+  </div>
+
+  <!-- Access Denied for Non-Admin Users -->
+  <div *ngIf="!isAdmin" class="access-denied">
+    <h2>{{ 'adminCourseManagement.accessDenied' | translate }}</h2>
+    <p>{{ 'adminCourseManagement.adminRequired' | translate }}</p>
+  </div>
+
+  <!-- Admin Course Management Interface -->
+  <div *ngIf="isAdmin" class="admin-interface">
+    <!-- Action Bar -->
+    <div class="action-bar">
+      <button 
+        class="btn btn-primary"
+        (click)="toggleCreateForm()"
+        [disabled]="isLoading">
+        <span class="btn-icon">{{ showCreateForm ? '×' : '+' }}</span>
+        {{ showCreateForm ? ('adminCourseManagement.cancelCreate' | translate) : ('adminCourseManagement.createCourse' | translate) }}
+      </button>
+      
+      <div class="action-stats">
+        <span class="stat-item">
+          {{ 'adminCourseManagement.totalCourses' | translate }}: {{ courses.length }}
+        </span>
+        <span class="stat-item">
+          <!-- {{ 'adminCourseManagement.activeCourses' | translate }}: {{ (courses | filter:status:'active').length }} -->
+        </span>
+      </div>
+    </div>
+
+    <!-- Create/Edit Course Form -->
+    <div *ngIf="showCreateForm" class="course-form-container">
+      <div class="form-header">
+        <h2>{{ editingCourse ? ('adminCourseManagement.editCourse' | translate) : ('adminCourseManagement.createNewCourse' | translate) }}</h2>
+        <p class="form-subtitle">{{ 'adminCourseManagement.formSubtitle' | translate }}</p>
+      </div>
+
+      <form class="course-form" (ngSubmit)="editingCourse ? updateCourse() : createCourse()">
+        <!-- Basic Course Information -->
+        <div class="form-section">
+          <h3 class="section-title">{{ 'adminCourseManagement.basicInfo' | translate }}</h3>
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="courseName">{{ 'adminCourseManagement.courseName' | translate }} *</label>
+              <input 
+                type="text" 
+                id="courseName"
+                [(ngModel)]="courseForm.name"
+                name="courseName"
+                placeholder="e.g., SWIM A STORY"
+                required
+                class="form-control">
+            </div>
+
+            <div class="form-group">
+              <label for="clientName">{{ 'adminCourseManagement.clientName' | translate }} *</label>
+              <input 
+                type="text" 
+                id="clientName"
+                [(ngModel)]="courseForm.clientName"
+                name="clientName"
+                placeholder="e.g., Hotel Riu"
+                required
+                class="form-control">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="description">{{ 'adminCourseManagement.description' | translate }} *</label>
+            <textarea 
+              id="description"
+              [(ngModel)]="courseForm.description"
+              name="description"
+              rows="4"
+              placeholder="For beginners and water-confident kids to build essential safety skills..."
+              required
+              class="form-control"></textarea>
+          </div>
+        </div>
+
+        <!-- Schedule Information -->
+        <div class="form-section">
+          <h3 class="section-title">{{ 'adminCourseManagement.schedule' | translate }}</h3>
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="startDate">{{ 'adminCourseManagement.startDate' | translate }} *</label>
+              <input 
+                type="date" 
+                id="startDate"
+                [(ngModel)]="courseForm.startDate"
+                name="startDate"
+                required
+                class="form-control">
+            </div>
+
+            <div class="form-group">
+              <label for="endDate">{{ 'adminCourseManagement.endDate' | translate }} *</label>
+              <input 
+                type="date" 
+                id="endDate"
+                [(ngModel)]="courseForm.endDate"
+                name="endDate"
+                required
+                class="form-control">
+            </div>
+          </div>
+        </div>
+
+        <!-- Professional Assignment -->
+        <div class="form-section">
+          <h3 class="section-title">{{ 'adminCourseManagement.professionalAssignment' | translate }}</h3>
+          
+          <div class="form-group">
+            <label for="professionalId">{{ 'adminCourseManagement.assignProfessional' | translate }} *</label>
+            <select 
+              id="professionalId"
+              [(ngModel)]="courseForm.professionalId"
+              name="professionalId"
+              required
+              class="form-control">
+              <option value="">{{ 'adminCourseManagement.selectProfessional' | translate }}</option>
+              <option *ngFor="let professional of professionals" [value]="professional.id">
+                {{ professional.name }} - {{ professional.specialties.join(', ') }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Pricing Structure -->
+        <div class="form-section">
+          <h3 class="section-title">{{ 'adminCourseManagement.pricingStructure' | translate }}</h3>
+          <p class="section-subtitle">{{ 'adminCourseManagement.pricingSubtitle' | translate }}</p>
+          
+          <div class="pricing-grid">
+            <div *ngFor="let pricing of courseForm.pricing" class="pricing-item">
+              <div class="pricing-header">
+                <span class="student-count">{{ pricing.studentCount }} {{ pricing.studentCount === 1 ? ('adminCourseManagement.student' | translate) : ('adminCourseManagement.students' | translate) }}</span>
+              </div>
+              <div class="pricing-inputs">
+                <div class="input-group">
+                  <label>{{ 'adminCourseManagement.price' | translate }} (€)</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="pricing.price"
+                    [name]="'price_' + pricing.studentCount"
+                    min="0"
+                    step="0.01"
+                    class="form-control"
+                    (ngModelChange)="updatePricing(pricing.studentCount, 'price', $event)">
+                </div>
+                <div class="input-group">
+                  <label>{{ 'adminCourseManagement.lessons' | translate }}</label>
+                  <input 
+                    type="number" 
+                    [(ngModel)]="pricing.lessonsCount"
+                    [name]="'lessons_' + pricing.studentCount"
+                    min="1"
+                    class="form-control"
+                    (ngModelChange)="updatePricing(pricing.studentCount, 'lessonsCount', $event)">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="cancelEdit()" [disabled]="isLoading">
+            {{ 'adminCourseManagement.cancel' | translate }}
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+            <span *ngIf="isLoading" class="loading-spinner"></span>
+            {{ editingCourse ? ('adminCourseManagement.updateCourse' | translate) : ('adminCourseManagement.createCourse' | translate) }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="filters-container">
+      <div class="search-section">
+        <div class="search-group">
+          <label for="searchTerm">{{ 'adminCourseManagement.search' | translate }}</label>
+          <input 
+            type="text" 
+            id="searchTerm"
+            [(ngModel)]="searchTerm"
+            placeholder="{{ 'adminCourseManagement.searchPlaceholder' | translate }}"
+            class="form-control search-input">
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <div class="filter-group">
+          <label for="statusFilter">{{ 'adminCourseManagement.filterByStatus' | translate }}</label>
+          <select id="statusFilter" [(ngModel)]="statusFilter" class="form-control">
+            <option value="all">{{ 'adminCourseManagement.allStatuses' | translate }}</option>
+            <option value="active">{{ 'adminCourseManagement.active' | translate }}</option>
+            <option value="completed">{{ 'adminCourseManagement.completed' | translate }}</option>
+            <option value="cancelled">{{ 'adminCourseManagement.cancelled' | translate }}</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="clientFilter">{{ 'adminCourseManagement.filterByClient' | translate }}</label>
+          <select id="clientFilter" [(ngModel)]="clientFilter" class="form-control">
+            <option value="all">{{ 'adminCourseManagement.allClients' | translate }}</option>
+            <option *ngFor="let client of clientOptions" [value]="client">{{ client }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Courses List -->
+    <div class="courses-container">
+      <div *ngIf="isLoading && courses.length === 0" class="loading-container">
+        <div class="loading-spinner-large"></div>
+        <p>{{ 'adminCourseManagement.loadingCourses' | translate }}</p>
+      </div>
+
+      <div *ngIf="!isLoading && filteredCourses.length === 0" class="empty-state">
+        <div class="empty-icon">📚</div>
+        <h3>{{ 'adminCourseManagement.noCourses' | translate }}</h3>
+        <p>{{ 'adminCourseManagement.noCoursesMessage' | translate }}</p>
+      </div>
+
+      <div *ngIf="filteredCourses.length > 0" class="courses-grid">
+        <div *ngFor="let course of filteredCourses" class="course-card">
+          <!-- Course Header -->
+          <div class="course-header">
+            <div class="course-title-section">
+              <h3 class="course-title">{{ course.name }}</h3>
+              <span class="course-code">{{ course.courseCode }}</span>
+            </div>
+            <div class="course-status">
+              <span class="status-badge" [ngClass]="getStatusClass(course.status)">
+                {{ ('adminCourseManagement.' + course.status) | translate }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Course Details -->
+          <div class="course-details">
+            <div class="detail-row">
+              <span class="detail-label">{{ 'adminCourseManagement.client' | translate }}:</span>
+              <span class="detail-value">{{ course.clientName }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">{{ 'adminCourseManagement.professional' | translate }}:</span>
+              <span class="detail-value">{{ getProfessionalName(course.professionalId) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">{{ 'adminCourseManagement.duration' | translate }}:</span>
+              <span class="detail-value">{{ course.startDate }} - {{ course.endDate }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">{{ 'adminCourseManagement.enrollment' | translate }}:</span>
+              <span class="detail-value">{{ course.currentStudents }}/{{ course.maxStudents }} {{ 'adminCourseManagement.students' | translate }}</span>
+            </div>
+          </div>
+
+          <!-- Course Description -->
+          <div class="course-description">
+            <p>{{ course.description }}</p>
+          </div>
+
+          <!-- Pricing Preview -->
+          <div class="pricing-preview">
+            <h4>{{ 'adminCourseManagement.currentPricing' | translate }}</h4>
+            <div class="pricing-summary">
+              <div *ngFor="let pricing of course.pricing" class="pricing-row">
+                <span class="pricing-students">{{ pricing.studentCount }}{{ pricing.studentCount === 1 ? ' student' : ' students' }}</span>
+                <span class="pricing-amount">€{{ pricing.price }} ({{ pricing.lessonsCount }} lessons)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Course Actions -->
+          <div class="course-actions">
+            <button class="btn btn-secondary btn-sm" (click)="editCourse(course)" [disabled]="isLoading">
+              <span class="btn-icon">✏️</span>
+              {{ 'adminCourseManagement.edit' | translate }}
+            </button>
+            <button class="btn btn-danger btn-sm" (click)="deleteCourse(course)" [disabled]="isLoading">
+              <span class="btn-icon">🗑️</span>
+              {{ 'adminCourseManagement.delete' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

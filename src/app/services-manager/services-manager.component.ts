@@ -1,44 +1,55 @@
+// src/app/services-manager/services-manager.component.ts (Updated)
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { HeaderComponent } from '../header/header.component';
-import { TranslationService } from '../services/translation.service';
-import { TranslatePipe } from '../pipes/translate.pipe';
-import { AuthService } from '../services/auth.service';
-import { ServicesManagerService } from '../services/services-manager.service';
-import { Subscription } from 'rxjs';
-import { catchError, finalize } from 'rxjs/operators';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Subject } from 'rxjs';
+import { takeUntil, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { AuthService } from '../services/auth.service';
 
+// Components
+import { HeaderComponent } from '../header/header.component';
+import { TranslatePipe } from '../pipes/translate.pipe';
+
+// Updated interfaces
 interface Course {
-  id: string;
+  id: string | number;
   name: string;
-  descriptionKey?: string;
-  type: 'client' | 'professional';
+  type: 'client' | 'professional' | 'admin_course';
   price: number;
-  duration: number;
+  duration?: number;
   description?: string;
+  descriptionKey?: string;
   translationKey?: string;
   deliveryMode?: 'online' | 'in_person';
   minParticipants?: number;
+
+  // Admin course specific fields
+  courseCode?: string;
+  clientName?: string;
+  startDate?: string;
+  endDate?: string;
+  professionalId?: number;
+  professionalName?: string;
+  maxStudents?: number;
+  currentStudents?: number;
+  availableSpots?: number;
+  currentPrice?: number;
+  pricing?: CoursePricing[];
 }
 
-interface SwimmingAbility {
-  description: string;
-  selected: boolean;
-}
-
-interface Professional {
-  id: number | string;
-  name: string;
-  specialties: string[];
-  verified: boolean;
-  available: boolean;
+interface CoursePricing {
+  studentCount: number;
+  price: number;
+  lessonsCount: number;
 }
 
 interface Enrollment {
-  type?: 'client_service' | 'professional_service';
+  motherContact?: string;
+  kidName?: string;
+  type: 'client_service' | 'professional_service';
   id: number | string;
   courseId: string;
   courseName: string;
@@ -56,11 +67,13 @@ interface Enrollment {
   notes?: string;
 }
 
-interface ProfessionalService {
-  professional_id: number;
-  service_id: string;
-  price_per_hour: number;
-  notes?: string;
+interface EnrollmentRequest {
+  courseId?: string;
+  adminCourseId?: number;
+  userId: number | null;
+  professionalId: number | null;
+  kidName?: string;
+  motherContact?: string;
 }
 
 @Component({
@@ -72,581 +85,411 @@ interface ProfessionalService {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ServicesManagerComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  private apiUrl = 'http://localhost:10000/api';
+  private authService = inject(AuthService);
+
   // User information
   userRole: string | null = null;
   userId: number | null = null;
 
-  // Available courses based on user role
-  clientCourses: Course[] = [
-    {
-      id: '5',
-      name: 'Children Aged 3-6',
-      type: 'client',
-      price: 80,
-      duration: 5,
-      translationKey: 'swimmingAbilities.titles.children36'
-    },
-    {
-      id: '6',
-      name: 'Children Aged 6-12',
-      type: 'client',
-      price: 80,
-      duration: 5,
-      translationKey: 'swimmingAbilities.titles.children612'
-    },
-    {
-      id: '7',
-      name: 'Any Age and Ability',
-      type: 'client',
-      price: 80,
-      duration: 5,
-      translationKey: 'swimmingAbilities.titles.anyAge'
-    }
-  ];
+  // Available courses (now fetched from backend)
+  clientCourses: Course[] = [];
+  professionalCourses: Course[] = [];
+  adminCourses: Course[] = []; // New: admin-created courses
+  userClientName: string | null = null; // For admin courses
 
-  professionalCourses: Course[] = [
-    // Swimming Story Course for Teacher Trainer/Technical Director
-    {
-      id: '1',
-      name: 'Swimming Story Course for Teacher Trainer/Technical Director (Online)',
-      type: 'professional',
-      price: 200,
-      duration: 10,
-      description: 'Online course for Teacher Trainer/Technical Director (includes pedagogical material)',
-      descriptionKey: 'professionalCourses.swimmingStoryTrainer.descriptionOnline',
-      deliveryMode: 'online'
-    },
-    {
-      id: '1',
-      name: 'Swimming Story Course for Teacher Trainer/Technical Director (In Person)',
-      type: 'professional',
-      price: 2000,
-      duration: 10,
-      description: 'In-person course for Teacher Trainer/Technical Director (includes pedagogical material) - Minimum 10 people',
-      descriptionKey: 'professionalCourses.swimmingStoryTrainer.descriptionInPerson',
-      deliveryMode: 'in_person',
-      minParticipants: 10
-    },
-    // Swimming Story Teacher Course
-    {
-      id: '2',
-      name: 'Swimming Story Teacher Course (Online)',
-      type: 'professional',
-      price: 90,
-      duration: 8,
-      description: 'Online course for becoming a Swimming Story Teacher',
-      descriptionKey: 'professionalCourses.swimmingStoryTeacher.descriptionOnline',
-      deliveryMode: 'online'
-    },
-    {
-      id: '2',
-      name: 'Swimming Story Teacher Course (In Person)',
-      type: 'professional',
-      price: 1500,
-      duration: 10,
-      description: 'In-person course for becoming a Swimming Story Teacher - Minimum 10 people',
-      descriptionKey: 'professionalCourses.swimmingStoryTeacher.descriptionInPerson',
-      deliveryMode: 'in_person',
-      minParticipants: 10
-    },
-    // Aquagym Instructor Course
-    {
-      id: '3',
-      name: 'Aquagym Instructor Course (Online)',
-      type: 'professional',
-      price: 45,
-      duration: 4,
-      description: 'Online course for becoming an Aquagym instructor',
-      descriptionKey: 'professionalCourses.aquagym.description',
-      deliveryMode: 'online'
-    },
-    // Front-crawl Spinning Methodology
-    {
-      id: '4',
-      name: 'Front-crawl Spinning Methodology Teacher Course (In Person)',
-      type: 'professional',
-      price: 850,
-      duration: 4,
-      description: 'In-person training for front-crawl spinning methodology - Minimum 10 people',
-      descriptionKey: 'professionalCourses.frontCrawl.description',
-      deliveryMode: 'in_person',
-      minParticipants: 10
-    }
-  ];
+  // Current enrollments
+  enrollments: Enrollment[] = [];
 
-  // Available professionals for client courses
-  availableProfessionals: Professional[] = [];
-
-  // User enrollments
-  myEnrollments: Enrollment[] = [];
-
-  // Professional services (for professionals)
-  professionalServices: ProfessionalService[] = [];
-
-  // Swimming abilities
-  swimmingAbilities: SwimmingAbility[] = [
-    { description: 'no puedo poner la cabeza debajo del agua, ni controlar la respiración', selected: false },
-    { description: 'puedo poner la cabeza debajo del agua y soplar burbujas por naziz o boca', selected: false },
-    { description: 'puedo poner la cabeza debajo del agua y soplar burbujas flotando por naziz y boca de frente y de espalda', selected: false },
-    { description: 'puedo desplazarse en el agua de frente y de espalda con movimientos de brazos y piernas sin control de la respiración', selected: false },
-    { description: 'puedo dar un giro de 360 grados en mi eje longitudinal', selected: false },
-    { description: 'puedo dar una voltereta en el agua', selected: false },
-    { description: 'necesito mejorar la técnica en el estilo de crol', selected: false },
-    { description: 'quiero mejora la técnica en todos los estilos con virajes', selected: false },
-    { description: 'tengo miedo al agua', selected: false }
-  ];
-
-  // Form data
-  kidName: string = '';
-  kidAge: number | null = null; // Not used in the current implementation
-  extraComments: string = '';
-  motherContact: string = '';
-  selectedCourse: string = '';
-  selectedProfessional: number | null = null;
-  startDate: string = '';
-  preferredTime: string = '';
-
-  // UI state
+  // Form state
+  showEnrollmentForm: boolean = false;
+  selectedCourse: Course | null = null;
   isLoading: boolean = false;
-  errorMessage: string = '';
+  error: string = '';
   successMessage: string = '';
-  private pendingRequests: number = 0;
 
-  // Subscriptions
-  private langSubscription: Subscription | null = null;
-  private loadedSubscription: Subscription | null = null;
-  private authSubscription: Subscription | null = null;
+  // Enrollment form data
+  enrollmentForm = {
+    kidName: '',
+    motherContact: ''
+  };
 
-  // Services
-  private translationService = inject(TranslationService);
-  private authService = inject(AuthService);
-  private servicesManagerService = inject(ServicesManagerService);
-  private cdr = inject(ChangeDetectorRef);
+  constructor(
+    private http: HttpClient,
+    private cdr: ChangeDetectorRef
+  ) { }
 
-  ngOnInit() {
-    // Subscribe to language changes
-    this.langSubscription = this.translationService.getCurrentLang().subscribe(() => {
-      console.log('Language changed');
-      this.cdr.detectChanges();
-    });
-
-    // Subscribe to translations loaded event
-    this.loadedSubscription = this.translationService.isTranslationsLoaded().subscribe(loaded => {
-      if (loaded) {
-        console.log('Translations loaded');
-        this.cdr.detectChanges();
-      }
-    });
-
-    // Subscribe to auth state to get user role
-    this.authSubscription = this.authService.getCurrentUser().subscribe(user => {
-      if (user) {
-        console.log('User authenticated:', user.role);
-        this.userRole = user.role;
-        this.userId = user.id;
-
-        // Set default values for professionals
-        if (this.userRole === 'professional') {
-          this.kidName = 'NaN';
-          this.motherContact = 'NaN';
-          this.kidAge = null; // Not used for professionals
-          this.extraComments = 'Nan';
-        }
-
-        // Only load data if we have a valid user ID
-        if (this.userId) {
-          this.loadInitialData();
-        } else {
-          console.error('User ID is null or undefined');
-          this.errorMessage = 'Authentication error. Please try logging in again.';
-          this.cdr.detectChanges();
-        }
-      } else {
-        console.warn('No user found in auth state');
-      }
-    });
+  ngOnInit(): void {
+    this.getUserInfo();
+    this.loadAvailableCourses();
+    this.loadEnrollments();
   }
 
-  loadInitialData() {
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private getUserInfo(): void {
+    this.authService.getCurrentUser().subscribe(user => {
+      this.userRole = (user.email === 'admin@gmail.com') ? 'admin' : 'client';
+      const userIdStr = user.id || localStorage.getItem('userId');
+      this.userId = userIdStr ? parseInt(userIdStr, 10) : null;
+    })
+  }
+
+  private getAuthHeaders(): HttpHeaders {
+    const token = localStorage.getItem('token');
+    return new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  }
+
+  // Load available courses from backend
+  loadAvailableCourses(): void {
     this.isLoading = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-    this.cdr.detectChanges();
-
-    console.log('Loading initial data for role:', this.userRole);
-
-    // Initialize the counter
-    this.pendingRequests = 1; // Start with 1 for enrollments
+    this.error = '';
 
     if (this.userRole === 'client') {
-      this.pendingRequests++; // Add 1 for professionals if user is client
+      // Load admin-created courses for clients
+      this.loadAdminCourses();
     } else if (this.userRole === 'professional') {
-      this.pendingRequests++; // Add 1 for professional services if user is professional
-    }
-
-    console.log('Initial pending requests:', this.pendingRequests);
-
-    // Load user enrollments
-    console.log('Loading user enrollments...');
-    this.servicesManagerService.getUserEnrollments()
-      .pipe(
-        catchError(error => {
-          console.error('Error loading enrollments:', error);
-          this.errorMessage = this.translationService.translate('servicesManager.errorGeneric');
-          this.checkAllRequestsComplete();
-          return of([]);
-        }),
-        finalize(() => {
-          console.log('User enrollments finalized');
-          this.checkAllRequestsComplete();
-        })
-      )
-      .subscribe(enrollments => {
-        console.log('User enrollments loaded:', enrollments);
-        this.myEnrollments = enrollments || [];
-        this.cdr.detectChanges();
-
-        // If user is a client, load available professionals
-        if (this.userRole === 'client') {
-          this.loadAvailableProfessionals();
-        }
-      });
-
-    // If user is a professional, load their professional services
-    if (this.userRole === 'professional') {
-      console.log('Loading professional services...');
-      this.loadProfessionalServices();
+      // Load professional training courses
+      this.loadProfessionalCourses();
     }
   }
 
-  private checkAllRequestsComplete() {
-    this.pendingRequests--;
-    console.log('Request completed, pending requests remaining:', this.pendingRequests);
-    if (this.pendingRequests <= 0) {
-      console.log('All requests completed, setting isLoading to false');
+  // Load admin-created courses for clients
+  private loadAdminCourses(): void {
+    this.http.get<Course[]>(`${this.apiUrl}/client/available-courses`, {
+      headers: this.getAuthHeaders()
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Error loading admin courses:', error);
+        // Fallback to legacy courses if admin courses fail to load
+        this.adminCourses = [];
+        this.isLoading = false;
+        this.cdr.detectChanges();
+        return of([]);
+      })
+    ).subscribe(courses => {
+      this.adminCourses = courses.filter(course => course.type === 'admin_course');
+      // Combine admin courses with legacy courses
+      this.clientCourses = [...this.adminCourses];
       this.isLoading = false;
       this.cdr.detectChanges();
-    }
+    });
   }
 
-  loadAvailableProfessionals() {
-    console.log('Loading available professionals...');
-    this.servicesManagerService.getAvailableProfessionals()
-      .pipe(
-        catchError(error => {
-          console.error('Error loading professionals:', error);
-          this.errorMessage = this.translationService.translate('servicesManager.errorLoadProfessionals');
-          return of([]);
-        }),
-        finalize(() => {
-          console.log('Professionals loading finalized');
-          this.checkAllRequestsComplete();
-        })
-      )
-      .subscribe({
-        next: (professionals) => {
-          console.log('Available professionals loaded:', professionals);
-          this.availableProfessionals = professionals || [];
-          this.cdr.detectChanges();
-        },
-        error: (error) => {
-          console.error('Error in professionals subscription:', error);
-        }
-      });
-  }
-
-  loadProfessionalServices() {
-    console.log('Loading professional services...');
-    this.servicesManagerService.getProfessionalServices()
-      .pipe(
-        catchError(error => {
-          console.error('Error loading professional services:', error);
-          this.errorMessage = this.translationService.translate('servicesManager.errorGeneric');
-          return of([]);
-        }),
-        finalize(() => {
-          console.log('Professional services finalized');
-          const checkAllRequestsComplete = () => {
-            console.log('Professional services request completed');
-          };
-          checkAllRequestsComplete();
-        })
-      )
-      .subscribe({
-        next: (services) => {
-          console.log('Professional services loaded:', services);
-          this.professionalServices = services || [];
-          this.cdr.detectChanges();
-        },
-        error: (error) => {
-          console.error('Error in professional services subscription:', error);
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        },
-        complete: () => {
-          console.log('Professional services subscription completed');
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        }
-      });
-  }
-
-  // Get course details using the ID
-  getSelectedCourseDetails(): Course | undefined {
-    if (this.userRole === 'client') {
-      console.log('Looking for client course:', this.selectedCourse);
-      return this.clientCourses.find(course => course.id.toString() === this.selectedCourse.toString());
-    } else {
-      console.log('Looking for professional course:', this.selectedCourse);
-      return this.professionalCourses.find(course => course.id.toString() === this.selectedCourse.toString());
-    }
-  }
-
-  // Check if a service is offered by the professional
-  isServiceOffered(serviceId: string): boolean {
-    if (!this.professionalServices) return false;
-    return this.professionalServices.some(service => service.service_id === serviceId);
-  }
-
-  // Get translated course name based on ID
-  getCourseName(course: Course): string {
-    if (course.translationKey) {
-      return this.translationService.translate(course.translationKey);
-    }
-    return course.name;
-  }
-
-  // Helper method to get the service name from the course arrays
-  getServiceName(serviceId: string): string {
-    // First check professional courses
-    console.log('Looking for service:', serviceId);
-    const professionalCourse = this.professionalCourses.find(course => course.id === serviceId.toString());
-    if (professionalCourse) return professionalCourse.name;
-
-    // Then check client courses
-    const clientCourse = this.clientCourses.find(course => course.id === serviceId.toString());
-    if (clientCourse) {
-      if (clientCourse.translationKey) {
-        return this.translationService.translate(clientCourse.translationKey);
-      }
-      return clientCourse.name;
-    }
-
-    // If not found
-    return `Service ${serviceId}`;
-  }
-
-  onCourseSelect() {
-    // Reset professional selection when course changes (for clients)
-    this.selectedProfessional = null;
+  // Load professional training courses
+  private loadProfessionalCourses(): void {
+    // For now, use legacy professional courses
+    // In the future, these could also be managed by admin
+    this.isLoading = false;
     this.cdr.detectChanges();
   }
 
-  validateForm(): boolean {
-    this.errorMessage = '';
+  // Load user enrollments
+  loadEnrollments(): void {
+    // Use the general enrollments endpoint that handles both user types
+    this.http.get<Enrollment[]>(`${this.apiUrl}/enrollments`, {
+      headers: this.getAuthHeaders()
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Error loading enrollments:', error);
+        return of([]);
+      })
+    ).subscribe(enrollments => {
+      this.enrollments = enrollments;
+      this.cdr.detectChanges();
+    });
+  }
 
-    // For professionals, skip kid name and mother contact validation as they are defaulted to "NaN"
+  // Get courses based on user role
+  get availableCourses(): Course[] {
     if (this.userRole === 'client') {
-      if (!this.kidName.trim()) {
-        this.errorMessage = this.translationService.translate('servicesManager.errorRequiredKidName');
+      return this.clientCourses;
+    } else if (this.userRole === 'professional') {
+      return this.professionalCourses;
+    }
+    return [];
+  }
+
+  // Select course for enrollment
+  selectCourse(course: Course): void {
+    this.selectedCourse = course;
+    this.showEnrollmentForm = true;
+    this.error = '';
+    this.successMessage = '';
+    this.resetEnrollmentForm();
+  }
+
+  // Reset enrollment form
+  resetEnrollmentForm(): void {
+    this.enrollmentForm = {
+      kidName: '',
+      motherContact: ''
+    };
+  }
+
+  // Cancel enrollment
+  cancelEnrollment(): void {
+    this.showEnrollmentForm = false;
+    this.selectedCourse = null;
+    this.resetEnrollmentForm();
+    this.error = '';
+    this.successMessage = '';
+  }
+
+  // Enroll in course
+  enrollInCourse(): void {
+    if (!this.selectedCourse || !this.validateEnrollmentForm()) {
+      console.warn('Invalid course selection or form data', this.selectedCourse, this.enrollmentForm);
+      return;
+    }
+
+    this.isLoading = true;
+    this.error = '';
+    this.successMessage = '';
+
+    // Determine if this is an admin course or legacy course
+    const isAdminCourse = this.selectedCourse.type === 'admin_course';
+    const endpoint = isAdminCourse ?
+      `${this.apiUrl}/enrollments/admin-course` :
+      `${this.apiUrl}/enrollments`;
+
+    const enrollmentData: EnrollmentRequest = {
+      userId: this.userId,
+      professionalId: this.selectedCourse.professionalId || null,
+    };
+
+    if (isAdminCourse) {
+      enrollmentData.adminCourseId = this.selectedCourse.id as number;
+      enrollmentData.kidName = this.enrollmentForm.kidName;
+      enrollmentData.motherContact = this.enrollmentForm.motherContact;
+    } else {
+      enrollmentData.courseId = this.selectedCourse.id as string;
+    }
+
+    this.http.post<any>(endpoint, enrollmentData, {
+      headers: this.getAuthHeaders()
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Error enrolling in course:', error);
+        this.error = error.error?.message || 'Failed to enroll in course. Please try again.';
+        this.isLoading = false;
+        this.cdr.detectChanges();
+        return of(null);
+      })
+    ).subscribe(response => {
+      if (response) {
+        this.successMessage = response.message ||
+          `Successfully enrolled in "${this.selectedCourse?.name}". Awaiting approval.`;
+        this.loadEnrollments(); // Refresh enrollments
+        this.loadAvailableCourses(); // Refresh available courses
+        this.cancelEnrollment();
+      }
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    });
+  }
+
+  refreshData(): void {
+    this.clearMessages();
+    this.loadAvailableCourses();
+    this.loadEnrollments();
+    this.resetEnrollmentForm();
+    this.selectedCourse = null;
+    this.showEnrollmentForm = false;
+    this.isLoading = false;
+    this.cdr.detectChanges();
+  }
+
+  // Validate enrollment form
+  private validateEnrollmentForm(): boolean {
+    // Additional validation for admin courses (client enrollments)
+    if (this.selectedCourse?.type === 'admin_course' && this.userRole === 'client') {
+      if (!this.enrollmentForm.kidName.trim()) {
+        this.error = 'Child name is required.';
         return false;
       }
-
-      if (!this.kidAge || this.kidAge <= 0) {
-        this.errorMessage = this.translationService.translate('servicesManager.errorRequiredKidAge');
+      if (!this.enrollmentForm.motherContact.trim()) {
+        this.error = 'Mother contact is required.';
         return false;
       }
-
-      if (!this.motherContact.trim()) {
-        this.errorMessage = this.translationService.translate('servicesManager.errorRequiredMotherContact');
-        return false;
-      }
-    }
-
-    if (!this.selectedCourse) {
-      this.errorMessage = this.translationService.translate('servicesManager.errorRequiredCourse');
-      return false;
-    }
-
-    // If client, validate professional selection
-    if (this.userRole === 'client' && !this.selectedProfessional) {
-      this.errorMessage = this.translationService.translate('servicesManager.errorRequiredProfessional');
-      return false;
-    }
-
-    if (!this.startDate) {
-      this.errorMessage = this.translationService.translate('servicesManager.errorRequiredDate');
-      return false;
-    }
-
-    // Validate that start date is in the future
-    const selectedDate = new Date(this.startDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time component for comparison
-    if (selectedDate <= today) {
-      this.errorMessage = this.translationService.translate('servicesManager.errorFutureDate');
-      return false;
     }
 
     return true;
   }
 
-  onSubmit() {
-    if (!this.validateForm()) {
-      this.cdr.detectChanges();
+  // Get status badge class
+  getStatusClass(status: string): string {
+    switch (status) {
+      case 'pending': return 'status-pending';
+      case 'approved': return 'status-approved';
+      case 'active': return 'status-active';
+      case 'completed': return 'status-completed';
+      case 'cancelled': return 'status-cancelled';
+      default: return 'status-default';
+    }
+  }
+
+  // Get localized status
+  getLocalizedStatus(status: string): string {
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+
+  // Get course price display
+  getCoursePrice(course: Course): string {
+    if (course.type === 'admin_course') {
+      // For admin courses, show current price based on enrollment
+      if (course.currentPrice !== undefined) {
+        return `€${course.currentPrice}`;
+      }
+      // Fallback to lowest price in pricing structure
+      if (course.pricing && course.pricing.length > 0) {
+        const minPrice = Math.min(...course.pricing.map(p => p.price));
+        return `from €${minPrice}`;
+      }
+    }
+    return `€${course.price}`;
+  }
+
+  // Get course duration display
+  getCourseDuration(course: Course): string {
+    if (course.type === 'admin_course') {
+      if (course.startDate && course.endDate) {
+        return `${course.startDate} - ${course.endDate}`;
+      }
+      if (course.pricing && course.pricing.length > 0) {
+        const lessonsCount = course.pricing[0].lessonsCount;
+        return `${lessonsCount} lessons`;
+      }
+    }
+    return course.duration ? `${course.duration} hours` : '';
+  }
+
+  // Get course description
+  getCourseDescription(course: Course): string {
+    if (course.description) {
+      return course.description;
+    }
+    if (course.descriptionKey) {
+      // This would be handled by the translation pipe in template
+      return course.descriptionKey;
+    }
+    return '';
+  }
+
+  // Check if course has available spots
+  hasAvailableSpots(course: Course): boolean {
+    if (course.type === 'admin_course') {
+      return (course.availableSpots || 0) > 0;
+    }
+    return true; // Legacy courses don't have spot limits
+  }
+
+  // Get enrollment status for a course
+  getEnrollmentStatus(courseId: string | number): string | null {
+    const enrollment = this.enrollments.find(e =>
+      e.courseId === courseId.toString() ||
+      e.courseId === `admin_course_${courseId}`
+    );
+    return enrollment?.status || null;
+  }
+
+  // Check if already enrolled in course
+  isEnrolledInCourse(courseId: string | number): boolean {
+    return this.getEnrollmentStatus(courseId) !== null;
+  }
+
+  // Cancel enrollment
+  cancelEnrollmentById(enrollmentId: string | number): void {
+    if (!confirm('Are you sure you want to cancel this enrollment?')) {
       return;
     }
 
     this.isLoading = true;
-    this.cdr.detectChanges();
+    this.error = '';
 
-    const enrollmentData = {
-      kidName: this.kidName.trim(),
-      motherContact: this.motherContact.trim(),
-      // kidAge: this.kidAge,
-      // extraComments: this.extraComments.trim(),
-      courseId: this.selectedCourse,
-      userId: this.userId,
-      professionalId: this.selectedProfessional,
-      startDate: this.startDate,
-      preferredTime: this.preferredTime || undefined
-    };
-
-    console.log('Submitting enrollment data:', enrollmentData);
-
-    this.servicesManagerService.createEnrollment(enrollmentData)
-      .pipe(
-        catchError(error => {
-          console.error('Enrollment failed', error);
-          this.errorMessage = error.error?.error || this.translationService.translate('servicesManager.errorGeneric');
-          this.successMessage = '';
-          this.isLoading = false;
-          this.cdr.detectChanges();
-          return of(null);
-        }),
-        finalize(() => {
-          console.log('Enrollment request finalized');
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          if (response) {
-            console.log('Enrollment successful', response);
-            this.successMessage = this.translationService.translate('servicesManager.successEnrollment');
-            this.errorMessage = '';
-            this.isLoading = false;
-
-            // Reset form (but keep defaults for professionals)
-            this.selectedCourse = '';
-            this.selectedProfessional = null;
-            this.startDate = '';
-            this.preferredTime = '';
-            
-            if (this.userRole === 'client') {
-              this.kidName = '';
-              this.motherContact = '';
-              this.kidAge = null; // Reset kid age for clients
-              this.extraComments = '';
-            }
-
-            // Reload enrollments
-            this.loadInitialData();
-          } else {
-            // Handle case where response is null (came from catchError)
-            this.isLoading = false;
-            this.cdr.detectChanges();
-          }
-        },
-        error: (error) => {
-          console.error('Error in enrollment subscription:', error);
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        },
-        complete: () => {
-          console.log('Enrollment subscription completed');
-        }
-      });
-  }
-
-  getProfessionalName(professionalId: number): string {
-    const professional = this.availableProfessionals.find(p => p.id === professionalId);
-    return professional ? professional.name : this.translationService.translate('servicesManager.notAssigned');
-  }
-
-  getStatusClass(status: string): string {
-    switch (status) {
-      case 'approved': return 'status-approved';
-      case 'pending': return 'status-pending';
-      case 'completed': return 'status-completed';
-      case 'cancelled': return 'status-cancelled';
-      default: return '';
-    }
-  }
-
-  getLocalizedStatus(status: string): string {
-    return this.translationService.translate(`servicesManager.${status}`);
-  }
-
-  toggleAbility(index: number): void {
-    this.swimmingAbilities[index].selected = !this.swimmingAbilities[index].selected;
-    this.cdr.detectChanges();
-  }
-
-  cancelEnrollment(enrollmentId: any) {
-    const confirmMessage = this.translationService.translate('servicesManager.confirmCancel');
-    if (confirm(confirmMessage)) {
-      this.isLoading = true;
+    this.http.delete(`${this.apiUrl}/enrollments/${enrollmentId}`, {
+      headers: this.getAuthHeaders()
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Error cancelling enrollment:', error);
+        this.error = 'Failed to cancel enrollment. Please try again.';
+        this.isLoading = false;
+        this.cdr.detectChanges();
+        return of(null);
+      })
+    ).subscribe(response => {
+      if (response !== null) {
+        this.successMessage = 'Enrollment cancelled successfully.';
+        this.loadEnrollments();
+        this.loadAvailableCourses();
+      }
+      this.isLoading = false;
       this.cdr.detectChanges();
+    });
+  }
 
-      console.log('Cancelling enrollment:', enrollmentId);
+  // Clear messages
+  clearMessages(): void {
+    this.error = '';
+    this.successMessage = '';
+  }
 
-      this.servicesManagerService.cancelEnrollment(enrollmentId)
-        .pipe(
-          catchError(error => {
-            console.error('Error cancelling enrollment:', error);
-            this.errorMessage = this.translationService.translate('servicesManager.errorCancelEnrollment');
-            this.successMessage = '';
-            this.isLoading = false;
-            this.cdr.detectChanges();
-            return of(null);
-          }),
-          finalize(() => {
-            console.log('Cancel enrollment request finalized');
-          })
-        )
-        .subscribe({
-          next: (response) => {
-            if (response) {
-              console.log('Enrollment cancelled successfully');
-              this.successMessage = this.translationService.translate('servicesManager.successCancel');
-              this.errorMessage = '';
-              this.loadInitialData();
-            } else {
-              // Handle case where response is null (came from catchError)
-              this.isLoading = false;
-              this.cdr.detectChanges();
-            }
-          },
-          error: (error) => {
-            console.error('Error in cancel enrollment subscription:', error);
-            this.isLoading = false;
-            this.cdr.detectChanges();
-          }
-        });
+  // Get pricing details for admin course
+  getPricingDetails(course: Course): string {
+    if (course.type === 'admin_course' && course.pricing && course.pricing.length > 0) {
+      const currentStudents = course.currentStudents || 0;
+      const nextEnrollmentCount = currentStudents + 1;
+
+      const applicablePricing = course.pricing.find(p => p.studentCount === nextEnrollmentCount);
+      if (applicablePricing) {
+        return `€${applicablePricing.price} for ${applicablePricing.lessonsCount} lessons (${nextEnrollmentCount} student${nextEnrollmentCount > 1 ? 's' : ''})`;
+      }
+    }
+    return '';
+  }
+
+  // Format course card info
+  getCourseCardInfo(course: Course): any {
+    if (course.type === 'admin_course') {
+      return {
+        title: course.name,
+        subtitle: course.clientName ? `Client: ${course.clientName}` : '',
+        price: this.getCoursePrice(course),
+        duration: this.getCourseDuration(course),
+        description: course.description || '',
+        professional: course.professionalName || 'Not assigned',
+        availability: course.availableSpots ?
+          `${course.availableSpots} spots available` : 'No spots available',
+        enrollmentCount: `${course.currentStudents || 0}/${course.maxStudents || 6} enrolled`
+      };
+    } else {
+      return {
+        title: course.name,
+        subtitle: '',
+        price: this.getCoursePrice(course),
+        duration: this.getCourseDuration(course),
+        description: this.getCourseDescription(course),
+        professional: '',
+        availability: '',
+        enrollmentCount: ''
+      };
     }
   }
 
-  ngOnDestroy(): void {
-    console.log('ServicesManagerComponent being destroyed');
-    // Clean up subscriptions
-    if (this.langSubscription) {
-      this.langSubscription.unsubscribe();
-    }
-    if (this.loadedSubscription) {
-      this.loadedSubscription.unsubscribe();
-    }
-    if (this.authSubscription) {
-      this.authSubscription.unsubscribe();
-    }
+  // Track function for ngFor
+  trackByCourseId(index: number, course: Course): string | number {
+    return course.id;
+  }
+
+  trackByEnrollmentId(index: number, enrollment: Enrollment): string | number {
+    return enrollment.id;
   }
 }
