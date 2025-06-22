@@ -51,22 +51,22 @@ function toggleCodeSections(filePath, sectionToUncomment, sectionToComment) {
   const fileContent = fs.readFileSync(filePath, 'utf8');
   const lines = fileContent.split('\n');
 
-  // Uncomment section (remove /* and */ markers to make the section active)
-  const [uncommentStart, uncommentEnd] = sectionToUncomment;
-  if (lines[uncommentStart - 1].includes('/*')) {
-    lines[uncommentStart - 1] = lines[uncommentStart - 1].replace(/\/\*\s*Development Environment\s*/, '/* Development Environment */');
-  }
-  if (lines[uncommentEnd - 1].includes('*/')) {
-    lines[uncommentEnd - 1] = lines[uncommentEnd - 1].replace(/\/\*\s*End Development Environment\s*\*\//, '/* End Development Environment */');
-  }
+  if (filePath.endsWith('.html')) {
+    // For TypeScript, use block comments
+    lines[sectionToUncomment[0] - 1] = lines[sectionToUncomment[0] - 1].replace(/^\s*\/\*\s*/, '').replace(/\s*\*\/\s*$/, '');
+    lines[sectionToUncomment[1] - 1] = lines[sectionToUncomment[1] - 1].replace(/^\s*\*\/\s*/, '');
+  } else {
+    for (let i = sectionToUncomment[0] - 1; i <= sectionToUncomment[1] - 1; i++) {
+      if (lines[i].trim().startsWith('//')) {
+        lines[i] = lines[i].replace(/^\s*\/\/\s*/, '');
+      }
+    }
 
-  // Comment section (add /* and */ markers to make the section inactive)
-  const [commentStart, commentEnd] = sectionToComment;
-  if (lines[commentStart - 1].includes('*/')) {
-    lines[commentStart - 1] = lines[commentStart - 1].replace(/\/\*\s*Production Environment\s*\*\//, '/* Production Environment');
-  }
-  if (lines[commentEnd - 1].includes('*/')) {
-    lines[commentEnd - 1] = lines[commentEnd - 1].replace(/\/\*\s*End Production Environment\s*\*\//, '/* End Production Environment */');
+    for (let i = sectionToComment[0] - 1; i <= sectionToComment[1] - 1; i++) {
+      if (!lines[i].trim().startsWith('//')) {
+        lines[i] = `// ${lines[i]}`;
+      }
+    }
   }
 
   fs.writeFileSync(filePath, lines.join('\n'), 'utf8');
@@ -87,12 +87,14 @@ filesConfig.forEach(({ path: filePath, type, lines, sections }) => {
   const fullPath = path.resolve(__dirname, filePath);
   if (fs.existsSync(fullPath)) {
     if (type === 'html' && lines) {
+      console.log(`Processing HTML file: ${fullPath}`);
       if (targetEnv === 'dev') {
         toggleHtmlLines(fullPath, lines.dev, lines.prod);
       } else {
         toggleHtmlLines(fullPath, lines.prod, lines.dev);
       }
     } else if (type === 'code' && sections) {
+      console.log(`Processing code file: ${fullPath}`);
       if (targetEnv === 'dev') {
         toggleCodeSections(fullPath, sections.dev, sections.prod);
       } else {

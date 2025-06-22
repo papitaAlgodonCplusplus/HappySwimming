@@ -40,10 +40,29 @@
 <app-header></app-header>
 <div class="homepage-container">
   <div class="homepage-content">
-    <h1 class="welcome-title">{{ 'welcome' | translate }} {{userName}}!</h1>
+    <!-- Header section with welcome title and small profile editor -->
+    <div class="header-section">
+      <h1 class="welcome-title">{{ 'welcome' | translate }} {{userName}}!</h1>
+      
+      <!-- Small profile editor next to welcome title -->
+      <div *ngIf="!isAdmin" class="profile-editor-small" (click)="navigateTo('/edit-profile')">
+        <div class="item-content">
+          <h2 class="item-title">{{ 'editProfile' | translate }}</h2>
+          <div class="icon-container">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <div class="grid-container">
-      <div *ngIf="!isAdmin" class="grid-item services-manager" (click)="navigateTo('/services-manager')">
+    <!-- Main content with large services manager and medium economic manager -->
+    <div class="main-content">
+      <!-- Large Services Manager -->
+      <div *ngIf="!isAdmin && userRole !== 'Profesional'" class="services-manager-large" (click)="navigateTo('/services-manager')">
         <div class="item-content">
           <h2 class="item-title">{{ 'servicesManagerTitle' | translate }}</h2>
           <p class="item-description">{{ 'servicesManagerDesc' | translate }}</p>
@@ -60,21 +79,8 @@
         </div>
       </div>
 
-      <div *ngIf="!isAdmin" class="grid-item profile-editor" (click)="navigateTo('/edit-profile')">
-        <div class="item-content">
-          <h2 class="item-title">{{ 'editProfile' | translate }}</h2>
-          <p class="item-description">{{ 'editProfileDesc' | translate }}</p>
-          <div class="icon-container">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid-item economic-manager" (click)="navigateTo('/economic-manager')">
+      <!-- Medium Economic Manager -->
+      <div class="economic-manager-medium" (click)="navigateTo('/economic-manager')">
         <div class="item-content">
           <h2 class="item-title">{{ 'economicManagerTitle' | translate }}</h2>
           <p class="item-description">{{ 'economicManagerDesc' | translate }}</p>
@@ -87,7 +93,10 @@
           </div>
         </div>
       </div>
+    </div>
 
+    <!-- Additional content for other modules -->
+    <div class="additional-content">
       <!-- Students Management for professionals -->
       <div *ngIf="userRole === 'professional' || userRole === 'Profesional'" class="grid-item students-manager"
         (click)="navigateTo('/students-management')">
@@ -138,30 +147,11 @@
         </div>
       </div>
 
-      <!-- Assign Professionals to Clients (admin only) -->
-      <!-- <div *ngIf="isAdmin" class="grid-item assign-professional" (click)="navigateTo('/assign-professional')">
-        <div class="item-content">
-          <h2 class="item-title">{{ 'assignProfessional_title' | translate }}</h2>
-          <p class="item-description"> {{ 'assignProfessional_desc' | translate }}</p>
-          <div class="icon-container">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M21 11V6a2 2 0 0 0-2-2h-1.5"></path>
-              <path d="M22 16.5 23 17.5l-5 5"></path>
-              <path d="M22 21.5v-5H17"></path>
-            </svg>
-          </div>
-        </div>
-      </div> -->
-
-
-      <!-- Assign Professionals to Clients (admin only) -->
+      <!-- Course Management (admin only) -->
       <div *ngIf="isAdmin" class="grid-item assign-professional" (click)="navigateTo('/admin-course-management')">
         <div class="item-content">
           <h2 class="item-title">{{ 'adminCourseManagement_title' | translate }}</h2>
-          <p class="item-description"> {{ 'adminCourseManagement_desc' | translate }}</p>
+          <p class="item-description">{{ 'adminCourseManagement_desc' | translate }}</p>
           <div class="icon-container">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

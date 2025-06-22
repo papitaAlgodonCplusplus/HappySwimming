@@ -28,6 +28,7 @@ const upload = multer({
 
 app.use(express.json());
 
+
 // Database connection DEV
 // const pool = new Pool({
 //   user: process.env.DB_USER || 'postgres',
@@ -40,9 +41,14 @@ app.use(express.json());
 
 // Database connection PROD
 const pool = new Pool({
-  connectionString: 'postgres://happyswimming_qjpe_user:SGCYBKnV6fp9WthlelqYVsVjRS9qaf4q@dpg-cvao8e5umphs73ag8b30-a.oregon-postgres.render.com:5432/happyswimming_qjpe',
-  ssl: { rejectUnauthorized: false }
+connectionString: 'postgres://happyswimming_qjpe_user:SGCYBKnV6fp9WthlelqYVsVjRS9qaf4q@dpg-cvao8e5umphs73ag8b30-a.oregon-postgres.render.com:5432/happyswimming_qjpe',
+ssl: { rejectUnauthorized: false }
 });
+
+
+
+
+// 
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -1264,152 +1270,165 @@ app.get('/api/professional/students', authenticateToken, async (req, res) => {
   }
 });
 
-
-// Update student status and notes
+// PUT: Update student information by professional
 app.put('/api/professional/students/:enrollmentId', authenticateToken, async (req, res) => {
   try {
-    // Get the enrollment ID from the route parameter
-    const enrollmentId = req.params.enrollmentId;
-
-    // Get the update data from the request body
-    // Added calification and assistance to destructured variables
-    const { status, notes, calification, assistance } = req.body;
-
-    // Get the professional ID from the authenticated user
     const userId = req.user.id;
+    const userRole = req.user.role;
+    const enrollmentId = req.params.enrollmentId;
+    const { calification, assistance, status, notes } = req.body;
 
-    // First, check if the professional is authorized to update this enrollment
-    const checkAuthQuery = `
-      SELECT cs.id 
-      FROM happyswimming.client_services cs
-      JOIN happyswimming.professionals p ON cs.professional_id = p.id
-      WHERE cs.id = $1 
-      AND p.user_id = $2
-    `;
-
-    const authResult = await pool.query(checkAuthQuery, [enrollmentId, userId]);
-
-    if (authResult.rows.length === 0) {
-      return res.status(403).json({ error: 'You are not authorized to update this enrollment' });
+    if (userRole !== 'professional') {
+      return res.status(403).json({ error: 'Professional access required' });
     }
 
-    // Update the enrollment status, notes, calification, and assistance
-    // Added calification and assistance to the SET clause and parameters
+    // Get professional ID
+    const professionalQuery = 'SELECT id FROM happyswimming.professionals WHERE user_id = $1';
+    const professionalResult = await pool.query(professionalQuery, [userId]);
+
+    if (professionalResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Professional profile not found' });
+    }
+
+    const professionalId = professionalResult.rows[0].id;
+
+    // Verify the professional owns this enrollment
+    const verifyQuery = `
+      SELECT id FROM happyswimming.client_services 
+      WHERE id = $1 AND professional_id = $2
+    `;
+
+    const verifyResult = await pool.query(verifyQuery, [enrollmentId, professionalId]);
+
+    if (verifyResult.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied. Enrollment not found or not assigned to you.' });
+    }
+
+    // Update the enrollment
     const updateQuery = `
       UPDATE happyswimming.client_services 
-      SET status = $1, 
-          notes = $2, 
-          calification = $3,
-          assistance = $4,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = $5
-      RETURNING *
+      SET calification = $1, assistance = $2, status = $3, notes = $4, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $5 AND professional_id = $6
+      RETURNING id, calification, assistance, status, notes
     `;
 
     const updateResult = await pool.query(updateQuery, [
+      calification,
+      assistance,
       status,
       notes,
-      calification !== undefined ? calification : 0,
-      assistance !== undefined ? assistance : 0,
-      enrollmentId
+      enrollmentId,
+      professionalId
     ]);
 
     if (updateResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Enrollment not found' });
+      return res.status(404).json({ error: 'Failed to update student information' });
     }
 
     res.json({
-      message: 'Enrollment updated successfully',
-      enrollment: updateResult.rows[0]
+      success: true,
+      message: 'Student information updated successfully',
+      data: updateResult.rows[0]
     });
 
   } catch (error) {
-    console.error('Error updating student enrollment:', error);
-    res.status(500).json({ error: 'Failed to update enrollment' });
+    console.error('Error updating student information:', error);
+    res.status(500).json({ error: 'Failed to update student information' });
   }
 });
 
-app.get('/api/professional/students/:enrollmentId/details', authenticateToken, async (req, res) => {
+app.get('/api/professional/admin-courses', authenticateToken, async (req, res) => {
   try {
-    // Get the enrollment ID from the route parameter
-    const enrollmentId = req.params.enrollmentId;
-
-    // Get the professional ID from the authenticated user
     const userId = req.user.id;
+    const userRole = req.user.role;
 
-    // First, check if the professional is authorized to view this enrollment
-    const checkAuthQuery = `
-      SELECT cs.id 
-      FROM happyswimming.client_services cs
-      JOIN happyswimming.professionals p ON cs.professional_id = p.id
-      WHERE cs.id = $1 
-      AND p.user_id = $2
-    `;
-
-    const authResult = await pool.query(checkAuthQuery, [enrollmentId, userId]);
-
-    if (authResult.rows.length === 0) {
-      return res.status(403).json({ error: 'You are not authorized to view this enrollment' });
+    if (userRole !== 'professional') {
+      return res.status(403).json({ error: 'Professional access required' });
     }
 
-    // Get the detailed enrollment information
-    const detailsQuery = `
+    // Get professional ID
+    const professionalQuery = 'SELECT id FROM happyswimming.professionals WHERE user_id = $1';
+    const professionalResult = await pool.query(professionalQuery, [userId]);
+    
+    if (professionalResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Professional profile not found' });
+    }
+    
+    const professionalId = professionalResult.rows[0].id;
+
+    // Get all admin courses assigned to this professional with enrolled students
+    const query = `
       SELECT 
-        u.id,
-        u.first_name,
-        u.last_name1,
-        u.last_name2,
-        u.email,
         cs.id as enrollment_id,
-        cs.service_id as course_id,
-        s.name as course_name,
+        cs.client_id,
+        cs.admin_course_id,
         cs.start_date,
         cs.end_date,
         cs.status,
+        cs.price,
         cs.notes,
         cs.calification,
         cs.assistance,
-        c.id as client_id,
-        CONCAT(u.first_name, ' ', u.last_name1) as name
+        cs.kid_name,
+        cs.mother_contact,
+        cs.created_at as enrollment_date,
+        
+        -- Admin course details
+        ac.id as course_id,
+        ac.course_code,
+        ac.name as course_name,
+        ac.description as course_description,
+        ac.client_name,
+        ac.start_date as course_start_date,
+        ac.end_date as course_end_date,
+        ac.status as course_status,
+        ac.max_students,
+        
+        -- Client details
+        CONCAT(cu.first_name, ' ', cu.last_name1) as client_name_full
+        
       FROM happyswimming.client_services cs
+      JOIN happyswimming.admin_courses ac ON cs.admin_course_id = ac.id
       JOIN happyswimming.clients c ON cs.client_id = c.id
-      JOIN happyswimming.users u ON c.user_id = u.id
-      JOIN happyswimming.services s ON cs.service_id = s.id
-      WHERE cs.id = $1
+      JOIN happyswimming.users cu ON c.user_id = cu.id
+      WHERE cs.professional_id = $1
+        AND ac.is_historical = FALSE
+      ORDER BY ac.start_date DESC, cs.created_at DESC
     `;
 
-    const result = await pool.query(detailsQuery, [enrollmentId]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Enrollment not found' });
-    }
-
-    const row = result.rows[0];
-
-    // Format the response
-    const studentDetails = {
-      id: row.id,
-      firstName: row.first_name,
-      lastName1: row.last_name1,
-      lastName2: row.last_name2 || null,
-      email: row.email,
-      name: row.name,
-      enrollmentId: row.enrollment_id,
+    const result = await pool.query(query, [professionalId]);
+    
+    const enrollments = result.rows.map(row => ({
+      id: row.enrollment_id,
+      admin_course_id: row.admin_course_id,
       courseId: row.course_id,
       courseName: row.course_name,
+      courseCode: row.course_code,
+      courseDescription: row.course_description,
+      clientName: row.client_name,
+      courseStartDate: row.course_start_date,
+      courseEndDate: row.course_end_date,
+      courseStatus: row.course_status,
+      maxStudents: row.max_students,
+      kid_name: row.kid_name,
+      mother_contact: row.mother_contact,
+      status: row.status,
       startDate: row.start_date,
       endDate: row.end_date,
-      status: row.status,
-      notes: row.notes,
-      calification: row.calification !== null ? parseFloat(row.calification) : undefined,
+      price: parseFloat(row.price),
+      calification: row.calification,
       assistance: row.assistance,
-      clientId: row.client_id
-    };
+      notes: row.notes,
+      enrollmentDate: row.enrollment_date,
+      professionalId: professionalId
+    }));
 
-    res.json(studentDetails);
+    console.log('Professional admin courses result:', enrollments);
+    res.json(enrollments);
+
   } catch (error) {
-    console.error('Error fetching student details:', error);
-    res.status(500).json({ error: 'Failed to fetch student details' });
+    console.error('Error fetching professional admin courses:', error);
+    res.status(500).json({ error: 'Failed to fetch courses and students' });
   }
 });
 

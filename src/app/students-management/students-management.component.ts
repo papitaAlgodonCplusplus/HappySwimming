@@ -1,59 +1,61 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
+// src/app/students-management/students-management.component.ts (Updated for Admin Courses)
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule, Router } from '@angular/router';
-import { HeaderComponent } from '../header/header.component';
-import { TranslationService } from '../services/translation.service';
-import { TranslatePipe } from '../pipes/translate.pipe';
+import { RouterModule } from '@angular/router';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Subject } from 'rxjs';
+import { takeUntil, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { AuthService } from '../services/auth.service';
-import { StudentsManagementService } from '../services/students-management.service';
-import { ServicesManagerService } from '../services/services-manager.service';
-import { Subscription, forkJoin, of } from 'rxjs';
-import { catchError, finalize } from 'rxjs/operators';
 
+// Components
+import { HeaderComponent } from '../header/header.component';
+import { TranslatePipe } from '../pipes/translate.pipe';
+
+// Updated interfaces for admin courses
 interface Student {
-  id: number;
-  kid_name?: string;
-  mother_contact?: string;
-  firstName?: string;
-  lastName?: string;
-  userId: number;
-  name: string;
-  email: string;
+  id: number | string;
   enrollmentId: number;
-  courseId: string;
-  courseName: string;
-  status: 'pending' | 'approved' | 'in_process' | 'reproved' | 'completed' | 'cancelled';
-  enrollmentDate: Date;
+  kidName: string;
+  motherContact: string;
+  status: 'pending' | 'approved' | 'completed' | 'cancelled' | 'active';
+  enrollmentDate?: Date;
   startDate?: Date;
-  progress?: number; // Progress percentage (0-100)
-  lastAttendance?: Date; // Last class attendance
+  endDate?: Date;
+  calification?: number;
+  assistance?: number;
   notes?: string;
-  calification?: number; // New field for student grade/score
-  assistance?: number; // New field for attendance percentage
-  professionalName?: string; // Added for admin view
-  professionalId?: number; // Added for admin view
-  type?: string; // Added to differentiate between client_service and professional_service
-  country?: string; // Added for filtering
+  courseId: number;
+  courseName: string;
+  courseCode: string;
+  clientName: string;
+  price: number;
 }
 
-interface Course {
-  id: string;
+interface AdminCourse {
+  id: number;
+  courseCode: string;
   name: string;
-  translationKey?: string; // Added for translation support
-  studentCount: number;
+  description: string;
+  clientName: string;
+  startDate: string;
+  endDate: string;
+  professionalId: number;
+  status: 'active' | 'completed' | 'cancelled';
+  maxStudents: number;
+  currentStudents: number;
   students: Student[];
-  expanded: boolean; // UI state to track if course is expanded in view
-  type?: string; // 'client' or 'professional'
+  expanded: boolean;
 }
 
-// Interface for filter options
-interface FilterOptions {
-  countries: string[];
-  clientNames: string[];
-  courseIds: { id: string, name: string }[]; // Updated to include course name
-  months: number[];
-  years: number[];
+interface CalendarDay {
+  date: Date;
+  day: number;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  courses: AdminCourse[];
+  hasEvents: boolean;
 }
 
 @Component({
@@ -65,688 +67,371 @@ interface FilterOptions {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class StudentsManagementComponent implements OnInit, OnDestroy {
+  private authService = inject(AuthService);
+  private destroy$ = new Subject<void>();
+  private apiUrl = 'http://localhost:10000/api';
+
   // User information
   userRole: string | null = null;
   userId: number | null = null;
-  userEmail: string = '';
   isAdmin: boolean = false;
+  isProfessional: boolean = false;
 
-  // Country data map for professionals
-  professionalCountries: Map<number, string> = new Map();
+  // Course and student data
+  adminCourses: AdminCourse[] = [];
+  allStudents: Student[] = [];
 
-  // Common countries for filter
-  countryOptions: string[] = [
-    'Spain', 'Portugal', 'UK', 'Ireland', 'France', 'Germany', 'Italy', 'USA', 'Canada',
-    'Brazil', 'Mexico', 'Australia', 'Argentina', 'Chile', 'Colombia', 'Peru', 'Ecuador',
-    'Venezuela', 'Costa Rica', 'Panama', 'Guatemala', 'El Salvador', 'Honduras', 'Nicaragua',
-    'Bolivia', 'Paraguay', 'Uruguay', 'Dominican Republic', 'Cuba', 'Puerto Rico', 'Sweden',
-    'Norway', 'Denmark', 'Finland', 'Netherlands', 'Belgium', 'Switzerland', 'Austria',
-    'Poland', 'Czech Republic', 'Slovakia', 'Hungary', 'Greece', 'Turkey', 'Russia', 'Japan',
-    'South Korea', 'China', 'India', 'Indonesia', 'Philippines', 'Thailand', 'South Africa',
-    'New Zealand', 'Malaysia', 'Singapore', 'Egypt', 'Saudi Arabia', 'United Arab Emirates'
-  ];
+  // Calendar data
+  currentDate: Date = new Date();
+  calendarDays: CalendarDay[] = [];
+  viewMode: 'list' | 'calendar' = 'list';
 
-  // Filter properties
-  selectedCountry: string = 'all';
-  selectedClientName: string = 'all';
-  selectedCourse: string = 'all';
-  selectedMonth: number = 0; // 0 means all months
-  selectedYear: number = 0; // 0 means all years
+  // Form state
+  editingStudent: Student | null = null;
+  showEditForm: boolean = false;
+  isLoading: boolean = false;
+  error: string = '';
+  successMessage: string = '';
 
-  // Filter options
-  filterOptions: FilterOptions = {
-    countries: [],
-    clientNames: [],
-    courseIds: [],
-    months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    years: []
+  // Edit form data
+  editForm = {
+    calification: 0,
+    assistance: 0,
+    status: 'pending' as 'pending' | 'approved' | 'completed' | 'cancelled' | 'active',
+    notes: ''
   };
 
-  // Original data (unfiltered)
-  originalCourses: Course[] = [];
-
-  // Courses with students
-  courses: Course[] = [];
-
-  // Selected student for editing
-  selectedStudent: Student | null = null;
-  studentNotes: string = '';
-
-  // UI state
-  isLoading: boolean = false;
-  errorMessage: string = '';
-  successMessage: string = '';
-  editModalVisible: boolean = false;
-  deleteModalVisible: boolean = false;
-
-  // Status options for dropdown
-  statusOptions = [
-    { value: 'pending', translationKey: 'studentsManagement.status.pending' },
-    { value: 'approved', translationKey: 'studentsManagement.status.approved' },
-    { value: 'in_process', translationKey: 'studentsManagement.status.inProcess' },
-    { value: 'reproved', translationKey: 'studentsManagement.status.reproved' },
-    { value: 'completed', translationKey: 'studentsManagement.status.completed' }
-  ];
-
-  // Month names for dropdown
-  monthNames: { value: number, name: string }[] = [
-    { value: 1, name: 'January' },
-    { value: 2, name: 'February' },
-    { value: 3, name: 'March' },
-    { value: 4, name: 'April' },
-    { value: 5, name: 'May' },
-    { value: 6, name: 'June' },
-    { value: 7, name: 'July' },
-    { value: 8, name: 'August' },
-    { value: 9, name: 'September' },
-    { value: 10, name: 'October' },
-    { value: 11, name: 'November' },
-    { value: 12, name: 'December' }
-  ];
-
-  // Subscriptions
-  private langSubscription: Subscription | null = null;
-  private loadedSubscription: Subscription | null = null;
-  private authSubscription: Subscription | null = null;
-
-  // Services
-  private translationService = inject(TranslationService);
-  private authService = inject(AuthService);
-  private studentsService = inject(StudentsManagementService);
-  private servicesManagerService = inject(ServicesManagerService);
-  private cdr = inject(ChangeDetectorRef);
-
-  ngOnInit() {
-    // Subscribe to language changes
-    this.langSubscription = this.translationService.getCurrentLang().subscribe(() => {
-      this.cdr.detectChanges();
-    });
-
-    // Subscribe to translations loaded event
-    this.loadedSubscription = this.translationService.isTranslationsLoaded().subscribe(loaded => {
-      if (loaded) {
-        this.cdr.detectChanges();
-      }
-    });
-
-    this.countryOptions.forEach(country => {
-      this.filterOptions.countries.push(country);
-    })
-
-    this.cdr.detectChanges();
-
-    // Subscribe to auth state to get user role
-    this.authSubscription = this.authService.getCurrentUser().subscribe(user => {
-      if (user) {
-        this.userRole = user.role;
-        this.userId = user.id;
-        this.userEmail = user.email || '';
-
-        // Check if user is admin (admin@gmail.com)
-        this.isAdmin = this.userEmail === 'admin@gmail.com';
-
-        console.log('User role:', this.userRole, 'Is Admin:', this.isAdmin);
-
-        // Allow access for professionals or admin
-        if ((this.userRole === 'professional' || this.isAdmin) && this.userId) {
-          this.loadStudentData();
-        } else {
-          // Redirect non-professionals/non-admins
-          this.errorMessage = this.translationService.translate('studentsManagement.unauthorized');
-          this.cdr.detectChanges();
-        }
-      }
-    });
-
-    // Initialize years for filter (last 5 years)
-    const currentYear = new Date().getFullYear();
-    for (let i = 0; i < 5; i++) {
-      this.filterOptions.years.push(currentYear - i);
-    }
-  }
-
-  loadStudentData() {
-    this.isLoading = true;
-    this.errorMessage = '';
-    this.cdr.detectChanges();
-
-    // If admin, use the admin endpoint to get all students
-    if (this.isAdmin) {
-      this.studentsService.getAllStudentsAdmin()
-        .pipe(
-          catchError(error => {
-            console.error('Error loading all students for admin:', error);
-            this.errorMessage = this.translationService.translate('studentsManagement.errorLoadingStudents');
-            this.isLoading = false;
-            this.cdr.detectChanges();
-            return of([]);
-          })
-        )
-        .subscribe(students => {
-          // Process students and fetch countries
-          this.processStudentsAndFetchCountries(students || []);
-        });
-    } else {
-      // For professionals, use the regular endpoint
-      this.studentsService.getStudentsByProfessional()
-        .pipe(
-          catchError(error => {
-            console.error('Error loading students:', error);
-            this.errorMessage = this.translationService.translate('studentsManagement.errorLoadingStudents');
-            this.isLoading = false;
-            this.cdr.detectChanges();
-            return of([]);
-          })
-        )
-        .subscribe(students => {
-          this.processStudents(students || []);
-          this.extractFilterOptions(students || []);
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        });
-    }
-  }
-
-  // New method to process students and fetch countries (for admin view)
-  processStudentsAndFetchCountries(students: Student[]) {
-    // First, collect all unique professional IDs
-    const professionalIds = new Set<number>();
-
-    students.forEach(student => {;
-      if (student.professionalId) {
-        professionalIds.add(student.professionalId);
-      }
-    });
-
-    // If there are professionals, fetch their countries
-    if (professionalIds.size > 0) {
-      // Create an array of observables for each professional's country
-      const countryRequests = Array.from(professionalIds).map(id =>
-        this.servicesManagerService.getCountryOfUser(id).pipe(
-          catchError(error => {
-            console.error(`Error fetching country for professional ${id}:`, error);
-            return of({ id, country: 'Unknown' });
-          })
-        )
-      );
-
-      // Execute all requests in parallel
-      forkJoin(countryRequests).subscribe({
-        next: (results) => {
-          // Store the country data
-          results.forEach(result => {
-            if (result && result.id && result.country) {
-              this.professionalCountries.set(result.id, result.country);
-            }
-          });
-
-          // After getting countries, process students and proceed
-          this.processStudents(students);
-          this.extractFilterOptions(students);
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        },
-        error: (error) => {
-          console.error('Error fetching countries:', error);
-          // Even with error, proceed with student processing
-          this.processStudents(students);
-          this.extractFilterOptions(students);
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        }
-      });
-    } else {
-      // No professionals to fetch countries for
-      this.processStudents(students);
-      this.extractFilterOptions(students);
-      this.isLoading = false;
-      this.cdr.detectChanges();
-    }
-  }
-
-  // Extract filter options from student data
-  extractFilterOptions(students: Student[]) {
-    // Extract unique countries, client names, and course data
-    const countries = new Set<string>();
-    const clientNames = new Set<string>();
-    const coursesMap = new Map<string, { id: string, name: string }>();
-
-    students.forEach(student => {
-      // Add country from professionalId if available
-      if (student.professionalId) {
-        const country = this.professionalCountries.get(student.professionalId);
-        if (country) {
-          countries.add(country);
-        }
-      }
-
-      if (student.name) {
-        clientNames.add(student.name);
-      } else if (student.firstName) {
-        clientNames.add(student.firstName + ' ' + (student.lastName || ''));
-      }
-
-      if (student.courseId && student.courseName) {
-        // Use courseId as the key to avoid duplicates
-        coursesMap.set(student.courseId, {
-          id: student.courseId,
-          name: student.courseName
-        });
-      }
-    });
-
-    // Update filter options
-    this.filterOptions.clientNames = Array.from(clientNames).sort();
-
-    // Transform the courses map into an array with both id and title
-    this.filterOptions.courseIds = Array.from(coursesMap.values())
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    this.cdr.detectChanges();
-  }
-
-  // Apply filters to the original course data
-  applyFilters() {
-    console.log('Applying filters:', {
-      country: this.selectedCountry,
-      clientName: this.selectedClientName,
-      course: this.selectedCourse,
-      month: this.selectedMonth,
-      year: this.selectedYear
-    });
-
-    // Clone the original courses
-    const filteredCourses = JSON.parse(JSON.stringify(this.originalCourses)) as Course[];
-
-    // For each course, filter its students
-    filteredCourses.forEach(course => {
-      course.students = course.students.filter(student => {
-        // Filter by country if professional
-        if (this.selectedCountry !== 'all' && student.professionalId) {
-          const professionalCountry = this.professionalCountries.get(student.professionalId);
-          if (!professionalCountry || professionalCountry !== this.selectedCountry) {
-            return false;
-          }
-        }
-
-        // Filter by client name
-        if (this.selectedClientName !== 'all') {
-          const fullName = student.name || (student.firstName + ' ' + (student.lastName || ''));
-          if (fullName !== this.selectedClientName) {
-            return false;
-          }
-        }
-
-        // Filter by course
-        if (this.selectedCourse !== 'all' && student.courseId.toString() !== this.selectedCourse.toString()) {
-          return false;
-        }
-
-        // Filter by month and year
-        if (student.startDate) {
-          const startDate = new Date(student.startDate);
-          const month = startDate.getMonth() + 1; // getMonth() returns 0-11
-          const year = startDate.getFullYear();
-
-          if (this.selectedMonth !== 0 && month !== this.selectedMonth) {
-            return false;
-          }
-
-          if (this.selectedYear !== 0 && year !== this.selectedYear) {
-            return false;
-          }
-        } else if (this.selectedMonth !== 0 || this.selectedYear !== 0) {
-          // If month or year is selected and student has no start date, filter it out
-          return false;
-        }
-
-        return true;
-      });
-
-      // Update student count
-      course.studentCount = course.students.length;
-    });
-
-    // Remove courses with no students
-    this.courses = filteredCourses.filter(course => course.studentCount > 0);
-
-    this.cdr.detectChanges();
-  }
-
-  // Reset all filters
-  resetFilters() {
-    this.selectedCountry = 'all';
-    this.selectedClientName = 'all';
-    this.selectedCourse = 'all';
-    this.selectedMonth = 0;
-    this.selectedYear = 0;
-
-    // Restore original data
-    this.courses = JSON.parse(JSON.stringify(this.originalCourses)) as Course[];
-
-    this.cdr.detectChanges();
-  }
-
-  // Process students and properly assign translation keys for both client and professional courses
-  processStudents(students: Student[]) {
-    console.log('Processing students:', students);
-    // Group students by course
-    const courseMap = new Map<string, Course>();
-
-    students.forEach(student => {
-      // Create a unique course identifier that includes the course type
-      const courseKey = `${student.type || 'client'}_${student.courseId}`;
-
-      if (!courseMap.has(courseKey)) {
-        // Determine translation key based on course name or ID
-        let translationKey: string | undefined = undefined;
-        let courseType = student.type || 'client_service';
-
-        // Check for translation keys for both client and professional courses
-        if (courseType === 'client_service') {
-          // Client courses
-          if (student.courseName.includes('3 TO 6') ||
-            student.courseName.includes('3-6') ||
-            student.courseName.includes('3 to 6') ||
-            student.courseName.toLowerCase().includes('swim a story') ||
-            student.courseName.toLowerCase().includes('nada un cuento') ||
-            student.courseId === '5') {
-            translationKey = 'swimmingAbilities.titles.children36Syntax';
-          }
-          else if (student.courseName.includes('6 TO 12') ||
-            student.courseName.includes('6-12') ||
-            student.courseName.includes('6 to 12') ||
-            student.courseName.toLowerCase().includes('swimming styles') ||
-            student.courseId === '6') {
-            translationKey = 'swimmingAbilities.titles.children612Syntax';
-          }
-          else if (student.courseName.toLowerCase().includes('any age') ||
-            student.courseName.toLowerCase().includes('cualquier edad') ||
-            student.courseId === '7') {
-            translationKey = 'swimmingAbilities.titles.anyAgeSyntax';
-          }
-        }
-        else if (courseType === 'professional_service') {
-          // Professional courses
-          if (student.courseId === '1' ||
-            (student.courseName.toLowerCase().includes('swimming story') &&
-              student.courseName.toLowerCase().includes('trainer'))) {
-            translationKey = 'professionalServices.swimmingStoryTrainer.title';
-          }
-          else if (student.courseId === '2' ||
-            (student.courseName.toLowerCase().includes('swimming story') &&
-              student.courseName.toLowerCase().includes('teacher'))) {
-            translationKey = 'professionalServices.swimmingStoryTeacher.title';
-          }
-          else if (student.courseId === '3' ||
-            student.courseName.toLowerCase().includes('front-crawl')) {
-            translationKey = 'professionalServices.frontCrawl.title';
-          }
-          else if (student.courseId === '4' ||
-            student.courseName.toLowerCase().includes('aquagym')) {
-            translationKey = 'professionalServices.aquagym.title';
-          }
-          else {
-            translationKey = 'professionalServices.swimmingStoryTeacher.title';
-          }
-        }
-
-        courseMap.set(courseKey, {
-          id: student.courseId,
-          name: student.courseName,
-          translationKey: translationKey,
-          studentCount: 0,
-          students: [],
-          expanded: false,
-          type: student.type || 'client_service'
-        });
-      }
-
-      const course = courseMap.get(courseKey);
-      if (course) {
-        course.students.push(student);
-        course.studentCount++;
-      }
-    });
-
-    // Sort logic for admin view vs professional view
-    if (this.isAdmin) {
-      this.courses = Array.from(courseMap.values())
-        .sort((a, b) => {
-          // First sort by type (client_service first, then professional_service)
-          if ((a.type || '') !== (b.type || '')) {
-            return (a.type || 'client_service') === 'client_service' ? -1 : 1;
-          }
-          // Then by name
-          return a.name.localeCompare(b.name);
-        });
-    } else {
-      // For professional view, just sort by name
-      this.courses = Array.from(courseMap.values())
-        .sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    // Store the original unfiltered data
-    this.originalCourses = JSON.parse(JSON.stringify(this.courses)) as Course[];
-
-    this.cdr.detectChanges();
-  }
-
-  toggleCourseExpansion(course: Course) {
-    course.expanded = !course.expanded;
-    this.cdr.detectChanges();
-  }
-
-  getStatusClass(status: string): string {
-    switch (status) {
-      case 'approved': return 'status-approved';
-      case 'pending': return 'status-pending';
-      case 'in_process': return 'status-in-process';
-      case 'reproved': return 'status-reproved';
-      case 'completed': return 'status-completed';
-      case 'cancelled': return 'status-cancelled';
-      default: return '';
-    }
-  }
-
-  getCalificationClass(calification: number | undefined): string {
-    if (calification === undefined) return '';
-
-    if (calification >= 9) return 'calification-excellent';
-    if (calification >= 7) return 'calification-good';
-    if (calification >= 5) return 'calification-pass';
-    return 'calification-fail';
-  }
-
-  getAssistanceClass(assistance: number | undefined): string {
-    if (assistance === undefined) return '';
-
-    if (assistance >= 90) return 'assistance-excellent';
-    if (assistance >= 75) return 'assistance-good';
-    if (assistance >= 50) return 'assistance-medium';
-    return 'assistance-poor';
-  }
-
-  getLocalizedStatus(status: string): string {
-    return this.translationService.translate(`studentsManagement.status.${status}`);
-  }
-
-  // Get localized month name
-  getMonthName(month: number): string {
-    return this.monthNames.find(m => m.value === month)?.name || '';
-  }
-
-  // Determine if this is a professional course
-  isProfessionalCourse(course: Course): boolean {
-    return course.type === 'professional_service';
-  }
-
-  // Open edit modal for student
-  openEditModal(student: Student) {
-    this.selectedStudent = { ...student };
-    this.studentNotes = student.notes || '';
-    this.editModalVisible = true;
-    this.cdr.detectChanges();
-  }
-
-  // Close edit modal
-  closeEditModal() {
-    this.editModalVisible = false;
-    this.selectedStudent = null;
-    this.cdr.detectChanges();
-  }
-
-  // Open delete confirmation modal
-  openDeleteModal(student: Student) {
-    this.selectedStudent = student;
-    this.deleteModalVisible = true;
-    this.cdr.detectChanges();
-  }
-
-  // Close delete modal
-  closeDeleteModal() {
-    this.deleteModalVisible = false;
-    this.selectedStudent = null;
-    this.cdr.detectChanges();
-  }
-
-  // Validate calification (0-10 scale)
-  validateCalification(value: number): boolean {
-    return value >= 0 && value <= 10;
-  }
-
-  // Validate assistance (0-100 percentage)
-  validateAssistance(value: number): boolean {
-    return value >= 0 && value <= 100;
-  }
-
-  // Update student status, calification, and assistance
-  updateStudent() {
-    if (!this.selectedStudent) return;
-
-    // Validate calification and assistance if provided
-    if (this.selectedStudent.calification !== undefined && !this.validateCalification(this.selectedStudent.calification)) {
-      this.errorMessage = this.translationService.translate('studentsManagement.errorInvalidCalification');
-      this.cdr.detectChanges();
-      return;
-    }
-
-    if (this.selectedStudent.assistance !== undefined && !this.validateAssistance(this.selectedStudent.assistance)) {
-      this.errorMessage = this.translationService.translate('studentsManagement.errorInvalidAssistance');
-      this.cdr.detectChanges();
-      return;
-    }
-
-    this.isLoading = true;
-    this.errorMessage = '';
-    this.cdr.detectChanges();
-
-    const updateData = {
-      studentId: this.selectedStudent.id,
-      enrollmentId: this.selectedStudent.enrollmentId,
-      status: this.selectedStudent.status,
-      notes: this.studentNotes,
-      calification: this.selectedStudent.calification,
-      assistance: this.selectedStudent.assistance,
-      isAdmin: this.isAdmin,
-      type: this.selectedStudent.type // Pass the type to the service
-    };
-
-    // Admin can update both client and professional enrollments
-    if (this.isAdmin) {
-      this.studentsService.updateStudentStatusAdmin(updateData)
-        .pipe(
-          catchError(error => {
-            console.error('Error updating student as admin:', error);
-            this.errorMessage = this.translationService.translate('studentsManagement.errorUpdatingStudent');
-            this.isLoading = false;
-            this.cdr.detectChanges();
-            return of(null);
-          }),
-          finalize(() => {
-            this.isLoading = false;
-            this.cdr.detectChanges();
-          })
-        )
-        .subscribe(response => {
-          if (response) {
-            this.successMessage = this.translationService.translate('studentsManagement.studentUpdated');
-            this.closeEditModal();
-            this.loadStudentData(); // Reload data to show updated status
-          }
-        });
-    } else {
-      // Regular professional update
-      this.studentsService.updateStudentStatus(updateData)
-        .pipe(
-          catchError(error => {
-            console.error('Error updating student:', error);
-            this.errorMessage = this.translationService.translate('studentsManagement.errorUpdatingStudent');
-            this.isLoading = false;
-            this.cdr.detectChanges();
-            return of(null);
-          }),
-          finalize(() => {
-            this.isLoading = false;
-            this.cdr.detectChanges();
-          })
-        )
-        .subscribe(response => {
-          if (response) {
-            this.successMessage = this.translationService.translate('studentsManagement.studentUpdated');
-            this.closeEditModal();
-            this.loadStudentData(); // Reload data to show updated status
-          }
-        });
-    }
-  }
-
-  // Delete student
-  deleteStudent() {
-    if (!this.selectedStudent) return;
-
-    this.isLoading = true;
-    this.errorMessage = '';
-    this.cdr.detectChanges();
-
-    // Different endpoints for admin vs professional
-    const deleteObservable = this.isAdmin
-      ? this.studentsService.deleteStudentAdmin(this.selectedStudent.enrollmentId, this.selectedStudent.type || 'client_service')
-      : this.studentsService.deleteStudent(this.selectedStudent.enrollmentId);
-
-    deleteObservable
-      .pipe(
-        catchError(error => {
-          console.error('Error deleting student:', error);
-          this.errorMessage = this.translationService.translate('studentsManagement.errorDeletingStudent');
-          this.isLoading = false;
-          this.cdr.detectChanges();
-          return of(null);
-        }),
-        finalize(() => {
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        })
-      )
-      .subscribe(response => {
-        if (response) {
-          this.successMessage = this.translationService.translate('studentsManagement.studentDeleted');
-          this.closeDeleteModal();
-          this.loadStudentData(); // Reload data to remove deleted student
-        }
-      });
+  // Filter options
+  selectedCourse: string = 'all';
+  selectedStatus: string = 'all';
+  selectedMonth: number = new Date().getMonth();
+  selectedYear: number = new Date().getFullYear();
+
+  constructor(
+    private http: HttpClient,
+    private cdr: ChangeDetectorRef
+  ) { }
+
+  ngOnInit(): void {
+    this.getUserInfo();
+    this.loadProfessionalCourses();
+    this.generateCalendar();
   }
 
   ngOnDestroy(): void {
-    // Clean up subscriptions
-    if (this.langSubscription) {
-      this.langSubscription.unsubscribe();
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private getUserInfo(): void {
+    this.authService.getCurrentUser().subscribe(user => {
+      this.isAdmin = user.email === 'admin@gmail.com';
+      this.isProfessional = !this.isAdmin;
+    })
+  }
+
+  private getAuthHeaders(): HttpHeaders {
+    const token = localStorage.getItem('token');
+    return new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  }
+
+  // Load courses assigned to the professional
+  loadProfessionalCourses(): void {
+    if (!this.isProfessional) {
+      this.error = 'Access denied. Professional access required.';
+      return;
     }
-    if (this.loadedSubscription) {
-      this.loadedSubscription.unsubscribe();
+
+    this.isLoading = true;
+    this.error = '';
+
+    this.http.get<any>(`${this.apiUrl}/professional/admin-courses`, {
+      headers: this.getAuthHeaders()
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Error loading professional courses:', error);
+        this.error = 'Failed to load courses. Please try again.';
+        this.isLoading = false;
+        this.cdr.detectChanges();
+        return of([]);
+      })
+    ).subscribe(data => {
+      this.processCourseData(data);
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    });
+  }
+
+  // Process course data and organize students
+  private processCourseData(data: any[]): void {
+    this.adminCourses = [];
+    this.allStudents = [];
+
+    if (!data || data.length === 0) {
+      return;
     }
-    if (this.authSubscription) {
-      this.authSubscription.unsubscribe();
+
+    // Group students by course
+    const courseMap = new Map<number, AdminCourse>();
+
+    data.forEach(enrollment => {
+      const courseId = enrollment.admin_course_id || enrollment.courseId;
+
+      if (!courseMap.has(courseId)) {
+        courseMap.set(courseId, {
+          id: courseId,
+          courseCode: enrollment.courseCode || `CURSO/${courseId}/CLIENT/2025`,
+          name: enrollment.courseName || 'Admin Course',
+          description: enrollment.courseDescription || '',
+          clientName: enrollment.clientName || 'Unknown Client',
+          startDate: enrollment.courseStartDate || enrollment.startDate,
+          endDate: enrollment.courseEndDate || enrollment.endDate,
+          professionalId: enrollment.professionalId || 0,
+          status: enrollment.courseStatus || 'active',
+          maxStudents: enrollment.maxStudents || 6,
+          currentStudents: 0,
+          students: [],
+          expanded: false
+        });
+      }
+
+      const course = courseMap.get(courseId)!;
+
+      const student: Student = {
+        id: enrollment.id,
+        enrollmentId: enrollment.id,
+        kidName: enrollment.kid_name || enrollment.kidName || 'Unknown Student',
+        motherContact: enrollment.mother_contact || enrollment.motherContact || '',
+        status: enrollment.status || 'pending',
+        enrollmentDate: enrollment.enrollmentDate ? new Date(enrollment.enrollmentDate) : undefined,
+        startDate: enrollment.startDate ? new Date(enrollment.startDate) : undefined,
+        endDate: enrollment.endDate ? new Date(enrollment.endDate) : undefined,
+        calification: enrollment.calification || 0,
+        assistance: enrollment.assistance || 0,
+        notes: enrollment.notes || '',
+        courseId: courseId,
+        courseName: course.name,
+        courseCode: course.courseCode,
+        clientName: course.clientName,
+        price: parseFloat(enrollment.price || 0)
+      };
+
+      course.students.push(student);
+      course.currentStudents++;
+      this.allStudents.push(student);
+    });
+
+    this.adminCourses = Array.from(courseMap.values());
+    this.generateCalendar();
+  }
+
+  // Generate calendar view
+  generateCalendar(): void {
+    const year = this.selectedYear;
+    const month = this.selectedMonth;
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+    const endDate = new Date(lastDay);
+    endDate.setDate(endDate.getDate() + (6 - lastDay.getDay()));
+
+    this.calendarDays = [];
+    const current = new Date(startDate);
+    const today = new Date();
+
+    while (current <= endDate) {
+      const day: CalendarDay = {
+        date: new Date(current),
+        day: current.getDate(),
+        isCurrentMonth: current.getMonth() === month,
+        isToday: this.isSameDay(current, today),
+        courses: this.getCoursesForDate(current),
+        hasEvents: false
+      };
+
+      day.hasEvents = day.courses.length > 0;
+      this.calendarDays.push(day);
+      current.setDate(current.getDate() + 1);
     }
+  }
+
+  // Get courses that are active on a specific date
+  private getCoursesForDate(date: Date): AdminCourse[] {
+    return this.adminCourses.filter(course => {
+      const startDate = new Date(course.startDate);
+      const endDate = new Date(course.endDate);
+      return date >= startDate && date <= endDate;
+    });
+  }
+
+  private isSameDay(date1: Date, date2: Date): boolean {
+    return date1.getDate() === date2.getDate() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getFullYear() === date2.getFullYear();
+  }
+
+  // Edit student information
+  editStudent(student: Student): void {
+    this.editingStudent = student;
+    this.editForm = {
+      calification: student.calification || 0,
+      assistance: student.assistance || 0,
+      status: student.status,
+      notes: student.notes || ''
+    };
+    this.showEditForm = true;
+    this.error = '';
+    this.successMessage = '';
+  }
+
+  // Save student changes
+  saveStudentChanges(): void {
+    if (!this.editingStudent) return;
+
+    this.isLoading = true;
+    this.error = '';
+
+    const updateData = {
+      calification: this.editForm.calification,
+      assistance: this.editForm.assistance,
+      status: this.editForm.status,
+      notes: this.editForm.notes
+    };
+
+    this.http.put(`${this.apiUrl}/professional/students/${this.editingStudent.enrollmentId}`, updateData, {
+      headers: this.getAuthHeaders()
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Error updating student:', error);
+        this.error = 'Failed to update student information. Please try again.';
+        this.isLoading = false;
+        this.cdr.detectChanges();
+        return of(null);
+      })
+    ).subscribe(response => {
+      if (response !== null) {
+        // Update local data
+        if (this.editingStudent) {
+          this.editingStudent.calification = this.editForm.calification;
+          this.editingStudent.assistance = this.editForm.assistance;
+          this.editingStudent.status = this.editForm.status;
+          this.editingStudent.notes = this.editForm.notes;
+        }
+
+        this.successMessage = 'Student information updated successfully.';
+        this.cancelEdit();
+      }
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    });
+  }
+
+  // Cancel editing
+  cancelEdit(): void {
+    this.editingStudent = null;
+    this.showEditForm = false;
+    this.editForm = {
+      calification: 0,
+      assistance: 0,
+      status: 'pending',
+      notes: ''
+    };
+  }
+
+  // Toggle course expansion
+  toggleCourse(course: AdminCourse): void {
+    course.expanded = !course.expanded;
+  }
+
+  // Get status badge class
+  getStatusClass(status: string): string {
+    switch (status) {
+      case 'pending': return 'status-pending';
+      case 'approved': return 'status-approved';
+      case 'active': return 'status-active';
+      case 'completed': return 'status-completed';
+      case 'cancelled': return 'status-cancelled';
+      default: return 'status-default';
+    }
+  }
+
+  // Get localized status
+  getLocalizedStatus(status: string): string {
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+
+  // Navigation methods
+  previousMonth(): void {
+    if (this.selectedMonth === 0) {
+      this.selectedMonth = 11;
+      this.selectedYear--;
+    } else {
+      this.selectedMonth--;
+    }
+    this.generateCalendar();
+  }
+
+  nextMonth(): void {
+    if (this.selectedMonth === 11) {
+      this.selectedMonth = 0;
+      this.selectedYear++;
+    } else {
+      this.selectedMonth++;
+    }
+    this.generateCalendar();
+  }
+
+  // Switch view mode
+  setViewMode(mode: 'list' | 'calendar'): void {
+    this.viewMode = mode;
+  }
+
+  // Get filtered courses
+  get filteredCourses(): AdminCourse[] {
+    return this.adminCourses.filter(course => {
+      const matchesCourse = this.selectedCourse === 'all' || course.id.toString() === this.selectedCourse;
+      const matchesStatus = this.selectedStatus === 'all' ||
+        course.students.some(student => student.status === this.selectedStatus);
+
+      return matchesCourse && matchesStatus;
+    });
+  }
+
+  // Get month name
+  getMonthName(month: number): string {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[month];
+  }
+
+  // Clear messages
+  clearMessages(): void {
+    this.error = '';
+    this.successMessage = '';
+  }
+
+  // Refresh data
+  refreshData(): void {
+    this.loadProfessionalCourses();
+  }
+
+  // Track functions for ngFor
+  trackByCourseId(index: number, course: AdminCourse): number {
+    return course.id;
+  }
+
+  trackByStudentId(index: number, student: Student): number | string {
+    return student.id;
+  }
+
+  trackByDayDate(index: number, day: CalendarDay): string {
+    return day.date.toDateString();
   }
 }
