@@ -31,12 +31,12 @@ app.use(express.json());
 
 // Database connection DEV
 // const pool = new Pool({
-//   user: process.env.DB_USER || 'postgres',
-//   host: process.env.DB_HOST || 'localhost',
-//   database: process.env.DB_NAME || 'happyswimming',
-//   password: process.env.DB_PASSWORD || 'postgres',
-//   port: process.env.DB_PORT || 5432,
-//   schema: 'happyswimming'
+// user: process.env.DB_USER || 'postgres',
+// host: process.env.DB_HOST || 'localhost',
+// database: process.env.DB_NAME || 'happyswimming',
+// password: process.env.DB_PASSWORD || 'postgres',
+// port: process.env.DB_PORT || 5432,
+// schema: 'happyswimming'
 // });
 
 // Database connection PROD
@@ -3080,7 +3080,7 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
                WHEN current_students = 0 THEN 
                  (SELECT price FROM happyswimming.course_pricing WHERE course_id = id AND student_count = 1)
                ELSE 
-                 (SELECT price FROM happyswimming.course_pricing WHERE course_id = id AND student_count = LEAST(current_students + 1, 6))
+                 (SELECT price FROM happyswimming.course_pricing WHERE course_id = $1 AND student_count = LEAST(current_students + 1, 6))
              END as current_price
       FROM happyswimming.admin_courses 
       WHERE id = $1 AND status = 'active' AND is_historical = FALSE
@@ -3101,17 +3101,6 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
       return res.status(400).json({ error: 'Course is full' });
     }
 
-    // Check if already enrolled
-    const existingEnrollment = await client.query(
-      'SELECT id FROM happyswimming.client_services WHERE client_id = $1 AND admin_course_id = $2',
-      [clientId, adminCourseId]
-    );
-
-    if (existingEnrollment.rows.length > 0) {
-      return res.status(400).json({ error: 'Already enrolled in this course' });
-    }
-
-    // For admin courses, we'll use a special service_id that represents admin courses
     // First, let's check if we have a special service for admin courses, if not create one
     let adminServiceId;
     const adminServiceCheck = await client.query(

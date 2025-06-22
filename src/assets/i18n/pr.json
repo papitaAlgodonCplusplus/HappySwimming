@@ -65,6 +65,7 @@
         "professional": "Profissional",
         "notAssigned": "Não Atribuído",
         "duration": "Duração",
+        "payNow": "Pagar Agora",
         "enrollment": "Inscrição",
         "availability": "Disponibilidade",
         "students": "alunos",
@@ -73,7 +74,7 @@
         "spotsLeft": "vagas restantes",
         "pricingStructure": "Estrutura de Preços",
         "lessons": "aulas",
-        "enroll": "Inscrever-se",
+        "enroll": "Inscrever Estudiante",
         "courseFull": "Curso Completo",
         "enrolled": "Inscrito",
         "myEnrollments": "Minhas Inscrições",
@@ -94,8 +95,11 @@
         "confirmEnrollment": "Confirmar Inscrição",
         "loadingCourses": "Carregando cursos disponíveis..."
     },
+    "adminCourseManagement_title": "Gerenciamento de Cursos",
+    "adminCourseManagement_desc": "Crie, gerencie e acompanhe os cursos de natação para clientes",
     "studentsManagement": {
         "title": "Gerenciamento de Alunos",
+        "description": "Gerencie os alunos inscritos nos cursos atribuídos a você",
         "professionalSubtitle": "Gerencie seus cursos atribuídos e acompanhe o progresso dos alunos",
         "accessDenied": "Acesso negado",
         "professionalRequired": "Privilégios de profissional são necessários para acessar esta seção",

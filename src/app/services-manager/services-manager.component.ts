@@ -112,6 +112,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   // Enrollment form data
   enrollmentForm = {
     kidName: '',
+    price: 0,
+    notes: '',
     motherContact: ''
   };
 
@@ -229,6 +231,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   resetEnrollmentForm(): void {
     this.enrollmentForm = {
       kidName: '',
+      price: 0,
+      notes: '',
       motherContact: ''
     };
   }
@@ -322,6 +326,11 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     }
 
     return true;
+  }
+
+  openPaymentLink(): void {
+    const link = 'https://checkout.revolut.com/pay/ba1803cf-942b-4239-85fd-dea28e94b3fc';
+    window.open(link, '_blank');
   }
 
   // Get status badge class

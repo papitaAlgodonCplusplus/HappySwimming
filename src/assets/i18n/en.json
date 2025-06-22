@@ -258,6 +258,7 @@
     "welcome": "Welcome,",
     "studentsManagement": {
         "title": "Students Management",
+        "description": "Manage your assigned students and track their progress",
         "professionalSubtitle": "Manage your assigned courses and track student progress",
         "accessDenied": "Access Denied",
         "professionalRequired": "Professional privileges are required to access this section",
@@ -353,6 +354,7 @@
         "activeCourses": "Active Courses"
     },
     "servicesManager": {
+        "payNow": "Pay Now",
         "title": "Course Services",
         "clientSubtitle": "Browse and enroll in available swimming courses",
         "professionalSubtitle": "Browse and enroll in professional development courses",
