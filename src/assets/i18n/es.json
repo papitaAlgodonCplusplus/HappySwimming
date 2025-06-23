@@ -399,7 +399,7 @@
         "price": "Precio",
         "minPeople": "Mínimo 10 personas"
     },
-    "welcome": "¡Bienvenido,",
+    "welcome": "¡Bienvenido, Usuario!",
     "personalInformation": "Información Personal",
     "currentInformation": "Información Actual",
     "updateInformation": "Actualizar Información",

@@ -36,7 +36,7 @@ export class HomepageComponent implements OnInit {
       }
 
       this.noUserName = !user.name;
-      this.userName = user.name || this.translationService.translate('User');
+      this.userName = this.translationService.translate('User');
       this.userRole = this.translateRole(user.role);
       console.log('User role:', this.userRole);
       this.userEmail = user.email || '';

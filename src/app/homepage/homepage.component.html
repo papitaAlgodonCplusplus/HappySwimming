@@ -42,7 +42,7 @@
   <div class="homepage-content">
     <!-- Header section with welcome title and small profile editor -->
     <div class="header-section">
-      <h1 class="welcome-title">{{ 'welcome' | translate }} {{userName}}!</h1>
+      <h1 class="welcome-title">{{ 'welcome' | translate }}</h1>
       
       <!-- Small profile editor next to welcome title -->
       <div *ngIf="!isAdmin" class="profile-editor-small" (click)="navigateTo('/edit-profile')">

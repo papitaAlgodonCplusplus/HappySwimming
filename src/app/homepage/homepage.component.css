@@ -139,20 +139,19 @@ body {
 }
 
 .economic-manager-medium .item-title {
-  font-size: 1.4rem;
-  margin-bottom: 1rem;
+  font-size: 1.2rem;
   font-weight: 600;
 }
 
 .economic-manager-medium .item-description {
-  font-size: 1.1rem;
+  font-size: 0.6rem;
   margin-bottom: 1.5rem;
   opacity: 0.9;
 }
 
 .economic-manager-medium .icon-container svg {
-  width: 60px;
-  height: 60px;
+  width: 30px;
+  height: 30px;
   stroke: white;
 }
 
@@ -256,16 +255,16 @@ body {
   }
 
   .services-manager-large .item-title {
-    font-size: 1.6rem;
+    font-size: 1.2rem;
   }
 
   .services-manager-large .item-description {
-    font-size: 1.1rem;
+    font-size: 0.6rem;
   }
 
   .services-manager-large .icon-container svg {
-    width: 60px;
-    height: 60px;
+    width: 30px;
+    height: 30px;
   }
 
   .economic-manager-medium {

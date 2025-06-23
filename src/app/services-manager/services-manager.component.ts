@@ -1,6 +1,6 @@
-// src/app/services-manager/services-manager.component.ts (Updated)
+// src/app/services-manager/services-manager.component.ts (Fixed)
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -80,6 +80,7 @@ interface EnrollmentRequest {
   selector: 'app-services-manager',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, HeaderComponent, TranslatePipe],
+  providers: [DatePipe], // Add DatePipe to providers
   templateUrl: './services-manager.component.html',
   styleUrls: ['./services-manager.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -94,6 +95,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     ? 'http://localhost:10000/api'     // Development URL
     : 'https://happyswimming.onrender.com/api';   // Production URL
   private authService = inject(AuthService);
+  private datePipe = inject(DatePipe); // Inject DatePipe using inject()
 
   // User information
   userRole: string | null = null;
@@ -376,7 +378,9 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   getCourseDuration(course: Course): string {
     if (course.type === 'admin_course') {
       if (course.startDate && course.endDate) {
-        return `${course.startDate} - ${course.endDate}`;
+        const startDate = this.datePipe.transform(course.startDate, 'mediumDate');
+        const endDate = this.datePipe.transform(course.endDate, 'mediumDate');
+        return `${startDate} - ${endDate}`;
       }
       if (course.pricing && course.pricing.length > 0) {
         const lessonsCount = course.pricing[0].lessonsCount;

@@ -366,7 +366,7 @@
         "register": "Registrar",
         "processing": "Processando..."
     },
-    "welcome": "Bem-vindo,",
+    "welcome": "Bem-vindo, Usuário!",
     "servicesManagerTitle": "Gerenciador de Serviços",
     "servicesManagerDesc": "Gerencie seus serviços, horários e clientes",
     "editProfile": "Editar Perfil",

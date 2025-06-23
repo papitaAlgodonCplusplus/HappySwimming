@@ -255,7 +255,7 @@
         "register": "Register",
         "processing": "Processing..."
     },
-    "welcome": "Welcome,",
+    "welcome": "Welcome, User!",
     "studentsManagement": {
         "title": "Students Management",
         "description": "Manage your assigned students and track their progress",
