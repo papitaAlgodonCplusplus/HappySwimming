@@ -1,5 +1,5 @@
 // src/app/students-management/students-management.component.ts (Updated for Admin Courses)
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject} from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -69,8 +69,14 @@ interface CalendarDay {
 export class StudentsManagementComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private destroy$ = new Subject<void>();
-  private apiUrl = 'http://localhost:10000/api';
+  // DEVELOPMENT mode is determined by the current host
+  private isDevelopment = window.location.hostname === 'localhost';
 
+  // API URL is dynamically set based on environment
+  private apiUrl = this.isDevelopment
+    ? 'http://localhost:10000/api'     // Development URL
+    : 'https://happyswimming.onrender.com/api';   // Production URL
+    
   // User information
   userRole: string | null = null;
   userId: number | null = null;

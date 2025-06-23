@@ -86,7 +86,13 @@ interface EnrollmentRequest {
 })
 export class ServicesManagerComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
-  private apiUrl = 'http://localhost:10000/api';
+  // DEVELOPMENT mode is determined by the current host
+  private isDevelopment = window.location.hostname === 'localhost';
+
+  // API URL is dynamically set based on environment
+  private apiUrl = this.isDevelopment
+    ? 'http://localhost:10000/api'     // Development URL
+    : 'https://happyswimming.onrender.com/api';   // Production URL
   private authService = inject(AuthService);
 
   // User information

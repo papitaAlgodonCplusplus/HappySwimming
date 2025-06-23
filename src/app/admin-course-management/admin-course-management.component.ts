@@ -65,8 +65,14 @@ interface CourseFormData {
 })
 export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
-  private apiUrl = 'http://localhost:10000/api';
+  // DEVELOPMENT mode is determined by the current host
+  private isDevelopment = window.location.hostname === 'localhost';
 
+  // API URL is dynamically set based on environment
+  private apiUrl = this.isDevelopment
+    ? 'http://localhost:10000/api'     // Development URL
+    : 'https://happyswimming.onrender.com/api';   // Production URL
+    
   // Use inject to get services in standalone components
   private authService = inject(AuthService);
   // User information
@@ -83,7 +89,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   // Form state
   showCreateForm: boolean = false;
   editingCourse: AdminCourse | null = null;
-  
+
   // Form data
   courseForm: CourseFormData = {
     name: '',
@@ -104,7 +110,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   constructor(
     private http: HttpClient,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.checkUserRole();
@@ -383,14 +389,14 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   // Get filtered courses
   get filteredCourses(): AdminCourse[] {
     return this.courses.filter(course => {
-      const matchesSearch = !this.searchTerm || 
+      const matchesSearch = !this.searchTerm ||
         course.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         course.clientName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         course.courseCode?.toLowerCase().includes(this.searchTerm.toLowerCase());
-      
+
       const matchesStatus = this.statusFilter === 'all' || course.status === this.statusFilter;
       const matchesClient = this.clientFilter === 'all' || course.clientName === this.clientFilter;
-      
+
       return matchesSearch && matchesStatus && matchesClient;
     });
   }
@@ -435,7 +441,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.clearMessages();
   }
 
-   private checkUserRole(): void {
+  private checkUserRole(): void {
     this.authService.getCurrentUser().subscribe(user => {
       this.isAdmin = user.email === 'admin@gmail.com';
       if (!this.isAdmin) {
