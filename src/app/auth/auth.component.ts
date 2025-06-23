@@ -33,6 +33,7 @@ export class AuthComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
+  public showPassword: boolean = false;
 
   ngOnInit() {
     // Get return URL from route parameters or default to '/'
@@ -122,5 +123,9 @@ export class AuthComponent implements OnInit, OnDestroy {
     if (this.loadedSubscription) {
       this.loadedSubscription.unsubscribe();
     }
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
   }
 }
