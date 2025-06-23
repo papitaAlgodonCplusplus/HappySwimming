@@ -1,16 +1,17 @@
-<style>   
-  @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap'); 
-  
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+
   .password-input-container {
     position: relative;
     display: flex;
     align-items: center;
   }
-  
+
   .password-input-container input {
-    padding-right: 40px; /* Make space for the icon */
+    padding-right: 40px;
+    /* Make space for the icon */
   }
-  
+
   .password-toggle-icon {
     position: absolute;
     right: 12px;
@@ -20,73 +21,66 @@
     user-select: none;
     z-index: 1;
   }
-  
+
   .password-toggle-icon:hover {
     color: #333;
   }
-</style>  
+</style>
 
-<app-header></app-header> 
-<div class="auth-container">   
-  <div class="login-section">     
-    <h1 class="title">{{ 'login' | translate }}</h1>          
-    
-    <!-- Add error message display -->     
-    <div *ngIf="errorMessage" class="error-message">       
-      {{ errorMessage }}     
-    </div>          
-    
-    <!-- Add success message display -->     
-    <div *ngIf="successMessage" class="success-message">       
-      {{ successMessage }}     
-    </div>          
-    
-    <div class="form-group">       
-      <label for="email">{{ 'email' | translate }}</label>       
-      <input type="email" id="email" [(ngModel)]="email" name="email" class="form-control" [disabled]="isLoading">     
-    </div>      
+<app-header></app-header>
+<div class="auth-container">
+  <div class="login-section">
+    <h1 class="title">{{ 'login' | translate }}</h1>
 
-    <div class="form-group">       
-      <label for="password">{{ 'password' | translate }}</label>       
+    <!-- Add error message display -->
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <!-- Add success message display -->
+    <div *ngIf="successMessage" class="success-message">
+      {{ successMessage }}
+    </div>
+
+    <div class="form-group">
+      <label for="email">{{ 'email' | translate }}</label>
+      <input type="email" id="email" [(ngModel)]="email" name="email" class="form-control" [disabled]="isLoading">
+    </div>
+
+    <div class="form-group">
+      <label for="password">{{ 'password' | translate }}</label>
       <div class="password-input-container">
-        <input 
-          [type]="showPassword ? 'text' : 'password'" 
-          id="password" 
-          [(ngModel)]="password" 
-          name="password" 
-          class="form-control"
-          [disabled]="isLoading" 
-          (keyup.enter)="login()">
-        <span 
-          class="password-toggle-icon" 
-          (click)="togglePasswordVisibility()"
-          [innerHTML]="showPassword ? '&#128065;' : '&#128064;'">
+        <input [type]="showPassword ? 'text' : 'password'" id="password" [(ngModel)]="password" name="password"
+          class="form-control" [disabled]="isLoading" (keyup.enter)="login()">
+        <span class="password-toggle-icon" (click)="togglePasswordVisibility()">
+          {{ showPassword ? '👁️' : '🚫👁️' }}
         </span>
       </div>
-    </div>      
+    </div>
 
-    <div class="forgot-password">       
-      <a routerLink="/password-recover">{{ 'forgotPassword' | translate }}</a>     
-    </div>      
+    <div class="forgot-password">
+      <a routerLink="/password-recover">{{ 'forgotPassword' | translate }}</a>
+    </div>
 
-    <div class="button-group">       
-      <button class="btn btn-normal" (click)="login()" [disabled]="isLoading">         
-        <span *ngIf="!isLoading">{{ 'enter' | translate }}</span>         
-        <span *ngIf="isLoading">Loading...</span>       
-      </button>       
-      <button class="btn btn-normal" routerLink="/register" [disabled]="isLoading">{{ 'register' | translate }}</button>     
-    </div>   
-  </div>    
+    <div class="button-group">
+      <button class="btn btn-normal" (click)="login()" [disabled]="isLoading">
+        <span *ngIf="!isLoading">{{ 'enter' | translate }}</span>
+        <span *ngIf="isLoading">Loading...</span>
+      </button>
+      <button class="btn btn-normal" routerLink="/register" [disabled]="isLoading">{{ 'register' | translate }}</button>
+    </div>
+  </div>
 
-  <div class="image-section">     
-    <div class="buttons-container">       
-      <button class="user-btn client-btn" (click)="navigateToRegisterSelector()">{{ 'client' | translate }}</button>       
-      <button class="user-btn professional-btn" (click)="navigateToFreeProfessional()">{{ 'professionals' | translate }}</button>     
-    </div>      
+  <div class="image-section">
+    <div class="buttons-container">
+      <button class="user-btn client-btn" (click)="navigateToRegisterSelector()">{{ 'client' | translate }}</button>
+      <button class="user-btn professional-btn" (click)="navigateToFreeProfessional()">{{ 'professionals' | translate
+        }}</button>
+    </div>
 
-    <div class="hero-content">       
-      <h1 class="hero-title">{{ 'title' | translate }}</h1>       
-      <p class="hero-subtitle">{{ 'subtitle' | translate }}</p>     
-    </div>   
-  </div> 
+    <div class="hero-content">
+      <h1 class="hero-title">{{ 'title' | translate }}</h1>
+      <p class="hero-subtitle">{{ 'subtitle' | translate }}</p>
+    </div>
+  </div>
 </div>
