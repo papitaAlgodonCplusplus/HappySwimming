@@ -64,11 +64,6 @@
       <!-- Courses Grid -->
       <div *ngIf="availableCourses.length > 0" class="courses-grid">
         <div *ngFor="let course of availableCourses; trackBy: trackByCourseId" class="course-card">
-          <!-- Course Type Badge -->
-          <div class="course-badge badge-admin">
-            {{ 'servicesManager.adminCourse' | translate }}
-          </div>
-
           <!-- Course Header -->
           <div class="course-header">
             <h3 class="course-title">{{ course.name }}</h3>
@@ -120,7 +115,6 @@
 
           <!-- Pricing Information -->
           <div class="course-pricing">
-            <div class="price-main">{{ getCoursePrice(course) }}</div>
             <div *ngIf="course.pricing && course.pricing.length > 0" class="pricing-details">
               <div class="pricing-note">{{ getPricingDetails(course) }}</div>
               <div class="pricing-structure">
@@ -186,6 +180,14 @@
             <div class="detail-row" *ngIf="enrollment.motherContact">
               <span class="detail-label">{{ 'servicesManager.motherContact' | translate }}:</span>
               <span class="detail-value">{{ enrollment.motherContact }}</span>
+            </div>
+            <div class="detail-row" *ngIf="enrollment.motherPhone">
+              <span class="detail-label">{{ 'servicesManager.motherPhone' | translate }}:</span>
+              <span class="detail-value">{{ enrollment.motherPhone }}</span>
+            </div>
+            <div class="detail-row" *ngIf="enrollment.motherEmail">
+              <span class="detail-label">{{ 'servicesManager.motherEmail' | translate }}:</span>
+              <span class="detail-value">{{ enrollment.motherEmail }}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">{{ 'servicesManager.enrollmentDate' | translate }}:</span>
@@ -266,6 +268,18 @@
             <label for="motherContact">{{ 'servicesManager.motherContact' | translate }} *</label>
             <input type="text" id="motherContact" [(ngModel)]="enrollmentForm.motherContact" name="motherContact"
               required class="form-control" placeholder="{{ 'servicesManager.enterMotherContact' | translate }}">
+          </div>
+
+          <div class="form-group">
+            <label for="motherPhone">{{ 'servicesManager.motherPhone' | translate }} *</label>
+            <input type="text" id="motherPhone" [(ngModel)]="enrollmentForm.motherPhone" name="motherPhone"
+              required class="form-control" placeholder="{{ 'servicesManager.enterMotherPhone' | translate }}">
+          </div>
+
+          <div class="form-group">
+            <label for="motherEmail">{{ 'servicesManager.motherEmail' | translate }} *</label>
+            <input type="text" id="motherEmail" [(ngModel)]="enrollmentForm.motherEmail" name="motherEmail"
+              required class="form-control" placeholder="{{ 'servicesManager.enterMotherEmail' | translate }}">
           </div>
 
           <!-- Payment button with calculated price-->

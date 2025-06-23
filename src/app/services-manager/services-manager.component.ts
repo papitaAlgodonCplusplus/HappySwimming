@@ -49,6 +49,8 @@ interface CoursePricing {
 interface Enrollment {
   motherContact?: string;
   kidName?: string;
+  motherEmail?: string;
+  motherPhone?: string;
   type: 'client_service' | 'professional_service';
   id: number | string;
   courseId: string;
@@ -73,6 +75,8 @@ interface EnrollmentRequest {
   userId: number | null;
   professionalId: number | null;
   kidName?: string;
+  motherEmail?: string;
+  motherPhone?: string;
   motherContact?: string;
 }
 
@@ -120,6 +124,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   // Enrollment form data
   enrollmentForm = {
     kidName: '',
+    motherEmail: '',
+    motherPhone: '',
     price: 0,
     notes: '',
     motherContact: ''
@@ -239,6 +245,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   resetEnrollmentForm(): void {
     this.enrollmentForm = {
       kidName: '',
+      motherEmail: '',
+      motherPhone: '',
       price: 0,
       notes: '',
       motherContact: ''
@@ -280,6 +288,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       enrollmentData.adminCourseId = this.selectedCourse.id as number;
       enrollmentData.kidName = this.enrollmentForm.kidName;
       enrollmentData.motherContact = this.enrollmentForm.motherContact;
+      enrollmentData.motherEmail = this.enrollmentForm.motherEmail;
+      enrollmentData.motherPhone = this.enrollmentForm.motherPhone;
     } else {
       enrollmentData.courseId = this.selectedCourse.id as string;
     }
