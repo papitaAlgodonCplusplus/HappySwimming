@@ -169,6 +169,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
         return of([]);
       })
     ).subscribe(professionals => {
+      console.log('Professionals: ', professionals);
       this.professionals = professionals;
       this.cdr.detectChanges();
     });
