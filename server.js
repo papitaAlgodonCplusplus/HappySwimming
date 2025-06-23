@@ -71,7 +71,10 @@ const corsOptions = {
   optionsSuccessStatus: 204
 };
 
-app.use(cors(corsOptions));
+app.use(cors({
+  origin: '*',
+  credentials: false // Note: must be false when origin is '*'
+}));
 
 // Additionally, for handling preflight requests explicitly:
 app.options('*', cors(corsOptions));
