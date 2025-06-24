@@ -1,4 +1,4 @@
-// src/app/services-manager/services-manager.component.ts (Fixed)
+// src/app/services-manager/services-manager.component.ts (Updated - Integrated Enrollments)
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -38,6 +38,10 @@ interface Course {
   availableSpots?: number;
   currentPrice?: number;
   pricing?: CoursePricing[];
+  
+  // Schedule fields
+  startTime?: string;
+  endTime?: string;
 }
 
 interface CoursePricing {
@@ -84,7 +88,7 @@ interface EnrollmentRequest {
   selector: 'app-services-manager',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, HeaderComponent, TranslatePipe],
-  providers: [DatePipe], // Add DatePipe to providers
+  providers: [DatePipe],
   templateUrl: './services-manager.component.html',
   styleUrls: ['./services-manager.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -99,7 +103,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     ? 'http://localhost:10000/api'     // Development URL
     : 'https://happyswimming.onrender.com/api';   // Production URL
   private authService = inject(AuthService);
-  private datePipe = inject(DatePipe); // Inject DatePipe using inject()
+  private datePipe = inject(DatePipe);
 
   // User information
   userRole: string | null = null;
@@ -108,15 +112,17 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   // Available courses (now fetched from backend)
   clientCourses: Course[] = [];
   professionalCourses: Course[] = [];
-  adminCourses: Course[] = []; // New: admin-created courses
-  userClientName: string | null = null; // For admin courses
+  adminCourses: Course[] = [];
+  userClientName: string | null = null;
 
   // Current enrollments
   enrollments: Enrollment[] = [];
 
   // Form state
   showEnrollmentForm: boolean = false;
+  showEnrollmentDetailsModal: boolean = false;
   selectedCourse: Course | null = null;
+  selectedEnrollment: Enrollment | null = null;
   isLoading: boolean = false;
   error: string = '';
   successMessage: string = '';
@@ -153,6 +159,142 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       const userIdStr = user.id || localStorage.getItem('userId');
       this.userId = userIdStr ? parseInt(userIdStr, 10) : null;
     })
+  }
+
+  /**
+   * Generates time options in 15-minute intervals
+   */
+  getTimeOptions(): { value: string, label: string }[] {
+    const options = [];
+    
+    // Generate options from 6:00 to 22:00 in 15-minute intervals
+    for (let hour = 6; hour <= 22; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const displayHour = hour.toString().padStart(2, '0');
+        const displayMinute = minute.toString().padStart(2, '0');
+        
+        options.push({
+          value: timeValue,
+          label: `${displayHour}:${displayMinute}`
+        });
+      }
+    }
+    
+    return options;
+  }
+
+  setDefaultTimes(course: Course): void {
+    // Set default schedules if not defined
+    if (!course.startTime) {
+      course.startTime = '09:00'; // Default start time
+    }
+    if (!course.endTime) {
+      course.endTime = '09:45'; // Default end time
+    }
+  }
+
+  /**
+   * Handles schedule selection changes
+   */
+  onScheduleChange(courseId: string | number, timeType: 'startTime' | 'endTime', value: string): void {
+    const course = this.availableCourses.find(c => c.id === courseId);
+    if (course) {
+      if (timeType === 'startTime') {
+        course.startTime = value;
+      } else {
+        course.endTime = value;
+      }
+      
+      // Validate that end time is after start time
+      if (course.startTime && course.endTime && course.startTime >= course.endTime) {
+        this.error = 'End time must be after start time';
+        // Clear invalid end time
+        course.endTime = '';
+      } else {
+        this.clearMessages();
+      }
+      
+      // Save changes to backend
+      this.saveScheduleChanges(courseId, course.startTime, course.endTime);
+      
+      this.cdr.detectChanges();
+    }
+  }
+
+  /**
+   * Formats time for display
+   */
+  formatTimeDisplay(time: string): string {
+    if (!time) return '';
+    
+    const [hours, minutes] = time.split(':');
+    return `${hours}:${minutes}`;
+  }
+
+  /**
+   * Saves schedule changes to backend
+   */
+  private saveScheduleChanges(courseId: string | number, startTime?: string, endTime?: string): void {
+    // Only proceed if both times are defined
+    if (!startTime || !endTime) {
+      return;
+    }
+    
+    const scheduleData = {
+      courseId: courseId,
+      startTime: startTime,
+      endTime: endTime
+    };
+    
+    this.http.patch(`${this.apiUrl}/courses/${courseId}/schedule`, scheduleData, {
+      headers: this.getAuthHeaders()
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Error saving schedule:', error);
+        this.error = 'Failed to save schedule changes. Please try again.';
+        this.cdr.detectChanges();
+        return of(null);
+      })
+    ).subscribe(response => {
+      if (response) {
+        this.successMessage = 'Schedule updated successfully';
+        // Auto-clear success message after 3 seconds
+        setTimeout(() => {
+          this.successMessage = '';
+          this.cdr.detectChanges();
+        }, 3000);
+      }
+    });
+  }
+
+  /**
+   * Calculates duration between two times
+   */
+  calculateDuration(startTime: string, endTime: string): string {
+    if (!startTime || !endTime) return '';
+    
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    
+    const startTotalMinutes = startHours * 60 + startMinutes;
+    const endTotalMinutes = endHours * 60 + endMinutes;
+    
+    const durationMinutes = endTotalMinutes - startTotalMinutes;
+    
+    if (durationMinutes <= 0) return '';
+    
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = durationMinutes % 60;
+    
+    if (hours === 0) {
+      return `${minutes} min`;
+    } else if (minutes === 0) {
+      return `${hours}h`;
+    } else {
+      return `${hours}h ${minutes}min`;
+    }
   }
 
   private getAuthHeaders(): HttpHeaders {
@@ -193,6 +335,19 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       // Combine admin courses with legacy courses
       this.clientCourses = [...this.adminCourses];
       this.isLoading = false;
+
+      for (const course of this.clientCourses) {
+        // Set default times if not defined
+        this.setDefaultTimes(course);
+        // Ensure course has a startTime and endTime
+        if (!course.startTime) {
+          course.startTime = '09:00'; // Default start time
+        }
+        if (!course.endTime) {
+          course.endTime = '09:45'; // Default end time
+        }
+      }
+
       this.cdr.detectChanges();
     });
   }
@@ -239,6 +394,42 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.error = '';
     this.successMessage = '';
     this.resetEnrollmentForm();
+  }
+
+  // Show enrollment details modal
+  showEnrollmentDetails(course: Course): void {
+    const enrollment = this.enrollments.find(e =>
+      e.courseId === course.id.toString() ||
+      e.courseId === `admin_course_${course.id}`
+    );
+    
+    if (enrollment) {
+      this.selectedEnrollment = enrollment;
+      this.showEnrollmentDetailsModal = true;
+      this.error = '';
+      this.successMessage = '';
+    }
+  }
+
+  // Close enrollment details modal
+  closeEnrollmentDetails(): void {
+    this.showEnrollmentDetailsModal = false;
+    this.selectedEnrollment = null;
+    this.error = '';
+    this.successMessage = '';
+  }
+
+  // Cancel enrollment from details modal
+  cancelEnrollmentFromDetails(): void {
+    if (!this.selectedEnrollment) {
+      return;
+    }
+
+    if (!confirm('Are you sure you want to cancel this enrollment?')) {
+      return;
+    }
+
+    this.cancelEnrollmentById(this.selectedEnrollment.id);
   }
 
   // Reset enrollment form
@@ -324,7 +515,9 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.loadEnrollments();
     this.resetEnrollmentForm();
     this.selectedCourse = null;
+    this.selectedEnrollment = null;
     this.showEnrollmentForm = false;
+    this.showEnrollmentDetailsModal = false;
     this.isLoading = false;
     this.cdr.detectChanges();
   }
@@ -459,6 +652,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         this.successMessage = 'Enrollment cancelled successfully.';
         this.loadEnrollments();
         this.loadAvailableCourses();
+        // Close the details modal if it was open
+        this.closeEnrollmentDetails();
       }
       this.isLoading = false;
       this.cdr.detectChanges();

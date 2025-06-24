@@ -354,6 +354,18 @@
         "activeCourses": "Active Courses"
     },
     "servicesManager": {
+        "endDate": "End Date",
+        "enrollmentDetails": "Enrollment Details",
+        "courseInformation": "Course Information",
+        "studentInformation": "Student Information",
+        "datesInformation": "Dates Information",
+        "courseName": "Course Name",
+        "status": "Status",
+        "cancelEnrollment": "Cancel Enrollment",
+        "close": "Close",
+        "schedule": "Schedule",
+        "startTime": "Start Time",
+        "endTime": "End Time",
         "payNow": "Pay Now",
         "title": "Course Services",
         "clientSubtitle": "Browse and enroll in available swimming courses",
