@@ -177,20 +177,6 @@
 
           <!-- Course Actions -->
           <div class="course-actions">
-            <!-- If not enrolled - show enroll button -->
-            <div *ngIf="!getEnrollmentStatus(course.id)">
-              <button *ngIf="hasAvailableSpots(course)" class="btn btn-primary" (click)="selectCourse(course)"
-                [disabled]="isLoading">
-                <span class="btn-icon">📝</span>
-                {{ 'servicesManager.enroll' | translate }}
-              </button>
-
-              <button *ngIf="!hasAvailableSpots(course)" class="btn btn-disabled" disabled>
-                <span class="btn-icon">🚫</span>
-                {{ 'servicesManager.courseFull' | translate }}
-              </button>
-            </div>
-
             <!-- If enrolled - show enrollment details button -->
             <div *ngIf="getEnrollmentStatus(course.id)">
               <button class="btn btn-info" (click)="showEnrollmentDetails(course)" [disabled]="isLoading">
