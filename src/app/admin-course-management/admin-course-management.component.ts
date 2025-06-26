@@ -30,6 +30,7 @@ interface AdminCourse {
   pricing: CoursePricing[];
   createdAt?: Date;
   isHistorical?: boolean;
+  isFixedPrice?: boolean; // New field to track pricing type
 }
 
 interface CoursePricing {
@@ -53,6 +54,9 @@ interface CourseFormData {
   endDate: string;
   professionalId: number | null;
   pricing: CoursePricing[];
+  isFixedPrice: boolean; // New field for pricing type selection
+  fixedPrice: number; // New field for fixed price value
+  fixedLessonsCount: number; // New field for fixed lessons count
 }
 
 @Component({
@@ -98,7 +102,10 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     startDate: '',
     endDate: '',
     professionalId: null,
-    pricing: this.getDefaultPricing()
+    pricing: this.getDefaultPricing(),
+    isFixedPrice: false,
+    fixedPrice: 100,
+    fixedLessonsCount: 5
   };
 
   // Filter and search
@@ -137,6 +144,56 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       { studentCount: 5, price: 100, lessonsCount: 5 },
       { studentCount: 6, price: 80, lessonsCount: 5 }
     ];
+  }
+
+  // Generate fixed pricing array when fixed price is selected
+  private generateFixedPricing(): CoursePricing[] {
+    const fixedPricing: CoursePricing[] = [];
+    for (let i = 1; i <= 6; i++) {
+      fixedPricing.push({
+        studentCount: i,
+        price: this.courseForm.fixedPrice,
+        lessonsCount: this.courseForm.fixedLessonsCount
+      });
+    }
+    return fixedPricing;
+  }
+
+  // Handle pricing type change
+  onPricingTypeChange(): void {
+    if (this.courseForm.isFixedPrice) {
+      // Switch to fixed pricing - generate fixed pricing array
+      this.courseForm.pricing = this.generateFixedPricing();
+    } else {
+      // Switch to variable pricing - use default pricing
+      this.courseForm.pricing = this.getDefaultPricing();
+    }
+    this.cdr.detectChanges();
+  }
+
+  // Handle fixed price change
+  onFixedPriceChange(): void {
+    if (this.courseForm.isFixedPrice) {
+      this.courseForm.pricing = this.generateFixedPricing();
+    }
+  }
+
+  // Handle fixed lessons count change
+  onFixedLessonsChange(): void {
+    if (this.courseForm.isFixedPrice) {
+      this.courseForm.pricing = this.generateFixedPricing();
+    }
+  }
+
+  // Check if course has fixed pricing
+  isFixedPricingCourse(course: AdminCourse): boolean {
+    if (course.isFixedPrice !== undefined) {
+      return course.isFixedPrice;
+    }
+    // Fallback: check if all pricing entries have the same price
+    if (!course.pricing || course.pricing.length === 0) return false;
+    const firstPrice = course.pricing[0].price;
+    return course.pricing.every(p => p.price === firstPrice);
   }
 
   // Load courses from API
@@ -198,9 +255,17 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.error = '';
     this.successMessage = '';
 
+    // Prepare pricing based on selected type
+    let finalPricing = this.courseForm.pricing;
+    if (this.courseForm.isFixedPrice) {
+      finalPricing = this.generateFixedPricing();
+    }
+
     const courseData = {
       ...this.courseForm,
-      maxStudents: 6 // Default max students
+      maxStudents: 6, // Default max students
+      pricing: finalPricing,
+      isFixedPrice: this.courseForm.isFixedPrice
     };
 
     console.log('Creating course with data:', courseData);
@@ -239,9 +304,17 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.error = '';
     this.successMessage = '';
 
+    // Prepare pricing based on selected type
+    let finalPricing = this.courseForm.pricing;
+    if (this.courseForm.isFixedPrice) {
+      finalPricing = this.generateFixedPricing();
+    }
+
     const courseData = {
       ...this.courseForm,
-      id: this.editingCourse.id
+      id: this.editingCourse.id,
+      pricing: finalPricing,
+      isFixedPrice: this.courseForm.isFixedPrice
     };
 
     this.http.put<AdminCourse>(`${this.apiUrl}/admin/courses/${this.editingCourse.id}`, courseData, {
@@ -333,15 +406,27 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       return false;
     }
 
-    // Validate pricing
-    for (let pricing of this.courseForm.pricing) {
-      if (pricing.price <= 0) {
-        this.error = `Price for ${pricing.studentCount} student(s) must be greater than 0.`;
+    // Validate pricing based on type
+    if (this.courseForm.isFixedPrice) {
+      if (this.courseForm.fixedPrice <= 0) {
+        this.error = 'Fixed price must be greater than 0.';
         return false;
       }
-      if (pricing.lessonsCount <= 0) {
-        this.error = `Lessons count must be greater than 0.`;
+      if (this.courseForm.fixedLessonsCount <= 0) {
+        this.error = 'Lessons count must be greater than 0.';
         return false;
+      }
+    } else {
+      // Validate variable pricing
+      for (let pricing of this.courseForm.pricing) {
+        if (pricing.price <= 0) {
+          this.error = `Price for ${pricing.studentCount} student(s) must be greater than 0.`;
+          return false;
+        }
+        if (pricing.lessonsCount <= 0) {
+          this.error = `Lessons count must be greater than 0.`;
+          return false;
+        }
       }
     }
 
@@ -351,6 +436,8 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   // Edit course
   editCourse(course: AdminCourse): void {
     this.editingCourse = course;
+    const isFixed = this.isFixedPricingCourse(course);
+    
     this.courseForm = {
       name: course.name,
       description: course.description,
@@ -358,8 +445,12 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       startDate: course.startDate,
       endDate: course.endDate,
       professionalId: course.professionalId,
-      pricing: [...course.pricing]
+      pricing: [...course.pricing],
+      isFixedPrice: isFixed,
+      fixedPrice: isFixed && course.pricing.length > 0 ? course.pricing[0].price : 100,
+      fixedLessonsCount: isFixed && course.pricing.length > 0 ? course.pricing[0].lessonsCount : 5
     };
+    
     this.showCreateForm = true;
     this.error = '';
     this.successMessage = '';
@@ -381,7 +472,10 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       startDate: '',
       endDate: '',
       professionalId: null,
-      pricing: this.getDefaultPricing()
+      pricing: this.getDefaultPricing(),
+      isFixedPrice: false,
+      fixedPrice: 100,
+      fixedLessonsCount: 5
     };
     this.error = '';
   }

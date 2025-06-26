@@ -1,4 +1,4 @@
-// src/app/services-manager/services-manager.component.ts (Updated - Integrated Enrollments)
+// src/app/services-manager/services-manager.component.ts (Updated - Fixed and Variable Pricing Support)
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -38,6 +38,7 @@ interface Course {
   availableSpots?: number;
   currentPrice?: number;
   pricing?: CoursePricing[];
+  isFixedPrice?: boolean; // New field to identify pricing type
   
   // Schedule fields
   startTime?: string;
@@ -159,6 +160,20 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       const userIdStr = user.id || localStorage.getItem('userId');
       this.userId = userIdStr ? parseInt(userIdStr, 10) : null;
     })
+  }
+
+  /**
+   * Check if course has fixed pricing
+   */
+  isFixedPricingCourse(course: Course): boolean {
+    if (course.isFixedPrice !== undefined) {
+      return course.isFixedPrice;
+    }
+    // Fallback: check if all pricing entries have the same price and lessons
+    if (!course.pricing || course.pricing.length === 0) return false;
+    const firstPrice = course.pricing[0].price;
+    const firstLessons = course.pricing[0].lessonsCount;
+    return course.pricing.every(p => p.price === firstPrice && p.lessonsCount === firstLessons);
   }
 
   /**
@@ -561,17 +576,26 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return status.charAt(0).toUpperCase() + status.slice(1);
   }
 
-  // Get course price display
+  // Get course price display - Updated for fixed/variable pricing
   getCoursePrice(course: Course): string {
     if (course.type === 'admin_course') {
-      // For admin courses, show current price based on enrollment
-      if (course.currentPrice !== undefined) {
-        return `€${course.currentPrice}`;
-      }
-      // Fallback to lowest price in pricing structure
-      if (course.pricing && course.pricing.length > 0) {
-        const minPrice = Math.min(...course.pricing.map(p => p.price));
-        return `from €${minPrice}`;
+      // Check if it's fixed pricing
+      if (this.isFixedPricingCourse(course)) {
+        // Fixed pricing - show single price
+        if (course.pricing && course.pricing.length > 0) {
+          const pricing = course.pricing[0];
+          return `€${pricing.price}`;
+        }
+      } else {
+        // Variable pricing - show range or current price
+        if (course.currentPrice !== undefined) {
+          return `€${course.currentPrice}`;
+        }
+        // Fallback to lowest price in pricing structure
+        if (course.pricing && course.pricing.length > 0) {
+          const minPrice = Math.min(...course.pricing.map(p => p.price));
+          return `from €${minPrice}`;
+        }
       }
     }
     return `€${course.price}`;
@@ -666,15 +690,23 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.successMessage = '';
   }
 
-  // Get pricing details for admin course
+  // Get pricing details for admin course - Updated for fixed/variable pricing
   getPricingDetails(course: Course): string {
     if (course.type === 'admin_course' && course.pricing && course.pricing.length > 0) {
-      const currentStudents = course.currentStudents || 0;
-      const nextEnrollmentCount = currentStudents + 1;
+      // Check if it's fixed pricing
+      if (this.isFixedPricingCourse(course)) {
+        // Fixed pricing - return simple description
+        const pricing = course.pricing[0];
+        return `€${pricing.price} for ${pricing.lessonsCount} lessons (same for all student counts)`;
+      } else {
+        // Variable pricing - return current enrollment pricing
+        const currentStudents = course.currentStudents || 0;
+        const nextEnrollmentCount = currentStudents + 1;
 
-      const applicablePricing = course.pricing.find(p => p.studentCount === nextEnrollmentCount);
-      if (applicablePricing) {
-        return `€${applicablePricing.price} for ${applicablePricing.lessonsCount} lessons (${nextEnrollmentCount} student${nextEnrollmentCount > 1 ? 's' : ''})`;
+        const applicablePricing = course.pricing.find(p => p.studentCount === nextEnrollmentCount);
+        if (applicablePricing) {
+          return `€${applicablePricing.price} for ${applicablePricing.lessonsCount} lessons (${nextEnrollmentCount} student${nextEnrollmentCount > 1 ? 's' : ''})`;
+        }
       }
     }
     return '';

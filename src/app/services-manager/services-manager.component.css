@@ -1,4 +1,4 @@
-/* src/app/services-manager/services-manager.component.css (Updated - Integrated Enrollments) */
+/* src/app/services-manager/services-manager.component.css (Updated - Fixed and Variable Pricing Support) */
 
 .services-manager-container {
   max-width: 1400px;
@@ -269,18 +269,77 @@
   font-size: 0.95rem;
 }
 
+/* Pricing Type Badge */
+.pricing-type-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 15px;
+}
+
+.fixed-pricing {
+  background: #e8f5e8;
+  color: #2e7d32;
+  border: 1px solid #4caf50;
+}
+
+.variable-pricing {
+  background: #fff3e0;
+  color: #f57c00;
+  border: 1px solid #ff9800;
+}
+
+/* Fixed Pricing Display */
+.fixed-pricing-display {
+  background: #f0f8ff;
+  border: 2px solid #3498db;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+}
+
+.fixed-price-main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.price-label {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.price-value {
+  font-weight: 700;
+  color: #3498db;
+  font-size: 1.5rem;
+}
+
+.fixed-price-details {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Variable Pricing Display */
+.variable-pricing-display {
+  background: #fff8f0;
+  border: 2px solid #ff9800;
+  border-radius: 8px;
+  padding: 20px;
+}
+
 /* Course Pricing */
 .course-pricing {
   padding: 20px;
   background: #f8f9fa;
   border-bottom: 1px solid #f1f3f4;
-}
-
-.price-main {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #2c3e50;
-  margin-bottom: 10px;
 }
 
 .pricing-details {
@@ -518,10 +577,41 @@
   line-height: 1.5;
 }
 
-.course-price {
-  font-size: 1.3rem;
+/* Modal Pricing Display */
+.course-price-modal {
+  margin: 15px 0;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.fixed-price-modal {
+  background: linear-gradient(135deg, #e8f5e8, #f0fff0);
+  border: 2px solid #4caf50;
+}
+
+.variable-price-modal {
+  background: linear-gradient(135deg, #fff3e0, #fffbf0);
+  border: 2px solid #ff9800;
+}
+
+.price-main {
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #3498db;
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.price-details {
+  font-size: 1rem;
+  color: #6c757d;
+  margin-bottom: 8px;
+}
+
+.price-note {
+  font-size: 0.85rem;
+  color: #6c757d;
+  font-style: italic;
 }
 
 /* Enrollment Details Content */
@@ -846,6 +936,17 @@
   .detail-value {
     text-align: left;
   }
+
+  .fixed-price-main {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .pricing-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -869,12 +970,6 @@
 
   .course-title {
     padding-right: 0;
-  }
-
-  .pricing-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
   }
 
   .schedule-section {
@@ -906,5 +1001,22 @@
   .btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .fixed-pricing-display,
+  .variable-pricing-display {
+    padding: 15px;
+  }
+
+  .price-value {
+    font-size: 1.3rem;
+  }
+
+  .course-price-modal {
+    padding: 12px;
+  }
+
+  .price-main {
+    font-size: 1.3rem;
   }
 }

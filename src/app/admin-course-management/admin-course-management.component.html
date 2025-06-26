@@ -116,8 +116,61 @@
           </div>
         </div>
 
-        <!-- Pricing Structure -->
+        <!-- Pricing Type Selection -->
         <div class="form-section">
+          <h3 class="section-title">{{ 'adminCourseManagement.pricingType' | translate }}</h3>
+          <p class="section-subtitle">{{ 'adminCourseManagement.pricingTypeSubtitle' | translate }}</p>
+
+          <div class="pricing-type-selector">
+            <div class="pricing-option">
+              <input type="radio" id="variablePricing" name="pricingType" [(ngModel)]="courseForm.isFixedPrice" 
+                     [value]="false" (change)="onPricingTypeChange()">
+              <label for="variablePricing" class="pricing-option-label">
+                <span class="option-title">{{ 'adminCourseManagement.variablePricing' | translate }}</span>
+                <span class="option-description">{{ 'adminCourseManagement.variablePricingDesc' | translate }}</span>
+              </label>
+            </div>
+
+            <div class="pricing-option">
+              <input type="radio" id="fixedPricing" name="pricingType" [(ngModel)]="courseForm.isFixedPrice" 
+                     [value]="true" (change)="onPricingTypeChange()">
+              <label for="fixedPricing" class="pricing-option-label">
+                <span class="option-title">{{ 'adminCourseManagement.fixedPricing' | translate }}</span>
+                <span class="option-description">{{ 'adminCourseManagement.fixedPricingDesc' | translate }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fixed Pricing Configuration -->
+        <div *ngIf="courseForm.isFixedPrice" class="form-section">
+          <h3 class="section-title">{{ 'adminCourseManagement.fixedPricingConfig' | translate }}</h3>
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="fixedPrice">{{ 'adminCourseManagement.price' | translate }} (€) *</label>
+              <input type="number" id="fixedPrice" [(ngModel)]="courseForm.fixedPrice" name="fixedPrice" 
+                     min="0" step="0.01" required class="form-control" (ngModelChange)="onFixedPriceChange()">
+            </div>
+
+            <div class="form-group">
+              <label for="fixedLessonsCount">{{ 'adminCourseManagement.lessons' | translate }} *</label>
+              <input type="number" id="fixedLessonsCount" [(ngModel)]="courseForm.fixedLessonsCount" 
+                     name="fixedLessonsCount" min="1" required class="form-control" (ngModelChange)="onFixedLessonsChange()">
+            </div>
+          </div>
+
+          <div class="fixed-pricing-preview">
+            <p class="preview-text">
+              {{ 'adminCourseManagement.fixedPricingPreview' | translate }}: 
+              <strong>€{{ courseForm.fixedPrice }} ({{ courseForm.fixedLessonsCount }} {{ 'adminCourseManagement.lessons' | translate }})</strong>
+              {{ 'adminCourseManagement.forAllStudentCounts' | translate }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Variable Pricing Structure -->
+        <div *ngIf="!courseForm.isFixedPrice" class="form-section">
           <h3 class="section-title">{{ 'adminCourseManagement.pricingStructure' | translate }}</h3>
           <p class="section-subtitle">{{ 'adminCourseManagement.pricingSubtitle' | translate }}</p>
 
@@ -240,6 +293,14 @@
               <span class="detail-value">{{ course.currentStudents }}/{{ course.maxStudents }} {{
                 'adminCourseManagement.students' | translate }}</span>
             </div>
+            <div class="detail-row">
+              <span class="detail-label">{{ 'adminCourseManagement.pricingType' | translate }}:</span>
+              <span class="detail-value">
+                <span class="pricing-type-badge" [ngClass]="isFixedPricingCourse(course) ? 'fixed-pricing' : 'variable-pricing'">
+                  {{ isFixedPricingCourse(course) ? ('adminCourseManagement.fixedPricing' | translate) : ('adminCourseManagement.variablePricing' | translate) }}
+                </span>
+              </span>
+            </div>
           </div>
 
           <!-- Course Description -->
@@ -250,7 +311,18 @@
           <!-- Pricing Preview -->
           <div class="pricing-preview">
             <h4>{{ 'adminCourseManagement.currentPricing' | translate }}</h4>
-            <div class="pricing-summary">
+            
+            <!-- Fixed Pricing Display -->
+            <div *ngIf="isFixedPricingCourse(course)" class="fixed-pricing-display">
+              <div class="fixed-price-info">
+                <span class="price-label">{{ 'adminCourseManagement.price' | translate }}:</span>
+                <span class="price-value">€{{ course.pricing[0].price }} ({{ course.pricing[0].lessonsCount }} {{ 'adminCourseManagement.lessons' | translate }})</span>
+              </div>
+              <div class="fixed-price-note">{{ 'adminCourseManagement.sameForAllStudents' | translate }}</div>
+            </div>
+
+            <!-- Variable Pricing Display -->
+            <div *ngIf="!isFixedPricingCourse(course)" class="pricing-summary">
               <div *ngFor="let pricing of course.pricing" class="pricing-row">
                 <span class="pricing-students">{{ pricing.studentCount }}{{ pricing.studentCount === 1 ? ' student' : '
                   students' }}</span>

@@ -1,4 +1,4 @@
-<!-- src/app/services-manager/services-manager.component.html (Updated - Integrated Enrollments) -->
+<!-- src/app/services-manager/services-manager.component.html (Updated - Fixed and Variable Pricing Support) -->
 <app-header></app-header>
 
 <div class="services-manager-container">
@@ -156,19 +156,41 @@
             <p>{{ getCourseDescription(course) }}</p>
           </div>
 
-          <!-- Pricing Information -->
+          <!-- Pricing Information - Updated for Fixed/Variable Pricing -->
           <div class="course-pricing">
             <div *ngIf="course.pricing && course.pricing.length > 0" class="pricing-details">
-              <div class="pricing-note">{{ getPricingDetails(course) }}</div>
-              <div class="pricing-structure">
-                <h4>{{ 'servicesManager.pricingStructure' | translate }}</h4>
-                <div class="pricing-list">
-                  <div *ngFor="let pricing of course.pricing" class="pricing-item">
-                    <span class="pricing-students">{{ pricing.studentCount }}{{ pricing.studentCount === 1 ? (' ' +
-                      ('servicesManager.student' | translate)) : (' ' + ('servicesManager.students' | translate))
-                      }}</span>
-                    <span class="pricing-amount">€{{ pricing.price }} ({{ pricing.lessonsCount }} {{
-                      'servicesManager.lessons' | translate }})</span>
+
+              <!-- Fixed Pricing Display -->
+              <div *ngIf="isFixedPricingCourse(course)" class="fixed-pricing-display">
+                <div class="pricing-type-badge fixed-pricing">
+                  {{ 'servicesManager.fixedPricing' | translate }}
+                </div>
+                <div class="fixed-price-main">
+                  <span class="price-label">{{ 'servicesManager.price' | translate }}:</span>
+                  <span class="price-value">€{{ course.pricing[0].price }}</span>
+                </div>
+                <div class="fixed-price-details">
+                  {{ course.pricing[0].lessonsCount }} {{ 'servicesManager.lessons' | translate }}
+                  - {{ 'servicesManager.sameForAllStudents' | translate }}
+                </div>
+              </div>
+
+              <!-- Variable Pricing Display -->
+              <div *ngIf="!isFixedPricingCourse(course)" class="variable-pricing-display">
+                <div class="pricing-type-badge variable-pricing">
+                  {{ 'servicesManager.variablePricing' | translate }}
+                </div>
+                <div class="pricing-note">{{ getPricingDetails(course) }}</div>
+                <div class="pricing-structure">
+                  <h4>{{ 'servicesManager.pricingStructure' | translate }}</h4>
+                  <div class="pricing-list">
+                    <div *ngFor="let pricing of course.pricing" class="pricing-item">
+                      <span class="pricing-students">{{ pricing.studentCount }}{{ pricing.studentCount === 1 ? (' ' +
+                        ('servicesManager.student' | translate)) : (' ' + ('servicesManager.students' | translate))
+                        }}</span>
+                      <span class="pricing-amount">€{{ pricing.price }} ({{ pricing.lessonsCount }} {{
+                        'servicesManager.lessons' | translate }})</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -195,7 +217,6 @@
       </div>
     </div>
   </div>
-
   <!-- Enrollment Form Modal -->
   <div *ngIf="showEnrollmentForm" class="modal-overlay" (click)="cancelEnrollment()">
     <div class="modal-content" (click)="$event.stopPropagation()">
@@ -223,8 +244,19 @@
               'servicesManager.spotsLeft' | translate }}
             </div>
           </div>
-          <div class="course-price">{{ getCoursePrice(selectedCourse) }}</div>
-          <div *ngIf="getPricingDetails(selectedCourse)" class="pricing-note">{{ getPricingDetails(selectedCourse) }}
+
+          <!-- Pricing Display in Modal - Updated for Fixed/Variable -->
+          <div class="course-price-modal">
+            <div *ngIf="isFixedPricingCourse(selectedCourse)" class="fixed-price-modal">
+              <div class="price-main">€{{ selectedCourse.pricing![0].price }}</div>
+              <div class="price-details">{{ selectedCourse.pricing![0].lessonsCount }} {{ 'servicesManager.lessons' |
+                translate }}</div>
+              <div class="price-note">{{ 'servicesManager.fixedPriceNote' | translate }}</div>
+            </div>
+            <div *ngIf="!isFixedPricingCourse(selectedCourse)" class="variable-price-modal">
+              <div class="price-main">{{ getCoursePrice(selectedCourse) }}</div>
+              <div class="price-note">{{ getPricingDetails(selectedCourse) }}</div>
+            </div>
           </div>
         </div>
 

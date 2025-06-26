@@ -304,6 +304,13 @@
         "saturday": "Sat"
     },
     "adminCourseManagement": {
+        "fixedPricing": "Fixed Pricing",
+        "fixedPricingConfig": "Fixed Pricing: Set a fixed price for the course",
+        "variablePricing": "Variable Pricing",
+        "fixedPricingPreview": "Fixed Pricing: Set a fixed price for the course",
+        "forAllStudentCounts": "for all group sizes (1-6 students)",
+        "pricingTypeSubtitle": "Choose between fixed or variable pricing",
+        "pricingType": "Pricing Type",
         "title": "Course Management",
         "subtitle": "Create, manage, and track swimming courses for clients",
         "accessDenied": "Access Denied",
