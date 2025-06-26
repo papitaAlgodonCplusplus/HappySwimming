@@ -62,6 +62,8 @@
         "endTime": "Hora de Fin",
         "payNow": "Pagar Ahora",
         "title": "Servicios de Cursos",
+        "variablePricing": "Precio Variable",
+        "fixedPricing": "Precio Fijo",
         "endDate": "Fecha de Fin",
         "clientSubtitle": "Consulta e inscríbete en los cursos de natación disponibles",
         "professionalSubtitle": "Consulta e inscríbete en cursos de formación profesional",

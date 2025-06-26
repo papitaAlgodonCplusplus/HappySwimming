@@ -63,6 +63,8 @@
         "studentInformation": "Informações do Estudante",
         "datesInformation": "Informações de Datas",
         "courseName": "Nome do Curso",
+        "variablePricing": "Preço Variável",
+        "fixedPricing": "Preço Fixo",
         "status": "Status",
         "cancelEnrollment": "Cancelar Inscrição",
         "close": "Fechar",

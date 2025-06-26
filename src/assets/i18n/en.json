@@ -367,6 +367,8 @@
         "studentInformation": "Student Information",
         "datesInformation": "Dates Information",
         "courseName": "Course Name",
+        "variablePricing": "Variable Pricing",
+        "fixedPricing": "Fixed Pricing",
         "status": "Status",
         "cancelEnrollment": "Cancel Enrollment",
         "close": "Close",
