@@ -1020,3 +1020,370 @@
     font-size: 1.3rem;
   }
 }
+
+/* Additional CSS for updated Services Manager Component */
+/* Add these styles to the existing services-manager.component.css */
+
+/* Multiple Pricing Styles */
+.single-pricing-display {
+  background: #e8f5e8;
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.multiple-pricing-display {
+  background: #fff3e0;
+  border: 2px solid #ff9800;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.pricing-type-badge.single-pricing {
+  background: #e8f5e8;
+  color: #2e7d32;
+  border: 1px solid #4caf50;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: inline-block;
+}
+
+.pricing-type-badge.multiple-pricing {
+  background: #fff3e0;
+  color: #f57c00;
+  border: 1px solid #ff9800;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: inline-block;
+}
+
+.single-price-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.single-price-main .price-value {
+  font-weight: 700;
+  color: #2e7d32;
+  font-size: 1.5rem;
+}
+
+.single-price-main .price-details {
+  color: #388e3c;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.pricing-structure h4 {
+  font-size: 1rem;
+  color: #2c3e50;
+  margin: 0 0 10px 0;
+}
+
+.pricing-list {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.pricing-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  font-size: 0.85rem;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.pricing-students {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.pricing-lessons {
+  color: #6c757d;
+  font-weight: 500;
+  text-align: center;
+}
+
+.pricing-amount {
+  font-weight: 600;
+  color: #2c3e50;
+  text-align: right;
+}
+
+.pricing-range-display {
+  text-align: center;
+  margin-top: 10px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.price-range {
+  font-weight: 600;
+  color: #f57c00;
+  font-size: 0.9rem;
+}
+
+/* Schedule Display (View Only) */
+.schedule-section-readonly .info-row {
+  align-items: flex-start;
+}
+
+.schedule-display-readonly {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.schedule-time-readonly {
+  font-weight: 600;
+  color: #2c3e50;
+  background: #f8f9fa;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+  font-size: 0.9rem;
+}
+
+.schedule-time-readonly::before {
+  content: "🕐";
+  margin-right: 5px;
+}
+
+/* Pricing Selection in Modal */
+.pricing-selection-section {
+  background: #f8f9fa;
+  border: 2px solid #3498db;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.pricing-selection-section h4 {
+  color: #2c3e50;
+  margin: 0 0 15px 0;
+  font-size: 1.1rem;
+}
+
+.pricing-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pricing-option-selector {
+  position: relative;
+}
+
+.pricing-option-selector input[type="radio"] {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+.pricing-option-label {
+  display: block;
+  cursor: pointer;
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 15px 15px 15px 45px;
+  transition: all 0.3s ease;
+}
+
+.pricing-option-label:hover {
+  border-color: #3498db;
+  background: #f0f8ff;
+}
+
+.pricing-option-selector input[type="radio"]:checked + .pricing-option-label {
+  border-color: #3498db;
+  background: linear-gradient(135deg, #e3f2fd, #f0f8ff);
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
+}
+
+.pricing-option-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.pricing-option-students {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.pricing-option-lessons {
+  font-weight: 500;
+  color: #6c757d;
+  text-align: center;
+}
+
+.pricing-option-price {
+  font-weight: 700;
+  color: #3498db;
+  font-size: 1.1rem;
+  text-align: right;
+}
+
+.selected-pricing-display {
+  background: #e8f5e8;
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 15px;
+  text-align: center;
+}
+
+.selected-pricing-display p {
+  margin: 0;
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+/* Single Pricing Modal Display */
+.single-pricing-modal {
+  background: #e8f5e8;
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.single-pricing-modal .price-main {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #2e7d32;
+  margin-bottom: 8px;
+}
+
+.single-pricing-modal .price-details {
+  font-size: 1rem;
+  color: #388e3c;
+  font-weight: 500;
+}
+
+/* Enhanced Course Card Styles */
+.course-card .multiple-pricing-display .pricing-list {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.course-card .multiple-pricing-display .pricing-item {
+  font-size: 0.8rem;
+  padding: 4px 6px;
+}
+
+/* Form Enhancements */
+.form-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.enrollment-form .form-control:invalid {
+  border-color: #e74c3c;
+}
+
+.enrollment-form .form-control:valid {
+  border-color: #27ae60;
+}
+
+/* Enrollment Details Enhancements */
+.detail-item .detail-value {
+  word-wrap: break-word;
+}
+
+/* Responsive Enhancements for Multiple Pricing */
+@media (max-width: 768px) {
+  .pricing-option-content {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    text-align: center;
+  }
+
+  .pricing-option-students,
+  .pricing-option-lessons,
+  .pricing-option-price {
+    text-align: center;
+  }
+
+  .pricing-item {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 2px;
+  }
+
+  .pricing-students,
+  .pricing-lessons,
+  .pricing-amount {
+    text-align: center;
+  }
+
+  .single-price-main {
+    align-items: center;
+  }
+
+  .pricing-selection-section {
+    padding: 15px;
+  }
+
+  .pricing-option-label {
+    padding: 12px 12px 12px 40px;
+  }
+
+  .single-pricing-modal .price-main {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .pricing-selection-section {
+    padding: 10px;
+  }
+
+  .pricing-option-label {
+    padding: 10px 10px 10px 35px;
+  }
+
+  .pricing-options-list {
+    gap: 8px;
+  }
+
+  .single-pricing-modal {
+    padding: 15px;
+  }
+
+  .single-pricing-modal .price-main {
+    font-size: 1.3rem;
+  }
+
+  .multiple-pricing-display {
+    padding: 12px;
+  }
+
+  .single-pricing-display {
+    padding: 12px;
+  }
+}

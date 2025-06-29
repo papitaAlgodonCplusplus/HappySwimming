@@ -1,4 +1,4 @@
-<!-- src/app/services-manager/services-manager.component.html (Updated - Fixed and Variable Pricing Support) -->
+<!-- src/app/services-manager/services-manager.component.html (Updated) -->
 <app-header></app-header>
 
 <div class="services-manager-container">
@@ -92,39 +92,15 @@
                 }}</span>
             </div>
 
-            <!-- Schedule Section -->
-            <div class="schedule-section">
+            <!-- Schedule Section - VIEW ONLY for clients -->
+            <div class="schedule-section-readonly">
               <div class="info-row">
                 <span class="info-label">{{ 'servicesManager.schedule' | translate }}:</span>
-              </div>
-              <div class="schedule-controls">
-                <div class="schedule-time-group">
-                  <label class="schedule-label">{{ 'servicesManager.startTime' | translate }}:</label>
-                  <select class="schedule-select" [(ngModel)]="course.startTime"
-                    (change)="onScheduleChange(course.id, 'startTime', course.startTime ?? '')">
-                    <option value="">{{ 'servicesManager.selectTime' | translate }}</option>
-                    <option *ngFor="let time of getTimeOptions()" [value]="time.value"
-                      [selected]="!course.startTime && time.value === '9:00'">
-                      {{ time.label }}
-                    </option>
-                  </select>
-                </div>
-                <div class="schedule-time-group">
-                  <label class="schedule-label">{{ 'servicesManager.endTime' | translate }}:</label>
-                  <select class="schedule-select" [(ngModel)]="course.endTime"
-                    (change)="onScheduleChange(course.id, 'endTime', course.endTime ?? '')">
-                    <option value="">{{ 'servicesManager.selectTime' | translate }}</option>
-                    <option *ngFor="let time of getTimeOptions()" [value]="time.value"
-                      [selected]="!course.endTime && time.value === '10:00'">
-                      {{ time.label }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-              <!-- Display selected schedule -->
-              <div *ngIf="course.startTime && course.endTime" class="schedule-display">
-                <span class="schedule-time">{{ formatTimeDisplay(course.startTime) }} - {{
-                  formatTimeDisplay(course.endTime) }}</span>
+                <span class="info-value schedule-display-readonly">
+                  <span class="schedule-time-readonly">
+                    {{ getScheduleDisplay(course) }}
+                  </span>
+                </span>
               </div>
             </div>
 
@@ -137,7 +113,7 @@
             <!-- Enrollment info -->
             <div class="info-row">
               <span class="info-label">{{ 'servicesManager.enrollment' | translate }}:</span>
-              <span class="info-value">{{ course.currentStudents || 0 }}/{{ course.maxStudents || 6 }} {{
+              <span class="info-value">{{ course.currentStudents || 0 }}/{{ course.maxStudents || 10 }} {{
                 'servicesManager.students' | translate }}</span>
             </div>
 
@@ -156,42 +132,42 @@
             <p>{{ getCourseDescription(course) }}</p>
           </div>
 
-          <!-- Pricing Information - Updated for Fixed/Variable Pricing -->
+          <!-- Multiple Pricing Information -->
           <div class="course-pricing">
             <div *ngIf="course.pricing && course.pricing.length > 0" class="pricing-details">
 
-              <!-- Fixed Pricing Display -->
-              <div *ngIf="isFixedPricingCourse(course)" class="fixed-pricing-display">
-                <div class="pricing-type-badge fixed-pricing">
-                  {{ 'servicesManager.fixedPricing' | translate }}
+              <!-- Single Pricing Option -->
+              <div *ngIf="course.pricing.length === 1" class="single-pricing-display">
+                <div class="pricing-type-badge single-pricing">
+                  {{'Single Pricing Option' | translate }} 
                 </div>
-                <div class="fixed-price-main">
-                  <span class="price-label">{{ 'servicesManager.price' | translate }}:</span>
+                <div class="single-price-main">
                   <span class="price-value">€{{ course.pricing[0].price }}</span>
-                </div>
-                <div class="fixed-price-details">
-                  {{ course.pricing[0].lessonsCount }} {{ 'servicesManager.lessons' | translate }}
-                  - {{ 'servicesManager.sameForAllStudents' | translate }}
+                  <span class="price-details">
+                    {{ course.pricing[0].studentCount }} {{ course.pricing[0].studentCount === 1 ? 'student' : 'students' }} - 
+                    {{ course.pricing[0].lessonsCount }} {{ course.pricing[0].lessonsCount === 1 ? 'lesson' : 'lessons' }}
+                  </span>
                 </div>
               </div>
 
-              <!-- Variable Pricing Display -->
-              <div *ngIf="!isFixedPricingCourse(course)" class="variable-pricing-display">
-                <div class="pricing-type-badge variable-pricing">
-                  {{ 'servicesManager.variablePricing' | translate }}
+              <!-- Multiple Pricing Options -->
+              <div *ngIf="course.pricing.length > 1" class="multiple-pricing-display">
+                <div class="pricing-type-badge multiple-pricing">
+                  Multiple Pricing Options
                 </div>
-                <div class="pricing-note">{{ getPricingDetails(course) }}</div>
+                <div class="pricing-note">{{ course.pricing.length }} pricing options available - choose during enrollment</div>
                 <div class="pricing-structure">
-                  <h4>{{ 'servicesManager.pricingStructure' | translate }}</h4>
+                  <h4>Available Options:</h4>
                   <div class="pricing-list">
                     <div *ngFor="let pricing of course.pricing" class="pricing-item">
-                      <span class="pricing-students">{{ pricing.studentCount }}{{ pricing.studentCount === 1 ? (' ' +
-                        ('servicesManager.student' | translate)) : (' ' + ('servicesManager.students' | translate))
-                        }}</span>
-                      <span class="pricing-amount">€{{ pricing.price }} ({{ pricing.lessonsCount }} {{
-                        'servicesManager.lessons' | translate }})</span>
+                      <span class="pricing-students">{{ pricing.studentCount }}{{ pricing.studentCount === 1 ? ' student' : ' students' }}</span>
+                      <span class="pricing-lessons">{{ pricing.lessonsCount }} {{ pricing.lessonsCount === 1 ? 'lesson' : 'lessons' }}</span>
+                      <span class="pricing-amount">€{{ pricing.price }}</span>
                     </div>
                   </div>
+                </div>
+                <div class="pricing-range-display">
+                  <span class="price-range">Price Range: {{ getCoursePrice(course) }}</span>
                 </div>
               </div>
             </div>
@@ -217,6 +193,7 @@
       </div>
     </div>
   </div>
+
   <!-- Enrollment Form Modal -->
   <div *ngIf="showEnrollmentForm" class="modal-overlay" (click)="cancelEnrollment()">
     <div class="modal-content" (click)="$event.stopPropagation()">
@@ -237,6 +214,9 @@
               <strong>{{ 'servicesManager.professional' | translate }}:</strong> {{ selectedCourse.professionalName }}
             </div>
             <div class="modal-detail">
+              <strong>{{ 'servicesManager.schedule' | translate }}:</strong> {{ getScheduleDisplay(selectedCourse) }}
+            </div>
+            <div class="modal-detail">
               <strong>{{ 'servicesManager.duration' | translate }}:</strong> {{ getCourseDuration(selectedCourse) }}
             </div>
             <div class="modal-detail">
@@ -245,18 +225,37 @@
             </div>
           </div>
 
-          <!-- Pricing Display in Modal - Updated for Fixed/Variable -->
-          <div class="course-price-modal">
-            <div *ngIf="isFixedPricingCourse(selectedCourse)" class="fixed-price-modal">
-              <div class="price-main">€{{ selectedCourse.pricing![0].price }}</div>
-              <div class="price-details">{{ selectedCourse.pricing![0].lessonsCount }} {{ 'servicesManager.lessons' |
-                translate }}</div>
-              <div class="price-note">{{ 'servicesManager.fixedPriceNote' | translate }}</div>
+          <!-- Pricing Selection for Multiple Options -->
+          <div *ngIf="hasMultiplePricingOptions(selectedCourse)" class="pricing-selection-section">
+            <h4>Select Pricing Option</h4>
+            <div class="pricing-options-list">
+              <div *ngFor="let pricing of availablePricingOptions; let i = index" class="pricing-option-selector">
+                <input type="radio" 
+                       [id]="'pricing-' + i" 
+                       [name]="'pricing-selection'" 
+                       [value]="i"
+                       [(ngModel)]="selectedPricingIndex"
+                       (change)="onPricingSelectionChange(i)">
+                <label [for]="'pricing-' + i" class="pricing-option-label">
+                  <div class="pricing-option-content">
+                    <span class="pricing-option-students">{{ pricing.studentCount }} {{ pricing.studentCount === 1 ? 'student' : 'students' }}</span>
+                    <span class="pricing-option-lessons">{{ pricing.lessonsCount }} {{ pricing.lessonsCount === 1 ? 'lesson' : 'lessons' }}</span>
+                    <span class="pricing-option-price">€{{ pricing.price }}</span>
+                  </div>
+                </label>
+              </div>
             </div>
-            <div *ngIf="!isFixedPricingCourse(selectedCourse)" class="variable-price-modal">
-              <div class="price-main">{{ getCoursePrice(selectedCourse) }}</div>
-              <div class="price-note">{{ getPricingDetails(selectedCourse) }}</div>
+            
+            <!-- Selected Pricing Display -->
+            <div *ngIf="selectedPricingIndex !== null" class="selected-pricing-display">
+              <p><strong>Selected:</strong> {{ getSelectedPricingInfo() }}</p>
             </div>
+          </div>
+
+          <!-- Single Pricing Display -->
+          <div *ngIf="!hasMultiplePricingOptions(selectedCourse) && selectedCourse.pricing && selectedCourse.pricing.length > 0" class="single-pricing-modal">
+            <div class="price-main">€{{ selectedCourse.pricing[0].price }}</div>
+            <div class="price-details">{{ selectedCourse.pricing[0].lessonsCount }} {{ 'servicesManager.lessons' | translate }} for {{ selectedCourse.pricing[0].studentCount }} {{ selectedCourse.pricing[0].studentCount === 1 ? 'student' : 'students' }}</div>
           </div>
         </div>
 
@@ -303,7 +302,8 @@
             <button type="button" class="btn btn-secondary" (click)="cancelEnrollment()" [disabled]="isLoading">
               {{ 'servicesManager.cancel' | translate }}
             </button>
-            <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+            <button type="submit" class="btn btn-primary" 
+                    [disabled]="isLoading || (hasMultiplePricingOptions(selectedCourse!) && selectedPricingIndex === null)">
               <span *ngIf="isLoading" class="loading-spinner"></span>
               {{ 'servicesManager.confirmEnrollment' | translate }}
             </button>
@@ -344,6 +344,14 @@
               <div class="detail-item">
                 <span class="detail-label">{{ 'servicesManager.price' | translate }}:</span>
                 <span class="detail-value">€{{ selectedEnrollment.price }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedEnrollment.selectedStudentCount">
+                <span class="detail-label">Selected Students:</span>
+                <span class="detail-value">{{ selectedEnrollment.selectedStudentCount }}</span>
+              </div>
+              <div class="detail-item" *ngIf="selectedEnrollment.selectedLessonsCount">
+                <span class="detail-label">Selected Lessons:</span>
+                <span class="detail-value">{{ selectedEnrollment.selectedLessonsCount }}</span>
               </div>
             </div>
           </div>

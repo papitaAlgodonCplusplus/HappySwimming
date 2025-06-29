@@ -1,4 +1,5 @@
 {
+    "Single Pricing Option": "Single Pricing Option",
     "DT Director Técnico": "Technical Director",
     "PR Profesor": "Teacher",
     "assignProfessional": {
@@ -304,10 +305,12 @@
         "saturday": "Sat"
     },
     "adminCourseManagement": {
-        "fixedPricing": "Fixed Pricing",
-        "fixedPricingConfig": "Fixed Pricing: Set a fixed price for the course",
-        "variablePricing": "Variable Pricing",
-        "fixedPricingPreview": "Fixed Pricing: Set a fixed price for the course",
+        "startTime": "Start Time",
+        "endTime": "End Time",
+        "fixedPricing": "One person private pricing",
+        "fixedPricingConfig": "One person private pricing: Set a fixed price for the course",
+        "variablePricing": "Group Pricing",
+        "fixedPricingPreview": "One person private pricing: Set a fixed price for the course",
         "forAllStudentCounts": "for all group sizes (1-6 students)",
         "pricingTypeSubtitle": "Choose between fixed or variable pricing",
         "pricingType": "Pricing Type",
@@ -358,7 +361,9 @@
         "edit": "Edit",
         "delete": "Archive",
         "totalCourses": "Total Courses",
-        "activeCourses": "Active Courses"
+        "activeCourses": "Active Courses",
+        "schedulePreview": "Schedule Preview",
+        "selectTime": "Select Time"
     },
     "servicesManager": {
         "endDate": "End Date",
@@ -367,8 +372,8 @@
         "studentInformation": "Student Information",
         "datesInformation": "Dates Information",
         "courseName": "Course Name",
-        "variablePricing": "Variable Pricing",
-        "fixedPricing": "Fixed Pricing",
+        "variablePricing": "Group Pricing",
+        "fixedPricing": "One person private pricing",
         "status": "Status",
         "cancelEnrollment": "Cancel Enrollment",
         "close": "Close",

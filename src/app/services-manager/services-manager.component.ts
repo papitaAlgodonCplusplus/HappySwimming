@@ -1,4 +1,4 @@
-// src/app/services-manager/services-manager.component.ts (Updated - Fixed and Variable Pricing Support)
+// src/app/services-manager/services-manager.component.ts (Updated)
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,7 +13,7 @@ import { AuthService } from '../services/auth.service';
 import { HeaderComponent } from '../header/header.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 
-// Updated interfaces
+// Updated interfaces for flexible pricing
 interface Course {
   id: string | number;
   name: string;
@@ -38,17 +38,16 @@ interface Course {
   availableSpots?: number;
   currentPrice?: number;
   pricing?: CoursePricing[];
-  isFixedPrice?: boolean; // New field to identify pricing type
   
-  // Schedule fields
+  // Schedule fields - VIEW ONLY for clients
   startTime?: string;
   endTime?: string;
 }
 
 interface CoursePricing {
   studentCount: number;
-  price: number;
   lessonsCount: number;
+  price: number;
 }
 
 interface Enrollment {
@@ -72,6 +71,8 @@ interface Enrollment {
   clientName?: string;
   isOutsourcing?: boolean;
   notes?: string;
+  selectedLessonsCount?: number;
+  selectedStudentCount?: number;
 }
 
 interface EnrollmentRequest {
@@ -83,6 +84,7 @@ interface EnrollmentRequest {
   motherEmail?: string;
   motherPhone?: string;
   motherContact?: string;
+  selectedPricingIndex?: number;
 }
 
 @Component({
@@ -96,13 +98,11 @@ interface EnrollmentRequest {
 })
 export class ServicesManagerComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
-  // DEVELOPMENT mode is determined by the current host
   private isDevelopment = window.location.hostname === 'localhost';
-
-  // API URL is dynamically set based on environment
   private apiUrl = this.isDevelopment
-    ? 'http://localhost:10000/api'     // Development URL
-    : 'https://happyswimming.onrender.com/api';   // Production URL
+    ? 'http://localhost:10000/api'
+    : 'https://happyswimming.onrender.com/api';
+  
   private authService = inject(AuthService);
   private datePipe = inject(DatePipe);
 
@@ -128,6 +128,10 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   error: string = '';
   successMessage: string = '';
 
+  // Pricing selection for enrollment
+  selectedPricingIndex: number | null = null;
+  availablePricingOptions: CoursePricing[] = [];
+
   // Enrollment form data
   enrollmentForm = {
     kidName: '',
@@ -135,7 +139,9 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     motherPhone: '',
     price: 0,
     notes: '',
-    motherContact: ''
+    motherContact: '',
+    selectedStudentCount: 1,
+    selectedLessonsCount: 1
   };
 
   constructor(
@@ -162,156 +168,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     })
   }
 
-  /**
-   * Check if course has fixed pricing
-   */
-  isFixedPricingCourse(course: Course): boolean {
-    if (course.isFixedPrice !== undefined) {
-      return course.isFixedPrice;
-    }
-    // Fallback: check if all pricing entries have the same price and lessons
-    if (!course.pricing || course.pricing.length === 0) return false;
-    const firstPrice = course.pricing[0].price;
-    const firstLessons = course.pricing[0].lessonsCount;
-    return course.pricing.every(p => p.price === firstPrice && p.lessonsCount === firstLessons);
-  }
-
-  /**
-   * Generates time options in 15-minute intervals
-   */
-  getTimeOptions(): { value: string, label: string }[] {
-    const options = [];
-    
-    // Generate options from 6:00 to 22:00 in 15-minute intervals
-    for (let hour = 6; hour <= 22; hour++) {
-      for (let minute = 0; minute < 60; minute += 15) {
-        const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        const displayHour = hour.toString().padStart(2, '0');
-        const displayMinute = minute.toString().padStart(2, '0');
-        
-        options.push({
-          value: timeValue,
-          label: `${displayHour}:${displayMinute}`
-        });
-      }
-    }
-    
-    return options;
-  }
-
-  setDefaultTimes(course: Course): void {
-    // Set default schedules if not defined
-    if (!course.startTime) {
-      course.startTime = '09:00'; // Default start time
-    }
-    if (!course.endTime) {
-      course.endTime = '09:45'; // Default end time
-    }
-  }
-
-  /**
-   * Handles schedule selection changes
-   */
-  onScheduleChange(courseId: string | number, timeType: 'startTime' | 'endTime', value: string): void {
-    const course = this.availableCourses.find(c => c.id === courseId);
-    if (course) {
-      if (timeType === 'startTime') {
-        course.startTime = value;
-      } else {
-        course.endTime = value;
-      }
-      
-      // Validate that end time is after start time
-      if (course.startTime && course.endTime && course.startTime >= course.endTime) {
-        this.error = 'End time must be after start time';
-        // Clear invalid end time
-        course.endTime = '';
-      } else {
-        this.clearMessages();
-      }
-      
-      // Save changes to backend
-      this.saveScheduleChanges(courseId, course.startTime, course.endTime);
-      
-      this.cdr.detectChanges();
-    }
-  }
-
-  /**
-   * Formats time for display
-   */
-  formatTimeDisplay(time: string): string {
-    if (!time) return '';
-    
-    const [hours, minutes] = time.split(':');
-    return `${hours}:${minutes}`;
-  }
-
-  /**
-   * Saves schedule changes to backend
-   */
-  private saveScheduleChanges(courseId: string | number, startTime?: string, endTime?: string): void {
-    // Only proceed if both times are defined
-    if (!startTime || !endTime) {
-      return;
-    }
-    
-    const scheduleData = {
-      courseId: courseId,
-      startTime: startTime,
-      endTime: endTime
-    };
-    
-    this.http.patch(`${this.apiUrl}/courses/${courseId}/schedule`, scheduleData, {
-      headers: this.getAuthHeaders()
-    }).pipe(
-      takeUntil(this.destroy$),
-      catchError(error => {
-        console.error('Error saving schedule:', error);
-        this.error = 'Failed to save schedule changes. Please try again.';
-        this.cdr.detectChanges();
-        return of(null);
-      })
-    ).subscribe(response => {
-      if (response) {
-        this.successMessage = 'Schedule updated successfully';
-        // Auto-clear success message after 3 seconds
-        setTimeout(() => {
-          this.successMessage = '';
-          this.cdr.detectChanges();
-        }, 3000);
-      }
-    });
-  }
-
-  /**
-   * Calculates duration between two times
-   */
-  calculateDuration(startTime: string, endTime: string): string {
-    if (!startTime || !endTime) return '';
-    
-    const [startHours, startMinutes] = startTime.split(':').map(Number);
-    const [endHours, endMinutes] = endTime.split(':').map(Number);
-    
-    const startTotalMinutes = startHours * 60 + startMinutes;
-    const endTotalMinutes = endHours * 60 + endMinutes;
-    
-    const durationMinutes = endTotalMinutes - startTotalMinutes;
-    
-    if (durationMinutes <= 0) return '';
-    
-    const hours = Math.floor(durationMinutes / 60);
-    const minutes = durationMinutes % 60;
-    
-    if (hours === 0) {
-      return `${minutes} min`;
-    } else if (minutes === 0) {
-      return `${hours}h`;
-    } else {
-      return `${hours}h ${minutes}min`;
-    }
-  }
-
   private getAuthHeaders(): HttpHeaders {
     const token = localStorage.getItem('token');
     return new HttpHeaders().set('Authorization', `Bearer ${token}`);
@@ -323,10 +179,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.error = '';
 
     if (this.userRole === 'client') {
-      // Load admin-created courses for clients
       this.loadAdminCourses();
     } else if (this.userRole === 'professional') {
-      // Load professional training courses
       this.loadProfessionalCourses();
     }
   }
@@ -339,7 +193,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       takeUntil(this.destroy$),
       catchError(error => {
         console.error('Error loading admin courses:', error);
-        // Fallback to legacy courses if admin courses fail to load
         this.adminCourses = [];
         this.isLoading = false;
         this.cdr.detectChanges();
@@ -347,37 +200,21 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       })
     ).subscribe(courses => {
       this.adminCourses = courses.filter(course => course.type === 'admin_course');
-      // Combine admin courses with legacy courses
       this.clientCourses = [...this.adminCourses];
+      console.log('Loaded admin courses:', this.adminCourses);
       this.isLoading = false;
-
-      for (const course of this.clientCourses) {
-        // Set default times if not defined
-        this.setDefaultTimes(course);
-        // Ensure course has a startTime and endTime
-        if (!course.startTime) {
-          course.startTime = '09:00'; // Default start time
-        }
-        if (!course.endTime) {
-          course.endTime = '09:45'; // Default end time
-        }
-      }
-
       this.cdr.detectChanges();
     });
   }
 
   // Load professional training courses
   private loadProfessionalCourses(): void {
-    // For now, use legacy professional courses
-    // In the future, these could also be managed by admin
     this.isLoading = false;
     this.cdr.detectChanges();
   }
 
   // Load user enrollments
   loadEnrollments(): void {
-    // Use the general enrollments endpoint that handles both user types
     this.http.get<Enrollment[]>(`${this.apiUrl}/enrollments`, {
       headers: this.getAuthHeaders()
     }).pipe(
@@ -409,6 +246,40 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.error = '';
     this.successMessage = '';
     this.resetEnrollmentForm();
+    
+    // Set up pricing options
+    if (course.pricing && course.pricing.length > 0) {
+      this.availablePricingOptions = [...course.pricing];
+      this.selectedPricingIndex = null;
+    } else {
+      this.availablePricingOptions = [];
+    }
+  }
+
+  // Handle pricing selection
+  onPricingSelectionChange(index: number): void {
+    this.selectedPricingIndex = index;
+    if (this.availablePricingOptions[index]) {
+      const selectedPricing = this.availablePricingOptions[index];
+      this.enrollmentForm.selectedStudentCount = selectedPricing.studentCount;
+      this.enrollmentForm.selectedLessonsCount = selectedPricing.lessonsCount;
+      this.enrollmentForm.price = selectedPricing.price;
+    }
+    this.cdr.detectChanges();
+  }
+
+  // Get selected pricing info for display
+  getSelectedPricingInfo(): string {
+    if (this.selectedPricingIndex !== null && this.availablePricingOptions[this.selectedPricingIndex]) {
+      const pricing = this.availablePricingOptions[this.selectedPricingIndex];
+      return `${pricing.studentCount} student${pricing.studentCount > 1 ? 's' : ''}, ${pricing.lessonsCount} lesson${pricing.lessonsCount > 1 ? 's' : ''} - €${pricing.price}`;
+    }
+    return '';
+  }
+
+  // Check if multiple pricing options are available
+  hasMultiplePricingOptions(course: Course): boolean {
+    return course.pricing ? course.pricing.length > 1 : false;
   }
 
   // Show enrollment details modal
@@ -455,8 +326,12 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       motherPhone: '',
       price: 0,
       notes: '',
-      motherContact: ''
+      motherContact: '',
+      selectedStudentCount: 1,
+      selectedLessonsCount: 1
     };
+    this.selectedPricingIndex = null;
+    this.availablePricingOptions = [];
   }
 
   // Cancel enrollment
@@ -479,7 +354,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.error = '';
     this.successMessage = '';
 
-    // Determine if this is an admin course or legacy course
     const isAdminCourse = this.selectedCourse.type === 'admin_course';
     const endpoint = isAdminCourse ?
       `${this.apiUrl}/enrollments/admin-course` :
@@ -496,6 +370,11 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       enrollmentData.motherContact = this.enrollmentForm.motherContact;
       enrollmentData.motherEmail = this.enrollmentForm.motherEmail;
       enrollmentData.motherPhone = this.enrollmentForm.motherPhone;
+      
+      // Include pricing selection for multiple pricing options
+      if (this.hasMultiplePricingOptions(this.selectedCourse) && this.selectedPricingIndex !== null) {
+        enrollmentData.selectedPricingIndex = this.selectedPricingIndex;
+      }
     } else {
       enrollmentData.courseId = this.selectedCourse.id as string;
     }
@@ -515,8 +394,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       if (response) {
         this.successMessage = response.message ||
           `Successfully enrolled in "${this.selectedCourse?.name}". Awaiting approval.`;
-        this.loadEnrollments(); // Refresh enrollments
-        this.loadAvailableCourses(); // Refresh available courses
+        this.loadEnrollments();
+        this.loadAvailableCourses();
         this.cancelEnrollment();
       }
       this.isLoading = false;
@@ -539,7 +418,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   // Validate enrollment form
   private validateEnrollmentForm(): boolean {
-    // Additional validation for admin courses (client enrollments)
     if (this.selectedCourse?.type === 'admin_course' && this.userRole === 'client') {
       if (!this.enrollmentForm.kidName.trim()) {
         this.error = 'Child name is required.';
@@ -547,6 +425,12 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       }
       if (!this.enrollmentForm.motherContact.trim()) {
         this.error = 'Mother contact is required.';
+        return false;
+      }
+      
+      // Validate pricing selection for multiple pricing options
+      if (this.hasMultiplePricingOptions(this.selectedCourse) && this.selectedPricingIndex === null) {
+        this.error = 'Please select a pricing option.';
         return false;
       }
     }
@@ -576,25 +460,23 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return status.charAt(0).toUpperCase() + status.slice(1);
   }
 
-  // Get course price display - Updated for fixed/variable pricing
+  // Get course price display for multiple pricing options
   getCoursePrice(course: Course): string {
     if (course.type === 'admin_course') {
-      // Check if it's fixed pricing
-      if (this.isFixedPricingCourse(course)) {
-        // Fixed pricing - show single price
-        if (course.pricing && course.pricing.length > 0) {
+      if (course.pricing && course.pricing.length > 0) {
+        if (course.pricing.length === 1) {
+          // Single pricing option
           const pricing = course.pricing[0];
           return `€${pricing.price}`;
-        }
-      } else {
-        // Variable pricing - show range or current price
-        if (course.currentPrice !== undefined) {
-          return `€${course.currentPrice}`;
-        }
-        // Fallback to lowest price in pricing structure
-        if (course.pricing && course.pricing.length > 0) {
-          const minPrice = Math.min(...course.pricing.map(p => p.price));
-          return `from €${minPrice}`;
+        } else {
+          // Multiple pricing options - show range
+          const prices = course.pricing.map(p => p.price);
+          const minPrice = Math.min(...prices);
+          const maxPrice = Math.max(...prices);
+          if (minPrice === maxPrice) {
+            return `€${minPrice}`;
+          }
+          return `€${minPrice} - €${maxPrice}`;
         }
       }
     }
@@ -610,8 +492,15 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         return `${startDate} - ${endDate}`;
       }
       if (course.pricing && course.pricing.length > 0) {
-        const lessonsCount = course.pricing[0].lessonsCount;
-        return `${lessonsCount} lessons`;
+        // Show lesson range if multiple options
+        const lessonCounts = [...new Set(course.pricing.map(p => p.lessonsCount))];
+        if (lessonCounts.length === 1) {
+          return `${lessonCounts[0]} lessons`;
+        } else {
+          const minLessons = Math.min(...lessonCounts);
+          const maxLessons = Math.max(...lessonCounts);
+          return `${minLessons}-${maxLessons} lessons`;
+        }
       }
     }
     return course.duration ? `${course.duration} hours` : '';
@@ -623,7 +512,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       return course.description;
     }
     if (course.descriptionKey) {
-      // This would be handled by the translation pipe in template
       return course.descriptionKey;
     }
     return '';
@@ -634,7 +522,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     if (course.type === 'admin_course') {
       return (course.availableSpots || 0) > 0;
     }
-    return true; // Legacy courses don't have spot limits
+    return true;
   }
 
   // Get enrollment status for a course
@@ -676,7 +564,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         this.successMessage = 'Enrollment cancelled successfully.';
         this.loadEnrollments();
         this.loadAvailableCourses();
-        // Close the details modal if it was open
         this.closeEnrollmentDetails();
       }
       this.isLoading = false;
@@ -690,54 +577,31 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.successMessage = '';
   }
 
-  // Get pricing details for admin course - Updated for fixed/variable pricing
+  // Get pricing details for admin course
   getPricingDetails(course: Course): string {
     if (course.type === 'admin_course' && course.pricing && course.pricing.length > 0) {
-      // Check if it's fixed pricing
-      if (this.isFixedPricingCourse(course)) {
-        // Fixed pricing - return simple description
+      if (course.pricing.length === 1) {
         const pricing = course.pricing[0];
-        return `€${pricing.price} for ${pricing.lessonsCount} lessons (same for all student counts)`;
+        return `€${pricing.price} for ${pricing.lessonsCount} lesson${pricing.lessonsCount > 1 ? 's' : ''} (${pricing.studentCount} student${pricing.studentCount > 1 ? 's' : ''})`;
       } else {
-        // Variable pricing - return current enrollment pricing
-        const currentStudents = course.currentStudents || 0;
-        const nextEnrollmentCount = currentStudents + 1;
-
-        const applicablePricing = course.pricing.find(p => p.studentCount === nextEnrollmentCount);
-        if (applicablePricing) {
-          return `€${applicablePricing.price} for ${applicablePricing.lessonsCount} lessons (${nextEnrollmentCount} student${nextEnrollmentCount > 1 ? 's' : ''})`;
-        }
+        return `Multiple pricing options available (${course.pricing.length} options)`;
       }
     }
     return '';
   }
 
-  // Format course card info
-  getCourseCardInfo(course: Course): any {
-    if (course.type === 'admin_course') {
-      return {
-        title: course.name,
-        subtitle: course.clientName ? `Client: ${course.clientName}` : '',
-        price: this.getCoursePrice(course),
-        duration: this.getCourseDuration(course),
-        description: course.description || '',
-        professional: course.professionalName || 'Not assigned',
-        availability: course.availableSpots ?
-          `${course.availableSpots} spots available` : 'No spots available',
-        enrollmentCount: `${course.currentStudents || 0}/${course.maxStudents || 6} enrolled`
-      };
-    } else {
-      return {
-        title: course.name,
-        subtitle: '',
-        price: this.getCoursePrice(course),
-        duration: this.getCourseDuration(course),
-        description: this.getCourseDescription(course),
-        professional: '',
-        availability: '',
-        enrollmentCount: ''
-      };
+  // Format time display (VIEW ONLY for clients)
+  formatTimeDisplay(time: string): string {
+    if (!time) return '';
+    return time.substring(0, 5); // Returns HH:MM format
+  }
+
+  // Get schedule display
+  getScheduleDisplay(course: Course): string {
+    if (course.startTime && course.endTime) {
+      return `${this.formatTimeDisplay(course.startTime)} - ${this.formatTimeDisplay(course.endTime)}`;
     }
+    return 'Schedule to be confirmed';
   }
 
   // Track function for ngFor

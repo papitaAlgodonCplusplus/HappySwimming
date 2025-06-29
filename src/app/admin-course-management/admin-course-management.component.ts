@@ -1,4 +1,4 @@
-// src/app/admin-course-management/admin-course-management.component.ts
+// src/app/admin-course-management/admin-course-management.component.ts (Updated)
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,9 +13,11 @@ import { AuthService } from '../services/auth.service';
 import { HeaderComponent } from '../header/header.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 
-// Models
+// Updated models for flexible pricing
 interface AdminCourse {
   id?: number;
+  startTime?: string;
+  endTime?: string;
   courseCode?: string;
   name: string;
   description: string;
@@ -30,13 +32,12 @@ interface AdminCourse {
   pricing: CoursePricing[];
   createdAt?: Date;
   isHistorical?: boolean;
-  isFixedPrice?: boolean; // New field to track pricing type
 }
 
 interface CoursePricing {
   studentCount: number;
-  price: number;
   lessonsCount: number;
+  price: number;
 }
 
 interface Professional {
@@ -50,13 +51,12 @@ interface CourseFormData {
   name: string;
   description: string;
   clientName: string;
+  startTime: string;
+  endTime: string;
   startDate: string;
   endDate: string;
   professionalId: number | null;
   pricing: CoursePricing[];
-  isFixedPrice: boolean; // New field for pricing type selection
-  fixedPrice: number; // New field for fixed price value
-  fixedLessonsCount: number; // New field for fixed lessons count
 }
 
 @Component({
@@ -69,16 +69,13 @@ interface CourseFormData {
 })
 export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
-  // DEVELOPMENT mode is determined by the current host
   private isDevelopment = window.location.hostname === 'localhost';
-
-  // API URL is dynamically set based on environment
   private apiUrl = this.isDevelopment
-    ? 'http://localhost:10000/api'     // Development URL
-    : 'https://happyswimming.onrender.com/api';   // Production URL
-    
-  // Use inject to get services in standalone components
+    ? 'http://localhost:10000/api'
+    : 'https://happyswimming.onrender.com/api';
+
   private authService = inject(AuthService);
+
   // User information
   userRole: string | null = null;
   isAdmin: boolean = false;
@@ -94,18 +91,17 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   showCreateForm: boolean = false;
   editingCourse: AdminCourse | null = null;
 
-  // Form data
+  // Form data with updated pricing structure
   courseForm: CourseFormData = {
     name: '',
     description: '',
     clientName: '',
+    startTime: '',
+    endTime: '',
     startDate: '',
     endDate: '',
     professionalId: null,
-    pricing: this.getDefaultPricing(),
-    isFixedPrice: false,
-    fixedPrice: 100,
-    fixedLessonsCount: 5
+    pricing: []
   };
 
   // Filter and search
@@ -113,6 +109,13 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   statusFilter: string = 'all';
   clientFilter: string = 'all';
   clientOptions: string[] = [];
+
+  // Pricing form controls
+  newPricingLine = {
+    studentCount: 1,
+    lessonsCount: 1,
+    price: 0
+  };
 
   constructor(
     private http: HttpClient,
@@ -133,67 +136,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   private getAuthHeaders(): HttpHeaders {
     const token = localStorage.getItem('token');
     return new HttpHeaders().set('Authorization', `Bearer ${token}`);
-  }
-
-  private getDefaultPricing(): CoursePricing[] {
-    return [
-      { studentCount: 1, price: 500, lessonsCount: 5 },
-      { studentCount: 2, price: 250, lessonsCount: 5 },
-      { studentCount: 3, price: 170, lessonsCount: 5 },
-      { studentCount: 4, price: 125, lessonsCount: 5 },
-      { studentCount: 5, price: 100, lessonsCount: 5 },
-      { studentCount: 6, price: 80, lessonsCount: 5 }
-    ];
-  }
-
-  // Generate fixed pricing array when fixed price is selected
-  private generateFixedPricing(): CoursePricing[] {
-    const fixedPricing: CoursePricing[] = [];
-    for (let i = 1; i <= 6; i++) {
-      fixedPricing.push({
-        studentCount: i,
-        price: this.courseForm.fixedPrice,
-        lessonsCount: this.courseForm.fixedLessonsCount
-      });
-    }
-    return fixedPricing;
-  }
-
-  // Handle pricing type change
-  onPricingTypeChange(): void {
-    if (this.courseForm.isFixedPrice) {
-      // Switch to fixed pricing - generate fixed pricing array
-      this.courseForm.pricing = this.generateFixedPricing();
-    } else {
-      // Switch to variable pricing - use default pricing
-      this.courseForm.pricing = this.getDefaultPricing();
-    }
-    this.cdr.detectChanges();
-  }
-
-  // Handle fixed price change
-  onFixedPriceChange(): void {
-    if (this.courseForm.isFixedPrice) {
-      this.courseForm.pricing = this.generateFixedPricing();
-    }
-  }
-
-  // Handle fixed lessons count change
-  onFixedLessonsChange(): void {
-    if (this.courseForm.isFixedPrice) {
-      this.courseForm.pricing = this.generateFixedPricing();
-    }
-  }
-
-  // Check if course has fixed pricing
-  isFixedPricingCourse(course: AdminCourse): boolean {
-    if (course.isFixedPrice !== undefined) {
-      return course.isFixedPrice;
-    }
-    // Fallback: check if all pricing entries have the same price
-    if (!course.pricing || course.pricing.length === 0) return false;
-    const firstPrice = course.pricing[0].price;
-    return course.pricing.every(p => p.price === firstPrice);
   }
 
   // Load courses from API
@@ -244,6 +186,84 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.clientOptions = Array.from(clients).sort();
   }
 
+  // Add new pricing line
+  addPricingLine(): void {
+    // Validate new pricing line
+    if (this.newPricingLine.studentCount < 1 || this.newPricingLine.studentCount > 10) {
+      this.error = 'Student count must be between 1 and 10';
+      return;
+    }
+    if (this.newPricingLine.lessonsCount < 1 || this.newPricingLine.lessonsCount > 10) {
+      this.error = 'Lessons count must be between 1 and 10';
+      return;
+    }
+    if (this.newPricingLine.price <= 0) {
+      this.error = 'Price must be greater than 0';
+      return;
+    }
+
+    // Check for duplicate combinations
+    const duplicate = this.courseForm.pricing.find(p => 
+      p.studentCount === this.newPricingLine.studentCount && 
+      p.lessonsCount === this.newPricingLine.lessonsCount
+    );
+
+    if (duplicate) {
+      this.error = `Pricing already exists for ${this.newPricingLine.studentCount} student(s) with ${this.newPricingLine.lessonsCount} lesson(s)`;
+      return;
+    }
+
+    // Add new pricing line
+    this.courseForm.pricing.push({
+      studentCount: this.newPricingLine.studentCount,
+      lessonsCount: this.newPricingLine.lessonsCount,
+      price: this.newPricingLine.price
+    });
+
+    // Sort pricing by student count, then by lessons count
+    this.courseForm.pricing.sort((a, b) => {
+      if (a.studentCount !== b.studentCount) {
+        return a.studentCount - b.studentCount;
+      }
+      return a.lessonsCount - b.lessonsCount;
+    });
+
+    // Reset form
+    this.newPricingLine = {
+      studentCount: 1,
+      lessonsCount: 1,
+      price: 0
+    };
+
+    this.clearMessages();
+    this.cdr.detectChanges();
+  }
+
+  // Remove pricing line
+  removePricingLine(index: number): void {
+    this.courseForm.pricing.splice(index, 1);
+    this.cdr.detectChanges();
+  }
+
+  // Update existing pricing line
+  updatePricingLine(index: number, field: keyof CoursePricing, value: number): void {
+    if (index >= 0 && index < this.courseForm.pricing.length) {
+      this.courseForm.pricing[index][field] = value;
+      
+      // Re-sort if student count or lessons count changed
+      if (field === 'studentCount' || field === 'lessonsCount') {
+        this.courseForm.pricing.sort((a, b) => {
+          if (a.studentCount !== b.studentCount) {
+            return a.studentCount - b.studentCount;
+          }
+          return a.lessonsCount - b.lessonsCount;
+        });
+      }
+      
+      this.cdr.detectChanges();
+    }
+  }
+
   // Create new course
   createCourse(): void {
     if (!this.validateCourseForm()) {
@@ -255,17 +275,10 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.error = '';
     this.successMessage = '';
 
-    // Prepare pricing based on selected type
-    let finalPricing = this.courseForm.pricing;
-    if (this.courseForm.isFixedPrice) {
-      finalPricing = this.generateFixedPricing();
-    }
-
     const courseData = {
       ...this.courseForm,
-      maxStudents: 6, // Default max students
-      pricing: finalPricing,
-      isFixedPrice: this.courseForm.isFixedPrice
+      maxStudents: 10, // Updated max students
+      pricing: this.courseForm.pricing
     };
 
     console.log('Creating course with data:', courseData);
@@ -304,17 +317,10 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.error = '';
     this.successMessage = '';
 
-    // Prepare pricing based on selected type
-    let finalPricing = this.courseForm.pricing;
-    if (this.courseForm.isFixedPrice) {
-      finalPricing = this.generateFixedPricing();
-    }
-
     const courseData = {
       ...this.courseForm,
       id: this.editingCourse.id,
-      pricing: finalPricing,
-      isFixedPrice: this.courseForm.isFixedPrice
+      pricing: this.courseForm.pricing
     };
 
     this.http.put<AdminCourse>(`${this.apiUrl}/admin/courses/${this.editingCourse.id}`, courseData, {
@@ -365,7 +371,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       })
     ).subscribe(response => {
       if (response !== null) {
-        // Remove from current list (it's now historical)
         this.courses = this.courses.filter(c => c.id !== course.id);
         this.extractClientOptions();
         this.successMessage = `Course "${course.name}" has been archived. All student data has been preserved as historical.`;
@@ -397,6 +402,18 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       this.error = 'End date is required.';
       return false;
     }
+    if (!this.courseForm.startTime) {
+      this.error = 'Start time is required.';
+      return false;
+    }
+    if (!this.courseForm.endTime) {
+      this.error = 'End time is required.';
+      return false;
+    }
+    if (this.courseForm.startTime >= this.courseForm.endTime) {
+      this.error = 'End time must be after start time.';
+      return false;
+    }
     if (new Date(this.courseForm.startDate) >= new Date(this.courseForm.endDate)) {
       this.error = 'End date must be after start date.';
       return false;
@@ -405,28 +422,24 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       this.error = 'Please assign a professional to this course.';
       return false;
     }
+    if (this.courseForm.pricing.length === 0) {
+      this.error = 'At least one pricing option is required.';
+      return false;
+    }
 
-    // Validate pricing based on type
-    if (this.courseForm.isFixedPrice) {
-      if (this.courseForm.fixedPrice <= 0) {
-        this.error = 'Fixed price must be greater than 0.';
+    // Validate each pricing line
+    for (let pricing of this.courseForm.pricing) {
+      if (pricing.studentCount < 1 || pricing.studentCount > 10) {
+        this.error = `Student count must be between 1 and 10.`;
         return false;
       }
-      if (this.courseForm.fixedLessonsCount <= 0) {
-        this.error = 'Lessons count must be greater than 0.';
+      if (pricing.lessonsCount < 1 || pricing.lessonsCount > 10) {
+        this.error = `Lessons count must be between 1 and 10.`;
         return false;
       }
-    } else {
-      // Validate variable pricing
-      for (let pricing of this.courseForm.pricing) {
-        if (pricing.price <= 0) {
-          this.error = `Price for ${pricing.studentCount} student(s) must be greater than 0.`;
-          return false;
-        }
-        if (pricing.lessonsCount <= 0) {
-          this.error = `Lessons count must be greater than 0.`;
-          return false;
-        }
+      if (pricing.price <= 0) {
+        this.error = `Price must be greater than 0.`;
+        return false;
       }
     }
 
@@ -436,21 +449,19 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   // Edit course
   editCourse(course: AdminCourse): void {
     this.editingCourse = course;
-    const isFixed = this.isFixedPricingCourse(course);
-    
+
     this.courseForm = {
       name: course.name,
       description: course.description,
       clientName: course.clientName,
+      startTime: course.startTime ?? '',
+      endTime: course.endTime ?? '',
       startDate: course.startDate,
       endDate: course.endDate,
       professionalId: course.professionalId,
-      pricing: [...course.pricing],
-      isFixedPrice: isFixed,
-      fixedPrice: isFixed && course.pricing.length > 0 ? course.pricing[0].price : 100,
-      fixedLessonsCount: isFixed && course.pricing.length > 0 ? course.pricing[0].lessonsCount : 5
+      pricing: [...course.pricing]
     };
-    
+
     this.showCreateForm = true;
     this.error = '';
     this.successMessage = '';
@@ -463,6 +474,39 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.resetForm();
   }
 
+  // Get time options
+  getTimeOptions(): { value: string, label: string }[] {
+    const options = [];
+    for (let hour = 6; hour <= 22; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const displayHour = hour.toString().padStart(2, '0');
+        const displayMinute = minute.toString().padStart(2, '0');
+        options.push({
+          value: timeValue,
+          label: `${displayHour}:${displayMinute}`
+        });
+      }
+    }
+    return options;
+  }
+
+  // Format time display
+  formatTimeDisplay(time: string): string {
+    if (!time) return '';
+    return time.substring(0, 5);
+  }
+
+  // Get student count options (1-10)
+  getStudentCountOptions(): number[] {
+    return Array.from({ length: 10 }, (_, i) => i + 1);
+  }
+
+  // Get lessons count options (1-10)  
+  getLessonsCountOptions(): number[] {
+    return Array.from({ length: 10 }, (_, i) => i + 1);
+  }
+
   // Reset form
   resetForm(): void {
     this.courseForm = {
@@ -470,12 +514,16 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       description: '',
       clientName: '',
       startDate: '',
+      startTime: '',
+      endTime: '',
       endDate: '',
       professionalId: null,
-      pricing: this.getDefaultPricing(),
-      isFixedPrice: false,
-      fixedPrice: 100,
-      fixedLessonsCount: 5
+      pricing: []
+    };
+    this.newPricingLine = {
+      studentCount: 1,
+      lessonsCount: 1,
+      price: 0
     };
     this.error = '';
   }
@@ -516,14 +564,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   clearMessages(): void {
     this.error = '';
     this.successMessage = '';
-  }
-
-  // Update pricing for a specific student count
-  updatePricing(studentCount: number, field: 'price' | 'lessonsCount', value: number): void {
-    const pricing = this.courseForm.pricing.find(p => p.studentCount === studentCount);
-    if (pricing) {
-      pricing[field] = value;
-    }
   }
 
   // Toggle create form
