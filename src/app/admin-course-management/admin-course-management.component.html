@@ -307,7 +307,7 @@
             <div class="summary-section">
               <h4>{{ 'adminCourseManagement.groupPricing' | translate }}</h4>
               <div class="summary-grid">
-                <div *ngFor="let groupPricing of courseForm.groupPricing" class="summary-item">
+                <div *ngFor="let groupPricing of courseForm.groupPricing.slice(0, courseForm.groupPricing.length / 2)" class="summary-item">
                   <span class="summary-label">{{ groupPricing.studentRange }} {{ 'adminCourseManagement.students' | translate }}</span>
                   <span class="summary-price">€{{ groupPricing.price }}
                     /{{ 'adminCourseManagement.student' | translate }}</span>

@@ -615,13 +615,12 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   // Get schedule display
   getScheduleDisplay(course: Course): string {
     if (!course.schedules || course.schedules.length === 0) {
-      return 'No schedules available';
+      return 'NA';
     }
-    if (course.schedules.length === 1) {
-      const schedule = course.schedules[0];
-      return `${this.formatTimeDisplay(schedule.startTime)} - ${this.formatTimeDisplay(schedule.endTime)}`;
-    }
-    return `${course.schedules.length} schedules available`;
+
+    return course.schedules
+      .map(schedule => `${this.formatTimeDisplay(schedule.startTime)} - ${this.formatTimeDisplay(schedule.endTime)}`)
+      .join(', ');
   }
 
   // Format time display
@@ -633,14 +632,14 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   // Get schedules display for course card
   getSchedulesDisplay(course: Course): string {
     if (!course.schedules || course.schedules.length === 0) {
-      return 'No schedules available';
+      return 'NA';
     }
 
     if (course.schedules.length === 1) {
       return this.getScheduleDisplay(course);
     }
 
-    return `${course.schedules.length} schedules available`;
+    return `${course.schedules.length}`;
   }
 
   // Get lesson options display for course card
@@ -651,7 +650,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       total + (schedule.lessonOptions?.length || 0), 0
     );
 
-    return `${totalOptions} lesson options available`;
+    return `${totalOptions}`;
   }
 
   // Get group pricing display
@@ -695,7 +694,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     const studentCost = groupPricing.price * this.selectedStudentCount;
     const lessonCost = this.selectedLessonOption.price;
 
-    return `Student cost: €${studentCost} (€${groupPricing.price} × ${this.selectedStudentCount}) + Lesson cost: €${lessonCost} = Total: €${this.calculatedPrice}`;
+    return `€${studentCost} (€${groupPricing.price} × ${this.selectedStudentCount}) + €${lessonCost} = Total: €${this.calculatedPrice}`;
   }
 
   // Track function for ngFor

@@ -90,13 +90,15 @@
             <!-- Schedules Info -->
             <div class="info-row">
               <span class="info-label">{{ 'servicesManager.schedules' | translate }}:</span>
-              <span class="info-value">{{ getSchedulesDisplay(course) }}</span>
+              <span class="info-value">{{ getSchedulesDisplay(course) + ' ' + (('servicesManager.schedules' |
+                translate)) }}</span>
             </div>
 
             <!-- Lesson Options Info -->
             <div class="info-row">
               <span class="info-label">{{ 'servicesManager.lessonOptions' | translate }}:</span>
-              <span class="info-value">{{ getLessonOptionsDisplay(course) }}</span>
+              <span class="info-value">{{ getLessonOptionsDisplay(course) + ' ' + (('servicesManager.spotsAvailable' |
+                translate)) }}</span>
             </div>
 
             <!-- Enrollment info -->
@@ -188,12 +190,32 @@
               <label for="scheduleSelect">{{ 'servicesManager.availableSchedules' | translate }} *</label>
               <select id="scheduleSelect" [(ngModel)]="selectedSchedule" name="scheduleSelect"
                 (ngModelChange)="onScheduleChange($event?.id || '')" required class="form-control">
-                <option [ngValue]="null">{{ 'servicesManager.selectSchedulePlaceholder' | translate }}</option>
+                <option [ngValue]="null">
+                  {{ 'servicesManager.selectSchedulePlaceholder' | translate }}
+                </option>
                 <option *ngFor="let schedule of getAvailableSchedules(); trackBy: trackByScheduleId"
                   [ngValue]="schedule">
-                  {{ getScheduleDisplay(selectedCourse!) }}
+                  {{ formatTimeDisplay(schedule.startTime) }} - {{ formatTimeDisplay(schedule.endTime) }}
                 </option>
               </select>
+            </div>
+          </div>
+
+          <!-- Student Count Selection -->
+          <div *ngIf="selectedSchedule" class="form-section">
+            <h4>{{ 'servicesManager.numberOfStudents' | translate }}</h4>
+            <div class="form-group">
+              <label for="studentCount">{{ 'servicesManager.howManyStudents' | translate }} *</label>
+              <select id="studentCount" [(ngModel)]="selectedStudentCount" name="studentCount"
+                (ngModelChange)="onStudentCountChange($event)" required class="form-control">
+                <option *ngFor="let count of getStudentCountOptions()" [value]="count">{{ count }} {{ count === 1 ?
+                  ('servicesManager.student' | translate) : ('servicesManager.students' | translate) }}</option>
+              </select>
+            </div>
+
+            <!-- Group Pricing Display -->
+            <div *ngIf="getApplicableGroupPricing()" class="group-pricing-display">
+              <div class="pricing-info">{{ getApplicableGroupPricingDisplay() }}</div>
             </div>
           </div>
 
@@ -216,24 +238,6 @@
             </div>
           </div>
 
-          <!-- Student Count Selection -->
-          <div *ngIf="selectedLessonOption" class="form-section">
-            <h4>{{ 'servicesManager.numberOfStudents' | translate }}</h4>
-            <div class="form-group">
-              <label for="studentCount">{{ 'servicesManager.howManyStudents' | translate }} *</label>
-              <select id="studentCount" [(ngModel)]="selectedStudentCount" name="studentCount"
-                (ngModelChange)="onStudentCountChange($event)" required class="form-control">
-                <option *ngFor="let count of getStudentCountOptions()" [value]="count">{{ count }} {{ count === 1 ?
-                  ('servicesManager.student' | translate) : ('servicesManager.students' | translate) }}</option>
-              </select>
-            </div>
-
-            <!-- Group Pricing Display -->
-            <div *ngIf="getApplicableGroupPricing()" class="group-pricing-display">
-              <div class="pricing-info">{{ getApplicableGroupPricingDisplay() }}</div>
-            </div>
-          </div>
-
           <!-- Price Calculation -->
           <div *ngIf="calculatedPrice > 0" class="price-calculation-section">
             <h4>{{ 'servicesManager.priceBreakdown' | translate }}</h4>
@@ -249,11 +253,11 @@
           <div class="form-section">
             <h4>{{ 'servicesManager.studentInformation' | translate }}</h4>
 
-            <!-- Child name (required for all courses) -->
+            <!-- Child names (required for all courses) -->
             <div class="form-group">
               <label for="kidName">{{ 'servicesManager.childName' | translate }} *</label>
-              <input type="text" id="kidName" [(ngModel)]="enrollmentForm.kidName" name="kidName" required
-                class="form-control" placeholder="{{ 'servicesManager.enterChildName' | translate }}">
+              <textarea id="kidName" [(ngModel)]="enrollmentForm.kidName" name="kidName" required class="form-control"
+                placeholder="{{ 'servicesManager.enterChildName' | translate }}" rows="3"></textarea>
             </div>
 
             <!-- Mother contact (required for all courses) -->
