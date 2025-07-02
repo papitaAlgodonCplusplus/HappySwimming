@@ -82,6 +82,7 @@
         "noTemplatesAvailable": "Nenhum curso existente disponível para usar como modelos. Crie seu primeiro curso manualmente."
     },
     "servicesManager": {
+        "view": "Ver",
         "availableSchedules": "Horários Disponíveis",
         "totalPrice": "Preço Total",
         "priceBreakdown": "Desglose de Preços",
@@ -230,6 +231,15 @@
         "notAssigned": "Não Atribuído"
     },
     "userAuthorization": {
+        "view": "Ver",
+        "close": "Fechar",
+        "firstName": "Nome",
+        "lastName1": "Sobrenome 1",
+        "lastName2": "Sobrenome 2",
+        "companyName": "Nome da Empresa",
+        "role": "Rol",
+        "registrationDate": "Data da registro",
+        "id": "ID",
         "title": "Autorização de Usuário",
         "adminView": "Visão de Administrador",
         "description": "Gerenciar e autorizar usuários no sistema",

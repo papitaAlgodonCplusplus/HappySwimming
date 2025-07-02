@@ -443,12 +443,9 @@
           <div class="schedules-preview">
             <h4>{{ 'adminCourseManagement.schedules' | translate }} ({{ getTotalSchedulesCount(course) }})</h4>
             <div class="schedules-preview-list">
-              <div *ngFor="let schedule of course.schedules?.slice(0, 2)" class="schedule-preview-item">
+              <div *ngFor="let schedule of course.schedules" class="schedule-preview-item">
                 <div class="schedule-time">{{ getScheduleDisplay(schedule) }}</div>
                 <div class="schedule-lessons-count">{{ schedule.lessonOptions.length || 0 }} {{ 'adminCourseManagement.lessonOptions' | translate | lowercase }}</div>
-              </div>
-              <div *ngIf="getTotalSchedulesCount(course) > 2" class="schedule-more">
-                +{{ getTotalSchedulesCount(course) - 2 }} {{ 'adminCourseManagement.moreSchedules' | translate }}
               </div>
             </div>
           </div>

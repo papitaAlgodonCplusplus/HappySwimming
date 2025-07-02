@@ -50,6 +50,7 @@ export class AuthorizeComponent implements OnInit, OnDestroy {
   
   // Modal state
   showConfirmationModal: boolean = false;
+  showViewModal: boolean = false;
   selectedUser: User | null = null;
   currentAction: 'authorize' | 'delete' = 'authorize';
   
@@ -113,12 +114,12 @@ export class AuthorizeComponent implements OnInit, OnDestroy {
         // Separate users by role
         this.clients = response.filter((user: any) => user.role === 'client').map((user: any) => ({
           ...user,
-          registrationDate: new Date(user.created_at || new Date())
+          registrationDate: new Date(user.registrationDate || new Date())
         }));
         
         this.professionals = response.filter((user: any) => user.role === 'professional').map((user: any) => ({
           ...user,
-          registrationDate: new Date(user.created_at || new Date())
+          registrationDate: new Date(user.registrationDate || new Date())
         }));
         
         // Apply initial filtering
@@ -177,6 +178,18 @@ export class AuthorizeComponent implements OnInit, OnDestroy {
       return true;
     });
     
+    this.cdr.detectChanges();
+  }
+  
+  viewUser(user: User) {
+    this.selectedUser = user;
+    this.showViewModal = true;
+    this.cdr.detectChanges();
+  }
+  
+  closeViewModal() {
+    this.showViewModal = false;
+    this.selectedUser = null;
     this.cdr.detectChanges();
   }
   

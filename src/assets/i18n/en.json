@@ -31,6 +31,15 @@
         "notAssigned": "Not Assigned"
     },
     "userAuthorization": {
+        "firstName": "Name",
+        "lastName1": "Last Name 1",
+        "lastName2": "Last Name 2",
+        "companyName": "Company Name",
+        "role": "Role",
+        "id": "ID",
+        "registrationDate": "Registration Date",
+        "view": "View",
+        "close": "Close",
         "title": "User Authorization",
         "adminView": "Admin View",
         "description": "Manage and authorize users in the system",

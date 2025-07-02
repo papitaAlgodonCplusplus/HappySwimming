@@ -63,6 +63,7 @@
               <th>{{ 'userAuthorization.date' | translate }}</th>
               <th>{{ 'userAuthorization.isAuthorized' | translate }}</th>
               <th>{{ 'userAuthorization.actions' | translate }}</th>
+              <th>{{ 'userAuthorization.view' | translate }}</th>
               <th>{{ 'userAuthorization.delete' | translate }}</th>
             </tr>
           </thead>
@@ -84,6 +85,11 @@
                   [ngClass]="{'disabled-btn': client.isAuthorized}">
                   <span class="icon">✓</span>
                   {{ client.isAuthorized ? ('userAuthorization.alreadyAuthorized' | translate) : ('userAuthorization.authorize' | translate) }}
+                </button>
+              </td>
+              <td>
+                <button (click)="viewUser(client)" class="view-btn">
+                  <span class="icon">👁️</span>
                 </button>
               </td>
               <td>
@@ -109,6 +115,7 @@
               <th>{{ 'userAuthorization.date' | translate }}</th>
               <th>{{ 'userAuthorization.isAuthorized' | translate }}</th>
               <th>{{ 'userAuthorization.actions' | translate }}</th>
+              <th>{{ 'userAuthorization.view' | translate }}</th>
               <th>{{ 'userAuthorization.delete' | translate }}</th>
             </tr>
           </thead>
@@ -133,6 +140,11 @@
                 </button>
               </td>
               <td>
+                <button (click)="viewUser(professional)" class="view-btn">
+                  <span class="icon">👁️</span>
+                </button>
+              </td>
+              <td>
                 <button (click)="deleteUser(professional)" class="delete-btn">
                   <span class="icon">🗑️</span>
                 </button>
@@ -153,6 +165,71 @@
       <button class="return-button" routerLink="/homepage">
         {{ 'userAuthorization.backToHomepage' | translate }}
       </button>
+    </div>
+
+    <!-- View User Modal -->
+    <div *ngIf="showViewModal" class="modal-overlay">
+      <div class="modal-container view-modal">
+        <div class="modal-header">
+          <h2>{{ 'userAuthorization.userDetails' | translate }}</h2>
+          <button class="close-btn" (click)="closeViewModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div *ngIf="selectedUser" class="user-info-grid">
+            <div class="info-row">
+              <span class="info-label">{{ 'userAuthorization.id' | translate }}:</span>
+              <span class="info-value">{{ selectedUser.id }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">{{ 'userAuthorization.code' | translate }}:</span>
+              <span class="info-value">{{ selectedUser.code || 'N/A' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">{{ 'userAuthorization.firstName' | translate }}:</span>
+              <span class="info-value">{{ selectedUser.firstName }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">{{ 'userAuthorization.lastName1' | translate }}:</span>
+              <span class="info-value">{{ selectedUser.lastName1 }}</span>
+            </div>
+            <div class="info-row" *ngIf="selectedUser.lastName2">
+              <span class="info-label">{{ 'userAuthorization.lastName2' | translate }}:</span>
+              <span class="info-value">{{ selectedUser.lastName2 }}</span>
+            </div>
+            <div class="info-row" *ngIf="selectedUser.companyName">
+              <span class="info-label">{{ 'userAuthorization.companyName' | translate }}:</span>
+              <span class="info-value">{{ selectedUser.companyName }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">{{ 'userAuthorization.email' | translate }}:</span>
+              <span class="info-value">{{ selectedUser.email }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">{{ 'userAuthorization.role' | translate }}:</span>
+              <span class="info-value">{{ selectedUser.role }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">{{ 'userAuthorization.country' | translate }}:</span>
+              <span class="info-value">{{ selectedUser.country }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">{{ 'userAuthorization.registrationDate' | translate }}:</span>
+              <span class="info-value">{{ selectedUser.registrationDate | date:'medium' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">{{ 'userAuthorization.authorizationStatus' | translate }}:</span>
+              <span class="info-value" [ngClass]="{'status-authorized': selectedUser.isAuthorized, 'status-unauthorized': !selectedUser.isAuthorized}">
+                {{ selectedUser.isAuthorized ? ('userAuthorization.authorized' | translate) : ('userAuthorization.unauthorized' | translate) }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-close" (click)="closeViewModal()">
+            {{ 'userAuthorization.close' | translate }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Confirmation Modal -->

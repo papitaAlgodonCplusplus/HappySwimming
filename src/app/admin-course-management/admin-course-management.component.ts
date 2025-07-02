@@ -334,7 +334,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     }
 
     // Check for duplicate schedule times
-    const duplicate = this.courseForm.schedules.find(s => 
+    const duplicate = this.courseForm.schedules.find(s =>
       s.startTime === this.newSchedule.startTime && s.endTime === this.newSchedule.endTime
     );
     if (duplicate) {
@@ -357,7 +357,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     }
 
     // Check for duplicate lesson counts in current schedule
-    const duplicate = this.newSchedule.lessonOptions.find(l => 
+    const duplicate = this.newSchedule.lessonOptions.find(l =>
       l.lessonCount === this.newLessonOption.lessonCount
     );
     if (duplicate) {
@@ -547,9 +547,9 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
 
   // Helper method to check if form is invalid for submit button
   isFormInvalid(): boolean {
-    return this.isLoading || 
-           this.courseForm.schedules.length === 0 || 
-           this.courseForm.groupPricing.some(gp => gp.price <= 0);
+    return this.isLoading ||
+      this.courseForm.schedules.length === 0 ||
+      this.courseForm.groupPricing.some(gp => gp.price <= 0);
   }
 
   // Update existing course
@@ -674,7 +674,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
         this.error = `Schedule ${i + 1} must have at least one lesson option.`;
         return false;
       }
-      
+
       for (const lessonOption of schedule.lessonOptions) {
         if (lessonOption.lessonCount < 1 || lessonOption.lessonCount > 20) {
           this.error = `Lesson count must be between 1 and 20.`;
@@ -798,7 +798,15 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     if (!course.groupPricing || course.groupPricing.length === 0) {
       return 'No group pricing set';
     }
-    return course.groupPricing
+
+    // Remove duplicates based on studentRange and price
+    const uniquePricing = course.groupPricing.filter((gp, index, self) =>
+      index === self.findIndex(item =>
+        item.studentRange === gp.studentRange && item.price === gp.price
+      )
+    );
+
+    return uniquePricing
       .map(gp => `${gp.studentRange} students: €${gp.price}`)
       .join(' | ');
   }
@@ -809,7 +817,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
 
   getTotalLessonOptionsCount(course: AdminCourse): number {
     if (!course.schedules) return 0;
-    return course.schedules.reduce((total, schedule) => 
+    return course.schedules.reduce((total, schedule) =>
       total + (schedule.lessonOptions ? schedule.lessonOptions.length : 0), 0
     );
   }
