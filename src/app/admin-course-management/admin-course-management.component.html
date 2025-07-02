@@ -32,7 +32,8 @@
     <div class="action-bar">
       <button class="btn btn-primary" (click)="toggleCreateForm()" [disabled]="isLoading">
         <span class="btn-icon">{{ showCreateForm ? '×' : '+' }}</span>
-        {{ showCreateForm ? ('adminCourseManagement.cancelCreate' | translate) : ('adminCourseManagement.createCourse' | translate) }}
+        {{ showCreateForm ? ('adminCourseManagement.cancelCreate' | translate) : ('adminCourseManagement.createCourse' |
+        translate) }}
       </button>
 
       <div class="action-stats">
@@ -45,7 +46,8 @@
     <!-- Create/Edit Course Form -->
     <div *ngIf="showCreateForm" class="course-form-container">
       <div class="form-header">
-        <h2>{{ editingCourse ? ('adminCourseManagement.editCourse' | translate) : ('adminCourseManagement.createNewCourse' | translate) }}</h2>
+        <h2>{{ editingCourse ? ('adminCourseManagement.editCourse' | translate) :
+          ('adminCourseManagement.createNewCourse' | translate) }}</h2>
         <p class="form-subtitle">{{ 'adminCourseManagement.formSubtitle' | translate }}</p>
 
         <!-- Course Template Selection -->
@@ -71,7 +73,8 @@
 
             <div class="form-group">
               <label for="clientName">{{ 'adminCourseManagement.clientName' | translate }} *</label>
-              <select id="clientName" [(ngModel)]="courseForm.clientName" name="clientName" required class="form-control">
+              <select id="clientName" [(ngModel)]="courseForm.clientName" name="clientName" required
+                class="form-control">
                 <option value="">{{ 'adminCourseManagement.selectClient' | translate }}...</option>
                 <option *ngFor="let client of clients" [value]="getClientDisplayName(client)">
                   {{ getClientDisplayName(client) }}
@@ -83,7 +86,8 @@
           <div class="form-group">
             <label for="description">{{ 'adminCourseManagement.description' | translate }} *</label>
             <textarea id="description" [(ngModel)]="courseForm.description" name="description" rows="4"
-              placeholder="{{ 'adminCourseManagement.descriptionPlaceholder' | translate }}" required class="form-control"></textarea>
+              placeholder="{{ 'adminCourseManagement.descriptionPlaceholder' | translate }}" required
+              class="form-control"></textarea>
           </div>
         </div>
 
@@ -95,12 +99,14 @@
           <div class="form-grid">
             <div class="form-group">
               <label for="startDate">{{ 'adminCourseManagement.startDate' | translate }} *</label>
-              <input type="date" id="startDate" [(ngModel)]="courseForm.startDate" name="startDate" required class="form-control">
+              <input type="date" id="startDate" [(ngModel)]="courseForm.startDate" name="startDate" required
+                class="form-control">
             </div>
 
             <div class="form-group">
               <label for="endDate">{{ 'adminCourseManagement.endDate' | translate }} *</label>
-              <input type="date" id="endDate" [(ngModel)]="courseForm.endDate" name="endDate" required class="form-control">
+              <input type="date" id="endDate" [(ngModel)]="courseForm.endDate" name="endDate" required
+                class="form-control">
             </div>
           </div>
         </div>
@@ -111,7 +117,8 @@
 
           <div class="form-group">
             <label for="professionalId">{{ 'adminCourseManagement.assignProfessional' | translate }} *</label>
-            <select id="professionalId" [(ngModel)]="courseForm.professionalId" name="professionalId" required class="form-control">
+            <select id="professionalId" [(ngModel)]="courseForm.professionalId" name="professionalId" required
+              class="form-control">
               <option value="">{{ 'adminCourseManagement.selectProfessional' | translate }}</option>
               <option *ngFor="let professional of professionals" [value]="professional.id">
                 {{ professional.name }} - {{ professional.specialties.join(', ') }}
@@ -162,7 +169,8 @@
               <div class="form-grid">
                 <div class="form-group">
                   <label for="newStartTime">{{ 'adminCourseManagement.startTime' | translate }} *</label>
-                  <select id="newStartTime" [(ngModel)]="newSchedule.startTime" name="newStartTime" class="form-control">
+                  <select id="newStartTime" [(ngModel)]="newSchedule.startTime" name="newStartTime"
+                    class="form-control">
                     <option value="">{{ 'adminCourseManagement.selectTime' | translate }}</option>
                     <option *ngFor="let time of getTimeOptions()" [value]="time.value">{{ time.label }}</option>
                   </select>
@@ -181,7 +189,8 @@
             <!-- Schedule Preview -->
             <div *ngIf="newSchedule.startTime && newSchedule.endTime" class="schedule-preview styled-preview">
               <p class="preview-text">
-                {{ 'adminCourseManagement.schedule' | translate }}: <strong>{{ formatTimeDisplay(newSchedule.startTime) }} - {{ formatTimeDisplay(newSchedule.endTime) }}</strong>
+                {{ 'adminCourseManagement.schedule' | translate }}: <strong>{{ formatTimeDisplay(newSchedule.startTime)
+                  }} - {{ formatTimeDisplay(newSchedule.endTime) }}</strong>
               </p>
             </div>
           </div>
@@ -195,24 +204,28 @@
               <div class="form-grid">
                 <div class="form-group">
                   <label for="newLessonCount">{{ 'adminCourseManagement.numberOfLessons' | translate }} *</label>
-                  <select id="newLessonCount" [(ngModel)]="newLessonOption.lessonCount" name="newLessonCount" class="form-control">
+                  <select id="newLessonCount" [(ngModel)]="newLessonOption.lessonCount" name="newLessonCount"
+                    class="form-control">
                     <option *ngFor="let count of getLessonCountOptions()" [value]="count">
-                      {{ count }} {{ count === 1 ? ('adminCourseManagement.lesson' | translate) : ('adminCourseManagement.lessons' | translate) }}
+                      {{ count }} {{ count === 1 ? ('adminCourseManagement.lesson' | translate) :
+                      ('adminCourseManagement.lessons' | translate) }}
                     </option>
                   </select>
                 </div>
 
                 <div class="form-group">
                   <label for="newLessonPrice">
-                    {{ 'adminCourseManagement.priceForLessons' | translate }} {{ newLessonOption.lessonCount }} 
-                    {{ newLessonOption.lessonCount > 1 ? ('adminCourseManagement.lessons' | translate) : ('adminCourseManagement.lesson' | translate) }} (€) *
+                    {{ 'adminCourseManagement.priceForLessons' | translate }} {{ newLessonOption.lessonCount }}
+                    {{ newLessonOption.lessonCount > 1 ? ('adminCourseManagement.lessons' | translate) :
+                    ('adminCourseManagement.lesson' | translate) }} (€) *
                   </label>
                   <input type="number" id="newLessonPrice" [(ngModel)]="newLessonOption.price" name="newLessonPrice"
                     min="0" step="0.01" class="form-control" placeholder="0.00">
                 </div>
 
                 <div class="form-group">
-                  <button type="button" class="btn btn-secondary btn-sm lesson-add-btn" (click)="addLessonOptionToNewSchedule()">
+                  <button type="button" class="btn btn-secondary btn-sm lesson-add-btn"
+                    (click)="addLessonOptionToNewSchedule()">
                     <span class="btn-icon">+</span>
                     {{ 'adminCourseManagement.addLessonOption' | translate }}
                   </button>
@@ -222,13 +235,17 @@
 
             <!-- Current Lesson Options for New Schedule -->
             <div *ngIf="newSchedule.lessonOptions.length > 0" class="current-lesson-options styled-list">
-              <h6>{{ 'adminCourseManagement.currentLessonOptions' | translate }} ({{ newSchedule.lessonOptions.length }})</h6>
+              <h6>{{ 'adminCourseManagement.currentLessonOptions' | translate }} ({{ newSchedule.lessonOptions.length
+                }})</h6>
               <div class="lesson-options-list">
-                <div *ngFor="let option of newSchedule.lessonOptions; let i = index" class="lesson-option-item styled-item">
+                <div *ngFor="let option of newSchedule.lessonOptions; let i = index"
+                  class="lesson-option-item styled-item">
                   <span class="lesson-option-text">
-                    {{ option.lessonCount }} {{ option.lessonCount === 1 ? ('adminCourseManagement.lesson' | translate) : ('adminCourseManagement.lessons' | translate) }} - €{{ option.price }}
+                    {{ option.lessonCount }} {{ option.lessonCount === 1 ? ('adminCourseManagement.lesson' | translate)
+                    : ('adminCourseManagement.lessons' | translate) }} - €{{ option.price }}
                   </span>
-                  <button type="button" class="btn btn-danger btn-xs" (click)="removeLessonOptionFromNewSchedule(i)">×</button>
+                  <button type="button" class="btn btn-danger btn-xs"
+                    (click)="removeLessonOptionFromNewSchedule(i)">×</button>
                 </div>
               </div>
             </div>
@@ -248,7 +265,8 @@
         <div *ngIf="courseForm.schedules.length > 0" class="current-schedules-section styled-schedules">
           <h4>{{ 'adminCourseManagement.currentSchedules' | translate }} ({{ courseForm.schedules.length }})</h4>
           <div class="schedules-list">
-            <div *ngFor="let schedule of courseForm.schedules; let scheduleIndex = index" class="schedule-card styled-card">
+            <div *ngFor="let schedule of courseForm.schedules; let scheduleIndex = index"
+              class="schedule-card styled-card">
               <div class="schedule-header">
                 <h5 class="schedule-title">{{ getScheduleDisplay(schedule) }}</h5>
                 <button type="button" class="btn btn-danger btn-sm" (click)="removeSchedule(scheduleIndex)">
@@ -262,31 +280,38 @@
 
                 <!-- Existing Lesson Options -->
                 <div class="lesson-options-grid">
-                  <div *ngFor="let lessonOption of schedule.lessonOptions; let lessonIndex = index" class="lesson-option-editor styled-editor">
+                  <div *ngFor="let lessonOption of schedule.lessonOptions; let lessonIndex = index"
+                    class="lesson-option-editor styled-editor">
                     <div class="lesson-option-controls">
                       <div class="control-group">
                         <label>{{ 'adminCourseManagement.lessons' | translate }}</label>
-                        <select [(ngModel)]="lessonOption.lessonCount" [name]="'lessonCount_' + scheduleIndex + '_' + lessonIndex"
-                          (ngModelChange)="updateLessonOption(scheduleIndex, lessonIndex, 'lessonCount', $event)" class="form-control form-control-sm">
+                        <select [(ngModel)]="lessonOption.lessonCount"
+                          [name]="'lessonCount_' + scheduleIndex + '_' + lessonIndex"
+                          (ngModelChange)="updateLessonOption(scheduleIndex, lessonIndex, 'lessonCount', $event)"
+                          class="form-control form-control-sm">
                           <option *ngFor="let count of getLessonCountOptions()" [value]="count">{{ count }}</option>
                         </select>
                       </div>
 
                       <div class="control-group">
                         <label>{{ 'adminCourseManagement.pricePerStudent' | translate }}</label>
-                        <input type="number" [(ngModel)]="lessonOption.price" [name]="'lessonPrice_' + scheduleIndex + '_' + lessonIndex"
-                          (ngModelChange)="updateLessonOption(scheduleIndex, lessonIndex, 'price', $event)" min="0" step="0.01" class="form-control form-control-sm">
+                        <input type="number" [(ngModel)]="lessonOption.price"
+                          [name]="'lessonPrice_' + scheduleIndex + '_' + lessonIndex"
+                          (ngModelChange)="updateLessonOption(scheduleIndex, lessonIndex, 'price', $event)" min="0"
+                          step="0.01" class="form-control form-control-sm">
                       </div>
 
                       <div class="control-group">
-                        <button type="button" class="btn btn-danger btn-xs" (click)="removeLessonOptionFromSchedule(scheduleIndex, lessonIndex)">×</button>
+                        <button type="button" class="btn btn-danger btn-xs"
+                          (click)="removeLessonOptionFromSchedule(scheduleIndex, lessonIndex)">×</button>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <!-- Add Lesson Option to Existing Schedule -->
-                <button type="button" class="btn btn-secondary btn-sm lesson-add-btn" (click)="addLessonOptionToSchedule(scheduleIndex)">
+                <button type="button" class="btn btn-secondary btn-sm lesson-add-btn"
+                  (click)="addLessonOptionToSchedule(scheduleIndex)">
                   <span class="btn-icon">+</span>
                   {{ 'adminCourseManagement.addLessonOption' | translate }}
                 </button>
@@ -307,8 +332,10 @@
             <div class="summary-section">
               <h4>{{ 'adminCourseManagement.groupPricing' | translate }}</h4>
               <div class="summary-grid">
-                <div *ngFor="let groupPricing of courseForm.groupPricing.slice(0, courseForm.groupPricing.length / 2)" class="summary-item">
-                  <span class="summary-label">{{ groupPricing.studentRange }} {{ 'adminCourseManagement.students' | translate }}</span>
+                <div *ngFor="let groupPricing of courseForm.groupPricing.slice(0, courseForm.groupPricing.length / 2)"
+                  class="summary-item">
+                  <span class="summary-label">{{ groupPricing.studentRange }} {{ 'adminCourseManagement.students' |
+                    translate }}</span>
                   <span class="summary-price">€{{ groupPricing.price }}
                     /{{ 'adminCourseManagement.student' | translate }}</span>
                 </div>
@@ -321,7 +348,8 @@
                 <h5>{{ getScheduleDisplay(schedule) }}</h5>
                 <div class="lesson-summary-grid">
                   <div *ngFor="let option of schedule.lessonOptions" class="lesson-summary-item">
-                    <span>{{ option.lessonCount }} {{ option.lessonCount > 1 ? ('adminCourseManagement.lessons' | translate) : ('adminCourseManagement.lesson' | translate) }}: €{{ option.price }}</span>
+                    <span>{{ option.lessonCount }} {{ option.lessonCount > 1 ? ('adminCourseManagement.lessons' |
+                      translate) : ('adminCourseManagement.lesson' | translate) }}: €{{ option.price }}</span>
                   </div>
                 </div>
               </div>
@@ -336,7 +364,8 @@
           </button>
           <button type="submit" class="btn btn-primary" [disabled]="isFormInvalid()">
             <span *ngIf="isLoading" class="loading-spinner"></span>
-            {{ editingCourse ? ('adminCourseManagement.updateCourse' | translate) : ('adminCourseManagement.createCourse' | translate) }}
+            {{ editingCourse ? ('adminCourseManagement.updateCourse' | translate) :
+            ('adminCourseManagement.createCourse' | translate) }}
           </button>
         </div>
       </form>
@@ -414,15 +443,18 @@
             </div>
             <div class="detail-row">
               <span class="detail-label">{{ 'adminCourseManagement.enrollment' | translate }}:</span>
-              <span class="detail-value">{{ course.currentStudents }}/{{ course.maxStudents }} {{ 'adminCourseManagement.students' | translate }}</span>
+              <span class="detail-value">{{ course.currentStudents }}/{{ course.maxStudents }} {{
+                'adminCourseManagement.students' | translate }}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">{{ 'adminCourseManagement.schedules' | translate }}:</span>
-              <span class="detail-value">{{ getTotalSchedulesCount(course) }} {{ 'adminCourseManagement.schedules' | translate | lowercase }}</span>
+              <span class="detail-value">{{ getTotalSchedulesCount(course) }} {{ 'adminCourseManagement.schedules' |
+                translate | lowercase }}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">{{ 'adminCourseManagement.totalLessonOptions' | translate }}:</span>
-              <span class="detail-value">{{ getTotalLessonOptionsCount(course) }} {{ 'adminCourseManagement.options' | translate }}</span>
+              <span class="detail-value">{{ getTotalLessonOptionsCount(course) }} {{ 'adminCourseManagement.options' |
+                translate }}</span>
             </div>
           </div>
 
@@ -441,11 +473,14 @@
 
           <!-- Schedules Preview -->
           <div class="schedules-preview">
-            <h4>{{ 'adminCourseManagement.schedules' | translate }} ({{ getTotalSchedulesCount(course) }})</h4>
+            <h4>{{ 'adminCourseManagement.schedules' | translate }} ({{ getUniqueSchedules(course).length }})</h4>
             <div class="schedules-preview-list">
-              <div *ngFor="let schedule of course.schedules" class="schedule-preview-item">
+              <div *ngFor="let schedule of getUniqueSchedules(course)" class="schedule-preview-item">
                 <div class="schedule-time">{{ getScheduleDisplay(schedule) }}</div>
-                <div class="schedule-lessons-count">{{ schedule.lessonOptions.length || 0 }} {{ 'adminCourseManagement.lessonOptions' | translate | lowercase }}</div>
+                <div class="schedule-lessons-count">
+                  {{ schedule.lessonOptions.length || 0 }} {{ 'adminCourseManagement.lessonOptions' | translate |
+                  lowercase }}
+                </div>
               </div>
             </div>
           </div>
@@ -488,9 +523,12 @@
 
           <div class="template-course-details">
             <p><strong>{{ 'adminCourseManagement.client' | translate }}:</strong> {{ course.clientName }}</p>
-            <p><strong>{{ 'adminCourseManagement.professional' | translate }}:</strong> {{ getProfessionalName(course.professionalId) }}</p>
-            <p><strong>{{ 'adminCourseManagement.schedules' | translate }}:</strong> {{ getTotalSchedulesCount(course) }}</p>
-            <p><strong>{{ 'adminCourseManagement.groupPricing' | translate }}:</strong> {{ getGroupPricingDisplay(course) }}</p>
+            <p><strong>{{ 'adminCourseManagement.professional' | translate }}:</strong> {{
+              getProfessionalName(course.professionalId) }}</p>
+            <p><strong>{{ 'adminCourseManagement.schedules' | translate }}:</strong> {{ getTotalSchedulesCount(course)
+              }}</p>
+            <p><strong>{{ 'adminCourseManagement.groupPricing' | translate }}:</strong> {{
+              getGroupPricingDisplay(course) }}</p>
           </div>
 
           <div class="template-course-description">

@@ -794,6 +794,16 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       .join(', ');
   }
 
+  getUniqueSchedules(course: AdminCourse): Schedule[] {
+    const seen = new Set<string>();
+    return course.schedules.filter(schedule => {
+      const key = `${schedule.startTime}-${schedule.endTime}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
   getGroupPricingDisplay(course: AdminCourse): string {
     if (!course.groupPricing || course.groupPricing.length === 0) {
       return 'No group pricing set';
