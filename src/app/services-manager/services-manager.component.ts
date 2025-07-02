@@ -13,7 +13,24 @@ import { AuthService } from '../services/auth.service';
 import { HeaderComponent } from '../header/header.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 
-// Updated interfaces for flexible pricing
+// New interfaces for updated pricing structure
+interface GroupPricing {
+  studentRange: '1-4' | '5-6';
+  price: number;
+}
+
+interface Schedule {
+  id?: string;
+  startTime: string;
+  endTime: string;
+  lessonOptions: LessonOption[];
+}
+
+interface LessonOption {
+  lessonCount: number;
+  price: number;
+}
+
 interface Course {
   id: string | number;
   name: string;
@@ -36,18 +53,10 @@ interface Course {
   maxStudents?: number;
   currentStudents?: number;
   availableSpots?: number;
-  currentPrice?: number;
-  pricing?: CoursePricing[];
-  
-  // Schedule fields - VIEW ONLY for clients
-  startTime?: string;
-  endTime?: string;
-}
 
-interface CoursePricing {
-  studentCount: number;
-  lessonsCount: number;
-  price: number;
+  // New pricing structure
+  schedules?: Schedule[];
+  groupPricing?: GroupPricing[];
 }
 
 interface Enrollment {
@@ -71,8 +80,9 @@ interface Enrollment {
   clientName?: string;
   isOutsourcing?: boolean;
   notes?: string;
-  selectedLessonsCount?: number;
-  selectedStudentCount?: number;
+  selectedScheduleId?: string;
+  selectedLessonCount?: number;
+  studentCount?: number;
 }
 
 interface EnrollmentRequest {
@@ -84,7 +94,9 @@ interface EnrollmentRequest {
   motherEmail?: string;
   motherPhone?: string;
   motherContact?: string;
-  selectedPricingIndex?: number;
+  selectedScheduleId?: string;
+  selectedLessonCount?: number;
+  studentCount?: number;
 }
 
 @Component({
@@ -102,7 +114,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   private apiUrl = this.isDevelopment
     ? 'http://localhost:10000/api'
     : 'https://happyswimming.onrender.com/api';
-  
+
   private authService = inject(AuthService);
   private datePipe = inject(DatePipe);
 
@@ -128,9 +140,11 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   error: string = '';
   successMessage: string = '';
 
-  // Pricing selection for enrollment
-  selectedPricingIndex: number | null = null;
-  availablePricingOptions: CoursePricing[] = [];
+  // New enrollment selection variables
+  selectedSchedule: Schedule | null = null;
+  selectedLessonOption: LessonOption | null = null;
+  selectedStudentCount: number = 1;
+  calculatedPrice: number = 0;
 
   // Enrollment form data
   enrollmentForm = {
@@ -140,8 +154,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     price: 0,
     notes: '',
     motherContact: '',
-    selectedStudentCount: 1,
-    selectedLessonsCount: 1
+    studentCount: 1
   };
 
   constructor(
@@ -246,40 +259,79 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.error = '';
     this.successMessage = '';
     this.resetEnrollmentForm();
-    
-    // Set up pricing options
-    if (course.pricing && course.pricing.length > 0) {
-      this.availablePricingOptions = [...course.pricing];
-      this.selectedPricingIndex = null;
-    } else {
-      this.availablePricingOptions = [];
-    }
+    this.resetSelections();
   }
 
-  // Handle pricing selection
-  onPricingSelectionChange(index: number): void {
-    this.selectedPricingIndex = index;
-    if (this.availablePricingOptions[index]) {
-      const selectedPricing = this.availablePricingOptions[index];
-      this.enrollmentForm.selectedStudentCount = selectedPricing.studentCount;
-      this.enrollmentForm.selectedLessonsCount = selectedPricing.lessonsCount;
-      this.enrollmentForm.price = selectedPricing.price;
-    }
+  // Reset enrollment selections
+  private resetSelections(): void {
+    this.selectedSchedule = null;
+    this.selectedLessonOption = null;
+    this.selectedStudentCount = 1;
+    this.calculatedPrice = 0;
+  }
+
+  // Handle schedule selection
+  onScheduleChange(scheduleId: string): void {
+    if (!this.selectedCourse?.schedules) return;
+
+    this.selectedSchedule = this.selectedCourse.schedules.find(s => s.id === scheduleId) || null;
+    this.selectedLessonOption = null;
+    this.calculatePrice();
     this.cdr.detectChanges();
   }
 
-  // Get selected pricing info for display
-  getSelectedPricingInfo(): string {
-    if (this.selectedPricingIndex !== null && this.availablePricingOptions[this.selectedPricingIndex]) {
-      const pricing = this.availablePricingOptions[this.selectedPricingIndex];
-      return `${pricing.studentCount} student${pricing.studentCount > 1 ? 's' : ''}, ${pricing.lessonsCount} lesson${pricing.lessonsCount > 1 ? 's' : ''} - €${pricing.price}`;
-    }
-    return '';
+  // Handle lesson option selection
+  onLessonOptionChange(lessonOption: LessonOption): void {
+    this.selectedLessonOption = lessonOption;
+    this.calculatePrice();
+    this.cdr.detectChanges();
   }
 
-  // Check if multiple pricing options are available
-  hasMultiplePricingOptions(course: Course): boolean {
-    return course.pricing ? course.pricing.length > 1 : false;
+  // Handle student count change
+  onStudentCountChange(count: number): void {
+    this.selectedStudentCount = count;
+    this.enrollmentForm.studentCount = count;
+    this.calculatePrice();
+    this.cdr.detectChanges();
+  }
+
+  // Calculate total price based on selections
+  private calculatePrice(): void {
+    if (!this.selectedCourse || !this.selectedLessonOption) {
+      this.calculatedPrice = 0;
+      this.enrollmentForm.price = 0;
+      return;
+    }
+
+    // Get appropriate group pricing
+    const groupPricing = this.getApplicableGroupPricing();
+    if (!groupPricing) {
+      this.calculatedPrice = 0;
+      this.enrollmentForm.price = 0;
+      return;
+    }
+
+    // Calculate: (group price per student * student count) + lesson option price
+    this.calculatedPrice = (groupPricing.price * this.selectedStudentCount) + this.selectedLessonOption.price;
+    this.enrollmentForm.price = this.calculatedPrice;
+  }
+
+  // Get applicable group pricing based on student count
+  public getApplicableGroupPricing(): GroupPricing | null {
+    if (!this.selectedCourse?.groupPricing) return null;
+
+    if (this.selectedStudentCount >= 1 && this.selectedStudentCount <= 4) {
+      return this.selectedCourse.groupPricing.find(gp => gp.studentRange === '1-4') || null;
+    } else if (this.selectedStudentCount >= 5 && this.selectedStudentCount <= 6) {
+      return this.selectedCourse.groupPricing.find(gp => gp.studentRange === '5-6') || null;
+    }
+
+    return null;
+  }
+
+  // Get available student count options
+  getStudentCountOptions(): number[] {
+    return Array.from({ length: 6 }, (_, i) => i + 1);
   }
 
   // Show enrollment details modal
@@ -288,7 +340,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       e.courseId === course.id.toString() ||
       e.courseId === `admin_course_${course.id}`
     );
-    
+
     if (enrollment) {
       this.selectedEnrollment = enrollment;
       this.showEnrollmentDetailsModal = true;
@@ -327,11 +379,9 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       price: 0,
       notes: '',
       motherContact: '',
-      selectedStudentCount: 1,
-      selectedLessonsCount: 1
+      studentCount: 1
     };
-    this.selectedPricingIndex = null;
-    this.availablePricingOptions = [];
+    this.resetSelections();
   }
 
   // Cancel enrollment
@@ -370,11 +420,9 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       enrollmentData.motherContact = this.enrollmentForm.motherContact;
       enrollmentData.motherEmail = this.enrollmentForm.motherEmail;
       enrollmentData.motherPhone = this.enrollmentForm.motherPhone;
-      
-      // Include pricing selection for multiple pricing options
-      if (this.hasMultiplePricingOptions(this.selectedCourse) && this.selectedPricingIndex !== null) {
-        enrollmentData.selectedPricingIndex = this.selectedPricingIndex;
-      }
+      enrollmentData.selectedScheduleId = this.selectedSchedule?.id;
+      enrollmentData.selectedLessonCount = this.selectedLessonOption?.lessonCount;
+      enrollmentData.studentCount = this.selectedStudentCount;
     } else {
       enrollmentData.courseId = this.selectedCourse.id as string;
     }
@@ -427,10 +475,16 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         this.error = 'Mother contact is required.';
         return false;
       }
-      
-      // Validate pricing selection for multiple pricing options
-      if (this.hasMultiplePricingOptions(this.selectedCourse) && this.selectedPricingIndex === null) {
-        this.error = 'Please select a pricing option.';
+      if (!this.selectedSchedule) {
+        this.error = 'Please select a schedule.';
+        return false;
+      }
+      if (!this.selectedLessonOption) {
+        this.error = 'Please select a lesson option.';
+        return false;
+      }
+      if (this.selectedStudentCount < 1 || this.selectedStudentCount > 6) {
+        this.error = 'Student count must be between 1 and 6.';
         return false;
       }
     }
@@ -460,25 +514,17 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return status.charAt(0).toUpperCase() + status.slice(1);
   }
 
-  // Get course price display for multiple pricing options
+  // Get course price display
   getCoursePrice(course: Course): string {
-    if (course.type === 'admin_course') {
-      if (course.pricing && course.pricing.length > 0) {
-        if (course.pricing.length === 1) {
-          // Single pricing option
-          const pricing = course.pricing[0];
-          return `€${pricing.price}`;
-        } else {
-          // Multiple pricing options - show range
-          const prices = course.pricing.map(p => p.price);
-          const minPrice = Math.min(...prices);
-          const maxPrice = Math.max(...prices);
-          if (minPrice === maxPrice) {
-            return `€${minPrice}`;
-          }
-          return `€${minPrice} - €${maxPrice}`;
-        }
+    if (course.type === 'admin_course' && course.groupPricing && course.groupPricing.length > 0) {
+      const prices = course.groupPricing.map(gp => gp.price);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+
+      if (minPrice === maxPrice) {
+        return `From €${minPrice}/student`;
       }
+      return `€${minPrice}-€${maxPrice}/student`;
     }
     return `€${course.price}`;
   }
@@ -490,17 +536,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         const startDate = this.datePipe.transform(course.startDate, 'mediumDate');
         const endDate = this.datePipe.transform(course.endDate, 'mediumDate');
         return `${startDate} - ${endDate}`;
-      }
-      if (course.pricing && course.pricing.length > 0) {
-        // Show lesson range if multiple options
-        const lessonCounts = [...new Set(course.pricing.map(p => p.lessonsCount))];
-        if (lessonCounts.length === 1) {
-          return `${lessonCounts[0]} lessons`;
-        } else {
-          const minLessons = Math.min(...lessonCounts);
-          const maxLessons = Math.max(...lessonCounts);
-          return `${minLessons}-${maxLessons} lessons`;
-        }
       }
     }
     return course.duration ? `${course.duration} hours` : '';
@@ -577,31 +612,90 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.successMessage = '';
   }
 
-  // Get pricing details for admin course
-  getPricingDetails(course: Course): string {
-    if (course.type === 'admin_course' && course.pricing && course.pricing.length > 0) {
-      if (course.pricing.length === 1) {
-        const pricing = course.pricing[0];
-        return `€${pricing.price} for ${pricing.lessonsCount} lesson${pricing.lessonsCount > 1 ? 's' : ''} (${pricing.studentCount} student${pricing.studentCount > 1 ? 's' : ''})`;
-      } else {
-        return `Multiple pricing options available (${course.pricing.length} options)`;
-      }
-    }
-    return '';
-  }
-
-  // Format time display (VIEW ONLY for clients)
-  formatTimeDisplay(time: string): string {
-    if (!time) return '';
-    return time.substring(0, 5); // Returns HH:MM format
-  }
-
   // Get schedule display
   getScheduleDisplay(course: Course): string {
-    if (course.startTime && course.endTime) {
-      return `${this.formatTimeDisplay(course.startTime)} - ${this.formatTimeDisplay(course.endTime)}`;
+    if (!course.schedules || course.schedules.length === 0) {
+      return 'No schedules available';
     }
-    return 'Schedule to be confirmed';
+    if (course.schedules.length === 1) {
+      const schedule = course.schedules[0];
+      return `${this.formatTimeDisplay(schedule.startTime)} - ${this.formatTimeDisplay(schedule.endTime)}`;
+    }
+    return `${course.schedules.length} schedules available`;
+  }
+
+  // Format time display
+  formatTimeDisplay(time: string): string {
+    if (!time) return '';
+    return time.substring(0, 5);
+  }
+
+  // Get schedules display for course card
+  getSchedulesDisplay(course: Course): string {
+    if (!course.schedules || course.schedules.length === 0) {
+      return 'No schedules available';
+    }
+
+    if (course.schedules.length === 1) {
+      return this.getScheduleDisplay(course);
+    }
+
+    return `${course.schedules.length} schedules available`;
+  }
+
+  // Get lesson options display for course card
+  getLessonOptionsDisplay(course: Course): string {
+    if (!course.schedules) return 'No lesson options';
+
+    const totalOptions = course.schedules.reduce((total, schedule) =>
+      total + (schedule.lessonOptions?.length || 0), 0
+    );
+
+    return `${totalOptions} lesson options available`;
+  }
+
+  // Get group pricing display
+  getGroupPricingDisplay(course: Course): string {
+    if (!course.groupPricing || course.groupPricing.length === 0) {
+      return 'No group pricing set';
+    }
+
+    return course.groupPricing
+      .map(gp => `${gp.studentRange} students: €${gp.price}/student`)
+      .join(' | ');
+  }
+
+  // Helper methods for enrollment form
+  getAvailableSchedules(): Schedule[] {
+    return this.selectedCourse?.schedules || [];
+  }
+
+  getAvailableLessonOptions(): LessonOption[] {
+    return this.selectedSchedule?.lessonOptions || [];
+  }
+
+  getSelectedLessonOptionDisplay(): string {
+    if (!this.selectedLessonOption) return '';
+    return `${this.selectedLessonOption.lessonCount} lesson${this.selectedLessonOption.lessonCount > 1 ? 's' : ''} - €${this.selectedLessonOption.price}`;
+  }
+
+  getApplicableGroupPricingDisplay(): string {
+    const groupPricing = this.getApplicableGroupPricing();
+    if (!groupPricing) return '';
+
+    return `${groupPricing.studentRange} students: €${groupPricing.price}/student`;
+  }
+
+  getPriceBreakdown(): string {
+    if (!this.selectedLessonOption || !this.getApplicableGroupPricing()) {
+      return '';
+    }
+
+    const groupPricing = this.getApplicableGroupPricing()!;
+    const studentCost = groupPricing.price * this.selectedStudentCount;
+    const lessonCost = this.selectedLessonOption.price;
+
+    return `Student cost: €${studentCost} (€${groupPricing.price} × ${this.selectedStudentCount}) + Lesson cost: €${lessonCost} = Total: €${this.calculatedPrice}`;
   }
 
   // Track function for ngFor
@@ -611,5 +705,13 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   trackByEnrollmentId(index: number, enrollment: Enrollment): string | number {
     return enrollment.id;
+  }
+
+  trackByScheduleId(index: number, schedule: Schedule): string {
+    return schedule.id || index.toString();
+  }
+
+  trackByLessonOption(index: number, option: LessonOption): string {
+    return `${option.lessonCount}-${option.price}`;
   }
 }

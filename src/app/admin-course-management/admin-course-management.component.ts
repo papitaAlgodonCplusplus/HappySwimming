@@ -13,11 +13,26 @@ import { AuthService } from '../services/auth.service';
 import { HeaderComponent } from '../header/header.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 
-// Updated models for flexible pricing
+// Interfaces
+interface GroupPricing {
+  studentRange: '1-4' | '5-6';
+  price: number;
+}
+
+interface Schedule {
+  id?: string;
+  startTime: string;
+  endTime: string;
+  lessonOptions: LessonOption[];
+}
+
+interface LessonOption {
+  lessonCount: number;
+  price: number;
+}
+
 interface AdminCourse {
   id?: number;
-  startTime?: string;
-  endTime?: string;
   courseCode?: string;
   name: string;
   description: string;
@@ -29,15 +44,10 @@ interface AdminCourse {
   maxStudents: number;
   currentStudents: number;
   status: 'active' | 'completed' | 'cancelled';
-  pricing: CoursePricing[];
+  schedules: Schedule[];
+  groupPricing: GroupPricing[];
   createdAt?: Date;
   isHistorical?: boolean;
-}
-
-interface CoursePricing {
-  studentCount: number;
-  lessonsCount: number;
-  price: number;
 }
 
 interface Professional {
@@ -51,12 +61,22 @@ interface CourseFormData {
   name: string;
   description: string;
   clientName: string;
-  startTime: string;
-  endTime: string;
   startDate: string;
   endDate: string;
   professionalId: number | null;
-  pricing: CoursePricing[];
+  schedules: Schedule[];
+  groupPricing: GroupPricing[];
+}
+
+// NEW: Client interface for dropdown
+interface Client {
+  id: number;
+  firstName: string;
+  lastName1: string;
+  lastName2?: string;
+  email: string;
+  companyName?: string;
+  phoneMobile?: string;
 }
 
 @Component({
@@ -83,6 +103,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   // Course management state
   courses: AdminCourse[] = [];
   professionals: Professional[] = [];
+  clients: Client[] = []; // NEW: Array to store clients
   isLoading: boolean = false;
   error: string = '';
   successMessage: string = '';
@@ -91,17 +112,20 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   showCreateForm: boolean = false;
   editingCourse: AdminCourse | null = null;
 
-  // Form data with updated pricing structure
+  // NEW: Course template selection
+  selectedCourseTemplate: AdminCourse | null = null;
+  showTemplateSelection: boolean = false;
+
+  // Form data with new structure
   courseForm: CourseFormData = {
     name: '',
     description: '',
     clientName: '',
-    startTime: '',
-    endTime: '',
     startDate: '',
     endDate: '',
     professionalId: null,
-    pricing: []
+    schedules: [],
+    groupPricing: []
   };
 
   // Filter and search
@@ -110,10 +134,15 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   clientFilter: string = 'all';
   clientOptions: string[] = [];
 
-  // Pricing form controls
-  newPricingLine = {
-    studentCount: 1,
-    lessonsCount: 1,
+  // New schedule and pricing controls
+  newSchedule: Schedule = {
+    startTime: '',
+    endTime: '',
+    lessonOptions: []
+  };
+
+  newLessonOption = {
+    lessonCount: 1,
     price: 0
   };
 
@@ -126,6 +155,8 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.checkUserRole();
     this.loadCourses();
     this.loadProfessionals();
+    this.loadClients(); // NEW: Load clients
+    this.initializeGroupPricing();
   }
 
   ngOnDestroy(): void {
@@ -136,6 +167,83 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   private getAuthHeaders(): HttpHeaders {
     const token = localStorage.getItem('token');
     return new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  }
+
+  // NEW: Load clients from API
+  loadClients(): void {
+    this.http.get<Client[]>(`${this.apiUrl}/admin/clients`, {
+      headers: this.getAuthHeaders()
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Error loading clients:', error);
+        return of([]);
+      })
+    ).subscribe(clients => {
+      console.log('Loaded clients:', clients);
+      this.clients = clients;
+      this.cdr.detectChanges();
+    });
+  }
+
+  // NEW: Get client display name for dropdown
+  getClientDisplayName(client: Client): string {
+    const name = `${client.firstName} ${client.lastName1}${client.lastName2 ? ' ' + client.lastName2 : ''}`;
+    return client.companyName ? `${name} (${client.companyName})` : name;
+  }
+
+  // NEW: Handle client selection
+  onClientSelected(clientName: string): void {
+    this.courseForm.clientName = clientName;
+  }
+
+  // NEW: Show template selection modal
+  showCourseTemplateSelection(): void {
+    this.showTemplateSelection = true;
+  }
+
+  // NEW: Hide template selection modal
+  hideCourseTemplateSelection(): void {
+    this.showTemplateSelection = false;
+    this.selectedCourseTemplate = null;
+  }
+
+  // NEW: Apply course template
+  applyCourseTemplate(course: AdminCourse): void {
+    if (!course) return;
+
+    // Copy course data to form, excluding dates and course-specific info
+    this.courseForm = {
+      name: course.name + ' - Copy',
+      description: course.description,
+      clientName: course.clientName,
+      startDate: '', // Don't copy dates
+      endDate: '',   // Don't copy dates
+      professionalId: course.professionalId,
+      schedules: course.schedules ? course.schedules.map(schedule => ({
+        ...schedule,
+        id: undefined // Remove ID so new schedules are created
+      })) : [],
+      groupPricing: course.groupPricing ? [...course.groupPricing] : []
+    };
+
+    // Initialize group pricing if empty
+    if (this.courseForm.groupPricing.length === 0) {
+      this.initializeGroupPricing();
+    }
+
+    this.hideCourseTemplateSelection();
+    this.clearMessages();
+    this.successMessage = `Template from "${course.name}" applied successfully. Please update the dates and course name as needed.`;
+    this.cdr.detectChanges();
+  }
+
+  // Initialize default group pricing structure
+  private initializeGroupPricing(): void {
+    this.courseForm.groupPricing = [
+      { studentRange: '1-4', price: 0 },
+      { studentRange: '5-6', price: 0 }
+    ];
   }
 
   // Load courses from API
@@ -186,82 +294,207 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.clientOptions = Array.from(clients).sort();
   }
 
-  // Add new pricing line
-  addPricingLine(): void {
-    // Validate new pricing line
-    if (this.newPricingLine.studentCount < 1 || this.newPricingLine.studentCount > 10) {
-      this.error = 'Student count must be between 1 and 10';
-      return;
-    }
-    if (this.newPricingLine.lessonsCount < 1 || this.newPricingLine.lessonsCount > 10) {
-      this.error = 'Lessons count must be between 1 and 10';
-      return;
-    }
-    if (this.newPricingLine.price <= 0) {
-      this.error = 'Price must be greater than 0';
+  // Schedule management methods
+  addSchedule(): void {
+    if (!this.validateNewSchedule()) {
       return;
     }
 
-    // Check for duplicate combinations
-    const duplicate = this.courseForm.pricing.find(p => 
-      p.studentCount === this.newPricingLine.studentCount && 
-      p.lessonsCount === this.newPricingLine.lessonsCount
-    );
-
-    if (duplicate) {
-      this.error = `Pricing already exists for ${this.newPricingLine.studentCount} student(s) with ${this.newPricingLine.lessonsCount} lesson(s)`;
-      return;
-    }
-
-    // Add new pricing line
-    this.courseForm.pricing.push({
-      studentCount: this.newPricingLine.studentCount,
-      lessonsCount: this.newPricingLine.lessonsCount,
-      price: this.newPricingLine.price
-    });
-
-    // Sort pricing by student count, then by lessons count
-    this.courseForm.pricing.sort((a, b) => {
-      if (a.studentCount !== b.studentCount) {
-        return a.studentCount - b.studentCount;
-      }
-      return a.lessonsCount - b.lessonsCount;
-    });
-
-    // Reset form
-    this.newPricingLine = {
-      studentCount: 1,
-      lessonsCount: 1,
-      price: 0
+    // Generate unique ID for the schedule
+    const scheduleId = Date.now().toString();
+    const newSchedule: Schedule = {
+      id: scheduleId,
+      startTime: this.newSchedule.startTime,
+      endTime: this.newSchedule.endTime,
+      lessonOptions: [...this.newSchedule.lessonOptions]
     };
 
+    this.courseForm.schedules.push(newSchedule);
+    this.resetNewSchedule();
     this.clearMessages();
     this.cdr.detectChanges();
   }
 
-  // Remove pricing line
-  removePricingLine(index: number): void {
-    this.courseForm.pricing.splice(index, 1);
+  private validateNewSchedule(): boolean {
+    if (!this.newSchedule.startTime) {
+      this.error = 'Start time is required for the schedule.';
+      return false;
+    }
+    if (!this.newSchedule.endTime) {
+      this.error = 'End time is required for the schedule.';
+      return false;
+    }
+    if (this.newSchedule.startTime >= this.newSchedule.endTime) {
+      this.error = 'End time must be after start time.';
+      return false;
+    }
+    if (this.newSchedule.lessonOptions.length === 0) {
+      this.error = 'At least one lesson option is required for the schedule.';
+      return false;
+    }
+
+    // Check for duplicate schedule times
+    const duplicate = this.courseForm.schedules.find(s => 
+      s.startTime === this.newSchedule.startTime && s.endTime === this.newSchedule.endTime
+    );
+    if (duplicate) {
+      this.error = `Schedule already exists for ${this.newSchedule.startTime} - ${this.newSchedule.endTime}`;
+      return false;
+    }
+
+    return true;
+  }
+
+  removeSchedule(index: number): void {
+    this.courseForm.schedules.splice(index, 1);
     this.cdr.detectChanges();
   }
 
-  // Update existing pricing line
-  updatePricingLine(index: number, field: keyof CoursePricing, value: number): void {
-    if (index >= 0 && index < this.courseForm.pricing.length) {
-      this.courseForm.pricing[index][field] = value;
-      
-      // Re-sort if student count or lessons count changed
-      if (field === 'studentCount' || field === 'lessonsCount') {
-        this.courseForm.pricing.sort((a, b) => {
-          if (a.studentCount !== b.studentCount) {
-            return a.studentCount - b.studentCount;
-          }
-          return a.lessonsCount - b.lessonsCount;
+  // Lesson option management
+  addLessonOptionToNewSchedule(): void {
+    if (!this.validateNewLessonOption()) {
+      return;
+    }
+
+    // Check for duplicate lesson counts in current schedule
+    const duplicate = this.newSchedule.lessonOptions.find(l => 
+      l.lessonCount === this.newLessonOption.lessonCount
+    );
+    if (duplicate) {
+      this.error = `Lesson option for ${this.newLessonOption.lessonCount} lessons already exists`;
+      return;
+    }
+
+    this.newSchedule.lessonOptions.push({
+      lessonCount: this.newLessonOption.lessonCount,
+      price: this.newLessonOption.price
+    });
+
+    // Sort by lesson count
+    this.newSchedule.lessonOptions.sort((a, b) => a.lessonCount - b.lessonCount);
+
+    this.resetNewLessonOption();
+    this.clearMessages();
+    this.cdr.detectChanges();
+  }
+
+  private validateNewLessonOption(): boolean {
+    if (this.newLessonOption.lessonCount < 1 || this.newLessonOption.lessonCount > 20) {
+      this.error = 'Lesson count must be between 1 and 20.';
+      return false;
+    }
+    if (this.newLessonOption.price <= 0) {
+      this.error = 'Price must be greater than 0.';
+      return false;
+    }
+    return true;
+  }
+
+  removeLessonOptionFromNewSchedule(index: number): void {
+    this.newSchedule.lessonOptions.splice(index, 1);
+    this.cdr.detectChanges();
+  }
+
+  addLessonOptionToSchedule(scheduleIndex: number): void {
+    const schedule = this.courseForm.schedules[scheduleIndex];
+    if (!schedule) return;
+
+    // Add a default lesson option
+    schedule.lessonOptions.push({
+      lessonCount: 1,
+      price: 0
+    });
+    this.cdr.detectChanges();
+  }
+
+  removeLessonOptionFromSchedule(scheduleIndex: number, lessonIndex: number): void {
+    const schedule = this.courseForm.schedules[scheduleIndex];
+    if (!schedule) return;
+
+    schedule.lessonOptions.splice(lessonIndex, 1);
+    this.cdr.detectChanges();
+  }
+
+  updateLessonOption(scheduleIndex: number, lessonIndex: number, field: 'lessonCount' | 'price', value: number): void {
+    const schedule = this.courseForm.schedules[scheduleIndex];
+    if (!schedule || !schedule.lessonOptions[lessonIndex]) return;
+
+    schedule.lessonOptions[lessonIndex][field] = value;
+
+    // Sort lesson options if lesson count changed
+    if (field === 'lessonCount') {
+      schedule.lessonOptions.sort((a, b) => a.lessonCount - b.lessonCount);
+    }
+
+    this.cdr.detectChanges();
+  }
+
+  // Group pricing management
+  updateGroupPricing(range: '1-4' | '5-6', price: number): void {
+    const groupPricing = this.courseForm.groupPricing.find(gp => gp.studentRange === range);
+    if (groupPricing) {
+      groupPricing.price = price;
+    }
+    this.cdr.detectChanges();
+  }
+
+  // Get helper methods
+  getLessonCountOptions(): number[] {
+    return Array.from({ length: 20 }, (_, i) => i + 1);
+  }
+
+  getTimeOptions(): { value: string, label: string }[] {
+    const options = [];
+    for (let hour = 6; hour <= 22; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const displayHour = hour.toString().padStart(2, '0');
+        const displayMinute = minute.toString().padStart(2, '0');
+        options.push({
+          value: timeValue,
+          label: `${displayHour}:${displayMinute}`
         });
       }
-      
-      this.cdr.detectChanges();
     }
+    return options;
+  }
+
+  formatTimeDisplay(time: string): string {
+    if (!time) return '';
+    return time.substring(0, 5);
+  }
+
+  // Reset methods
+  private resetNewSchedule(): void {
+    this.newSchedule = {
+      startTime: '',
+      endTime: '',
+      lessonOptions: []
+    };
+  }
+
+  private resetNewLessonOption(): void {
+    this.newLessonOption = {
+      lessonCount: 1,
+      price: 0
+    };
+  }
+
+  resetForm(): void {
+    this.courseForm = {
+      name: '',
+      description: '',
+      clientName: '',
+      startDate: '',
+      endDate: '',
+      professionalId: null,
+      schedules: [],
+      groupPricing: []
+    };
+    this.initializeGroupPricing();
+    this.resetNewSchedule();
+    this.resetNewLessonOption();
+    this.error = '';
   }
 
   // Create new course
@@ -277,8 +510,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
 
     const courseData = {
       ...this.courseForm,
-      maxStudents: 10, // Updated max students
-      pricing: this.courseForm.pricing
+      maxStudents: 6 // Updated max students to 6
     };
 
     console.log('Creating course with data:', courseData);
@@ -307,6 +539,19 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Helper method to get group pricing value
+  getGroupPricingValue(range: '1-4' | '5-6'): number {
+    const groupPricing = this.courseForm.groupPricing.find(gp => gp.studentRange === range);
+    return groupPricing ? groupPricing.price : 0;
+  }
+
+  // Helper method to check if form is invalid for submit button
+  isFormInvalid(): boolean {
+    return this.isLoading || 
+           this.courseForm.schedules.length === 0 || 
+           this.courseForm.groupPricing.some(gp => gp.price <= 0);
+  }
+
   // Update existing course
   updateCourse(): void {
     if (!this.editingCourse || !this.validateCourseForm()) {
@@ -319,8 +564,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
 
     const courseData = {
       ...this.courseForm,
-      id: this.editingCourse.id,
-      pricing: this.courseForm.pricing
+      id: this.editingCourse.id
     };
 
     this.http.put<AdminCourse>(`${this.apiUrl}/admin/courses/${this.editingCourse.id}`, courseData, {
@@ -402,18 +646,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       this.error = 'End date is required.';
       return false;
     }
-    if (!this.courseForm.startTime) {
-      this.error = 'Start time is required.';
-      return false;
-    }
-    if (!this.courseForm.endTime) {
-      this.error = 'End time is required.';
-      return false;
-    }
-    if (this.courseForm.startTime >= this.courseForm.endTime) {
-      this.error = 'End time must be after start time.';
-      return false;
-    }
     if (new Date(this.courseForm.startDate) >= new Date(this.courseForm.endDate)) {
       this.error = 'End date must be after start date.';
       return false;
@@ -422,24 +654,36 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       this.error = 'Please assign a professional to this course.';
       return false;
     }
-    if (this.courseForm.pricing.length === 0) {
-      this.error = 'At least one pricing option is required.';
+    if (this.courseForm.schedules.length === 0) {
+      this.error = 'At least one schedule is required.';
       return false;
     }
 
-    // Validate each pricing line
-    for (let pricing of this.courseForm.pricing) {
-      if (pricing.studentCount < 1 || pricing.studentCount > 10) {
-        this.error = `Student count must be between 1 and 10.`;
+    // Validate group pricing
+    for (const groupPricing of this.courseForm.groupPricing) {
+      if (groupPricing.price <= 0) {
+        this.error = `Price for ${groupPricing.studentRange} students must be greater than 0.`;
         return false;
       }
-      if (pricing.lessonsCount < 1 || pricing.lessonsCount > 10) {
-        this.error = `Lessons count must be between 1 and 10.`;
+    }
+
+    // Validate each schedule
+    for (let i = 0; i < this.courseForm.schedules.length; i++) {
+      const schedule = this.courseForm.schedules[i];
+      if (schedule.lessonOptions.length === 0) {
+        this.error = `Schedule ${i + 1} must have at least one lesson option.`;
         return false;
       }
-      if (pricing.price <= 0) {
-        this.error = `Price must be greater than 0.`;
-        return false;
+      
+      for (const lessonOption of schedule.lessonOptions) {
+        if (lessonOption.lessonCount < 1 || lessonOption.lessonCount > 20) {
+          this.error = `Lesson count must be between 1 and 20.`;
+          return false;
+        }
+        if (lessonOption.price <= 0) {
+          this.error = `All lesson prices must be greater than 0.`;
+          return false;
+        }
       }
     }
 
@@ -454,13 +698,17 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       name: course.name,
       description: course.description,
       clientName: course.clientName,
-      startTime: course.startTime ?? '',
-      endTime: course.endTime ?? '',
       startDate: course.startDate,
       endDate: course.endDate,
       professionalId: course.professionalId,
-      pricing: [...course.pricing]
+      schedules: course.schedules ? [...course.schedules] : [],
+      groupPricing: course.groupPricing ? [...course.groupPricing] : []
     };
+
+    // Initialize group pricing if not present
+    if (this.courseForm.groupPricing.length === 0) {
+      this.initializeGroupPricing();
+    }
 
     this.showCreateForm = true;
     this.error = '';
@@ -472,60 +720,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.editingCourse = null;
     this.showCreateForm = false;
     this.resetForm();
-  }
-
-  // Get time options
-  getTimeOptions(): { value: string, label: string }[] {
-    const options = [];
-    for (let hour = 6; hour <= 22; hour++) {
-      for (let minute = 0; minute < 60; minute += 15) {
-        const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        const displayHour = hour.toString().padStart(2, '0');
-        const displayMinute = minute.toString().padStart(2, '0');
-        options.push({
-          value: timeValue,
-          label: `${displayHour}:${displayMinute}`
-        });
-      }
-    }
-    return options;
-  }
-
-  // Format time display
-  formatTimeDisplay(time: string): string {
-    if (!time) return '';
-    return time.substring(0, 5);
-  }
-
-  // Get student count options (1-10)
-  getStudentCountOptions(): number[] {
-    return Array.from({ length: 10 }, (_, i) => i + 1);
-  }
-
-  // Get lessons count options (1-10)  
-  getLessonsCountOptions(): number[] {
-    return Array.from({ length: 10 }, (_, i) => i + 1);
-  }
-
-  // Reset form
-  resetForm(): void {
-    this.courseForm = {
-      name: '',
-      description: '',
-      clientName: '',
-      startDate: '',
-      startTime: '',
-      endTime: '',
-      endDate: '',
-      professionalId: null,
-      pricing: []
-    };
-    this.newPricingLine = {
-      studentCount: 1,
-      lessonsCount: 1,
-      price: 0
-    };
-    this.error = '';
   }
 
   // Get filtered courses
@@ -584,5 +778,39 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
         return;
       }
     })
+  }
+
+  // Helper methods for display
+  getScheduleDisplay(schedule: Schedule): string {
+    return `${this.formatTimeDisplay(schedule.startTime)} - ${this.formatTimeDisplay(schedule.endTime)}`;
+  }
+
+  getLessonOptionsDisplay(schedule: Schedule): string {
+    if (!schedule.lessonOptions || schedule.lessonOptions.length === 0) {
+      return 'No lesson options';
+    }
+    return schedule.lessonOptions
+      .map(option => `${option.lessonCount} lessons (€${option.price})`)
+      .join(', ');
+  }
+
+  getGroupPricingDisplay(course: AdminCourse): string {
+    if (!course.groupPricing || course.groupPricing.length === 0) {
+      return 'No group pricing set';
+    }
+    return course.groupPricing
+      .map(gp => `${gp.studentRange} students: €${gp.price}`)
+      .join(' | ');
+  }
+
+  getTotalSchedulesCount(course: AdminCourse): number {
+    return course.schedules ? course.schedules.length : 0;
+  }
+
+  getTotalLessonOptionsCount(course: AdminCourse): number {
+    if (!course.schedules) return 0;
+    return course.schedules.reduce((total, schedule) => 
+      total + (schedule.lessonOptions ? schedule.lessonOptions.length : 0), 0
+    );
   }
 }

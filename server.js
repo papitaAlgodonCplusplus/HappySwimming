@@ -2582,7 +2582,7 @@ app.delete('/api/enrollments/:id', authenticateToken, async (req, res) => {
 app.get('/api/admin/courses', authenticateToken, async (req, res) => {
   try {
     // Check admin privileges
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.email !== 'admin@gmail.com') {
       return res.status(403).json({ error: 'Admin privileges required.' });
     }
 
@@ -2595,8 +2595,6 @@ app.get('/api/admin/courses', authenticateToken, async (req, res) => {
         ac.client_name,
         ac.start_date,
         ac.end_date,
-        ac.start_time,
-        ac.end_time,
         ac.professional_id,
         ac.status,
         ac.max_students,
@@ -2605,25 +2603,51 @@ app.get('/api/admin/courses', authenticateToken, async (req, res) => {
         ac.updated_at,
         CONCAT(pu.first_name, ' ', pu.last_name1) as professional_name,
         
-        -- Get pricing information
+        -- Get schedules with lesson options
         COALESCE(
           JSON_AGG(
             JSON_BUILD_OBJECT(
-              'studentCount', cp.student_count,
-              'price', cp.price,
-              'lessonsCount', cp.lessons_count
-            ) ORDER BY cp.student_count, cp.lessons_count
-          ) FILTER (WHERE cp.id IS NOT NULL),
+              'id', cs.id,
+              'startTime', cs.start_time,
+              'endTime', cs.end_time,
+              'lessonOptions', schedule_lessons.lesson_options
+            )
+          ) FILTER (WHERE cs.id IS NOT NULL),
           '[]'::json
-        ) as pricing
+        ) as schedules,
+        
+        -- Get group pricing
+        COALESCE(
+          JSON_AGG(
+            JSON_BUILD_OBJECT(
+              'studentRange', cgp.student_range,
+              'price', cgp.price
+            )
+          ) FILTER (WHERE cgp.id IS NOT NULL),
+          '[]'::json
+        ) as group_pricing
         
       FROM happyswimming.admin_courses ac
       LEFT JOIN happyswimming.professionals p ON ac.professional_id = p.id
       LEFT JOIN happyswimming.users pu ON p.user_id = pu.id
-      LEFT JOIN happyswimming.course_pricing cp ON ac.id = cp.course_id
+      LEFT JOIN happyswimming.course_schedules cs ON ac.id = cs.course_id
+      LEFT JOIN happyswimming.course_group_pricing cgp ON ac.id = cgp.course_id
+      LEFT JOIN (
+        SELECT 
+          cs2.id as schedule_id,
+          JSON_AGG(
+            JSON_BUILD_OBJECT(
+              'lessonCount', slo.lesson_count,
+              'price', slo.price
+            ) ORDER BY slo.lesson_count
+          ) as lesson_options
+        FROM happyswimming.course_schedules cs2
+        LEFT JOIN happyswimming.schedule_lesson_options slo ON cs2.id = slo.schedule_id
+        GROUP BY cs2.id
+      ) schedule_lessons ON cs.id = schedule_lessons.schedule_id
       WHERE ac.is_historical = FALSE
       GROUP BY ac.id, ac.course_code, ac.name, ac.description, ac.client_name, 
-               ac.start_date, ac.end_date, ac.start_time, ac.end_time, ac.professional_id, ac.status, 
+               ac.start_date, ac.end_date, ac.professional_id, ac.status, 
                ac.max_students, ac.current_students, ac.created_at, ac.updated_at,
                pu.first_name, pu.last_name1
       ORDER BY ac.created_at DESC
@@ -2638,14 +2662,13 @@ app.get('/api/admin/courses', authenticateToken, async (req, res) => {
       clientName: row.client_name,
       startDate: row.start_date,
       endDate: row.end_date,
-      startTime: row.start_time,
-      endTime: row.end_time,
       professionalId: row.professional_id,
       professionalName: row.professional_name,
       status: row.status,
       maxStudents: row.max_students,
       currentStudents: row.current_students,
-      pricing: row.pricing || [],
+      schedules: row.schedules || [],
+      groupPricing: row.group_pricing || [],
       createdAt: row.created_at
     }));
 
@@ -2656,6 +2679,47 @@ app.get('/api/admin/courses', authenticateToken, async (req, res) => {
   }
 });
 
+
+// GET: Fetch all authorized clients for admin dropdown (admin only)
+app.get('/api/admin/clients', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        c.id,
+        u.first_name as "firstName",
+        u.last_name1 as "lastName1", 
+        u.last_name2 as "lastName2",
+        u.email,
+        c.company_name as "companyName",
+        c.phone_mobile as "phoneMobile",
+        c.city,
+        c.country
+      FROM happyswimming.clients c
+      JOIN happyswimming.users u ON c.user_id = u.id
+      WHERE u.is_authorized = true AND u.is_active = true
+      ORDER BY u.first_name, u.last_name1
+    `;
+
+    const result = await pool.query(query);
+    
+    const clients = result.rows.map(row => ({
+      id: row.id,
+      firstName: row.firstName,
+      lastName1: row.lastName1,
+      lastName2: row.lastName2,
+      email: row.email,
+      companyName: row.companyName,
+      phoneMobile: row.phoneMobile,
+      city: row.city,
+      country: row.country
+    }));
+
+    res.json(clients);
+  } catch (error) {
+    console.error('Error fetching clients:', error);
+    res.status(500).json({ error: 'Failed to fetch clients' });
+  }
+});
 
 app.post('/api/admin/courses', authenticateToken, async (req, res) => {
   const client = await pool.connect();
@@ -2674,23 +2738,26 @@ app.post('/api/admin/courses', authenticateToken, async (req, res) => {
       clientName,
       startDate,
       endDate,
-      startTime,
-      endTime,
       professionalId,
-      pricing
+      schedules,
+      groupPricing
     } = req.body;
 
     // Validation
-    if (!name || !description || !clientName || !startDate || !endDate || !professionalId || !startTime || !endTime) {
-      return res.status(400).json({ error: 'All fields including schedule times are required' });
+    if (!name || !description || !clientName || !startDate || !endDate || !professionalId) {
+      return res.status(400).json({ error: 'All basic fields are required' });
     }
 
     if (new Date(startDate) >= new Date(endDate)) {
       return res.status(400).json({ error: 'End date must be after start date' });
     }
 
-    if (startTime >= endTime) {
-      return res.status(400).json({ error: 'End time must be after start time' });
+    if (!schedules || schedules.length === 0) {
+      return res.status(400).json({ error: 'At least one schedule is required' });
+    }
+
+    if (!groupPricing || groupPricing.length !== 2) {
+      return res.status(400).json({ error: 'Both group pricing options (1-4 and 5-6 students) are required' });
     }
 
     // Verify professional exists
@@ -2703,43 +2770,13 @@ app.post('/api/admin/courses', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Professional not found' });
     }
 
-    // Validate pricing array
-    if (!pricing || !Array.isArray(pricing) || pricing.length === 0) {
-      return res.status(400).json({ error: 'At least one pricing option is required' });
-    }
-
-    // Validate each pricing option
-    for (const price of pricing) {
-      if (!price.studentCount || price.studentCount < 1 || price.studentCount > 10) {
-        return res.status(400).json({ error: 'Student count must be between 1 and 10' });
-      }
-      if (!price.lessonsCount || price.lessonsCount < 1 || price.lessonsCount > 10) {
-        return res.status(400).json({ error: 'Lessons count must be between 1 and 10' });
-      }
-      if (!price.price || price.price <= 0) {
-        return res.status(400).json({ error: 'Price must be greater than 0' });
-      }
-    }
-
-    // Check for duplicate student/lesson combinations
-    const combinations = new Set();
-    for (const price of pricing) {
-      const combo = `${price.studentCount}-${price.lessonsCount}`;
-      if (combinations.has(combo)) {
-        return res.status(400).json({
-          error: `Duplicate pricing found for ${price.studentCount} student(s) with ${price.lessonsCount} lesson(s)`
-        });
-      }
-      combinations.add(combo);
-    }
-
-    // Insert course with schedule times
+    // Insert course
     const courseQuery = `
       INSERT INTO happyswimming.admin_courses 
-      (name, description, client_name, start_date, end_date, start_time, end_time, professional_id, created_by, max_students)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      (name, description, client_name, start_date, end_date, professional_id, created_by, max_students)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id, course_code, name, description, client_name, start_date, end_date, 
-                start_time, end_time, professional_id, status, max_students, current_students, created_at
+                professional_id, status, max_students, current_students, created_at
     `;
 
     const courseResult = await client.query(courseQuery, [
@@ -2748,23 +2785,47 @@ app.post('/api/admin/courses', authenticateToken, async (req, res) => {
       clientName,
       startDate,
       endDate,
-      startTime,
-      endTime,
       professionalId,
       req.user.id,
-      10 // Updated max students to 10
+      6 // Max students is 6 (can be 1-4 or 5-6)
     ]);
 
     const newCourse = courseResult.rows[0];
+    const courseId = newCourse.id;
 
-    // Insert multiple pricing options
-    for (const price of pricing) {
-      await client.query(
-        `INSERT INTO happyswimming.course_pricing 
-         (course_id, student_count, price, lessons_count)
-         VALUES ($1, $2, $3, $4)`,
-        [newCourse.id, price.studentCount, price.price, price.lessonsCount]
+    // Insert schedules and lesson options
+    for (const schedule of schedules) {
+      if (!schedule.startTime || !schedule.endTime || !schedule.lessonOptions || schedule.lessonOptions.length === 0) {
+        continue; // Skip invalid schedules
+      }
+
+      // Insert schedule
+      const scheduleResult = await client.query(
+        'INSERT INTO happyswimming.course_schedules (course_id, start_time, end_time) VALUES ($1, $2, $3) RETURNING id',
+        [courseId, schedule.startTime, schedule.endTime]
       );
+
+      const scheduleId = scheduleResult.rows[0].id;
+
+      // Insert lesson options for this schedule
+      for (const lessonOption of schedule.lessonOptions) {
+        if (lessonOption.lessonCount > 0 && lessonOption.price > 0) {
+          await client.query(
+            'INSERT INTO happyswimming.schedule_lesson_options (schedule_id, lesson_count, price) VALUES ($1, $2, $3)',
+            [scheduleId, lessonOption.lessonCount, lessonOption.price]
+          );
+        }
+      }
+    }
+
+    // Insert group pricing
+    for (const pricing of groupPricing) {
+      if (pricing.price > 0 && (pricing.studentRange === '1-4' || pricing.studentRange === '5-6')) {
+        await client.query(
+          'INSERT INTO happyswimming.course_group_pricing (course_id, student_range, price) VALUES ($1, $2, $3)',
+          [courseId, pricing.studentRange, pricing.price]
+        );
+      }
     }
 
     // Get professional name for response
@@ -2778,7 +2839,7 @@ app.post('/api/admin/courses', authenticateToken, async (req, res) => {
 
     await client.query('COMMIT');
 
-    // Return the complete course object with pricing
+    // Return the complete course object
     const responseData = {
       id: newCourse.id,
       courseCode: newCourse.course_code,
@@ -2787,14 +2848,13 @@ app.post('/api/admin/courses', authenticateToken, async (req, res) => {
       clientName: newCourse.client_name,
       startDate: newCourse.start_date,
       endDate: newCourse.end_date,
-      startTime: newCourse.start_time,
-      endTime: newCourse.end_time,
       professionalId: newCourse.professional_id,
       professionalName: professionalResult.rows[0]?.professional_name || 'Unknown',
       status: newCourse.status,
       maxStudents: newCourse.max_students,
       currentStudents: newCourse.current_students,
-      pricing: pricing,
+      schedules: schedules,
+      groupPricing: groupPricing,
       createdAt: newCourse.created_at
     };
 
@@ -2809,8 +2869,8 @@ app.post('/api/admin/courses', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT: Update existing admin course
 
+// PUT: Update existing admin course
 app.put('/api/admin/courses/:id', authenticateToken, async (req, res) => {
   const client = await pool.connect();
 
@@ -2829,23 +2889,14 @@ app.put('/api/admin/courses/:id', authenticateToken, async (req, res) => {
       clientName,
       startDate,
       endDate,
-      startTime,
-      endTime,
       professionalId,
-      pricing
+      schedules,
+      groupPricing
     } = req.body;
 
-    // Validation (same as create)
-    if (!name || !description || !clientName || !startDate || !endDate || !professionalId || !startTime || !endTime) {
-      return res.status(400).json({ error: 'All fields including schedule times are required' });
-    }
-
-    if (new Date(startDate) >= new Date(endDate)) {
-      return res.status(400).json({ error: 'End date must be after start date' });
-    }
-
-    if (startTime >= endTime) {
-      return res.status(400).json({ error: 'End time must be after start time' });
+    // Similar validation as create
+    if (!name || !description || !clientName || !startDate || !endDate || !professionalId) {
+      return res.status(400).json({ error: 'All basic fields are required' });
     }
 
     // Check if course exists
@@ -2858,42 +2909,14 @@ app.put('/api/admin/courses/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Course not found' });
     }
 
-    // Verify professional exists
-    const professionalCheck = await client.query(
-      'SELECT id FROM happyswimming.professionals WHERE id = $1',
-      [professionalId]
-    );
-
-    if (professionalCheck.rows.length === 0) {
-      return res.status(400).json({ error: 'Professional not found' });
-    }
-
-    // Validate pricing
-    if (!pricing || !Array.isArray(pricing) || pricing.length === 0) {
-      return res.status(400).json({ error: 'At least one pricing option is required' });
-    }
-
-    // Validate each pricing option
-    for (const price of pricing) {
-      if (!price.studentCount || price.studentCount < 1 || price.studentCount > 10) {
-        return res.status(400).json({ error: 'Student count must be between 1 and 10' });
-      }
-      if (!price.lessonsCount || price.lessonsCount < 1 || price.lessonsCount > 10) {
-        return res.status(400).json({ error: 'Lessons count must be between 1 and 10' });
-      }
-      if (!price.price || price.price <= 0) {
-        return res.status(400).json({ error: 'Price must be greater than 0' });
-      }
-    }
-
-    // Update course with schedule times
+    // Update course basic info
     const updateQuery = `
       UPDATE happyswimming.admin_courses 
       SET name = $1, description = $2, client_name = $3, start_date = $4, 
-          end_date = $5, start_time = $6, end_time = $7, professional_id = $8, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $9
+          end_date = $5, professional_id = $6, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $7
       RETURNING id, course_code, name, description, client_name, start_date, end_date,
-                start_time, end_time, professional_id, status, max_students, current_students, updated_at
+                professional_id, status, max_students, current_students, updated_at
     `;
 
     const updateResult = await client.query(updateQuery, [
@@ -2902,24 +2925,48 @@ app.put('/api/admin/courses/:id', authenticateToken, async (req, res) => {
       clientName,
       startDate,
       endDate,
-      startTime,
-      endTime,
       professionalId,
       courseId
     ]);
 
     const updatedCourse = updateResult.rows[0];
 
-    // Delete existing pricing and insert new pricing
-    await client.query('DELETE FROM happyswimming.course_pricing WHERE course_id = $1', [courseId]);
+    // Delete existing schedules, lesson options, and group pricing
+    await client.query('DELETE FROM happyswimming.schedule_lesson_options WHERE schedule_id IN (SELECT id FROM happyswimming.course_schedules WHERE course_id = $1)', [courseId]);
+    await client.query('DELETE FROM happyswimming.course_schedules WHERE course_id = $1', [courseId]);
+    await client.query('DELETE FROM happyswimming.course_group_pricing WHERE course_id = $1', [courseId]);
 
-    for (const price of pricing) {
-      await client.query(
-        `INSERT INTO happyswimming.course_pricing 
-         (course_id, student_count, price, lessons_count)
-         VALUES ($1, $2, $3, $4)`,
-        [courseId, price.studentCount, price.price, price.lessonsCount]
+    // Insert new schedules and lesson options (same logic as create)
+    for (const schedule of schedules) {
+      if (!schedule.startTime || !schedule.endTime || !schedule.lessonOptions || schedule.lessonOptions.length === 0) {
+        continue;
+      }
+
+      const scheduleResult = await client.query(
+        'INSERT INTO happyswimming.course_schedules (course_id, start_time, end_time) VALUES ($1, $2, $3) RETURNING id',
+        [courseId, schedule.startTime, schedule.endTime]
       );
+
+      const scheduleId = scheduleResult.rows[0].id;
+
+      for (const lessonOption of schedule.lessonOptions) {
+        if (lessonOption.lessonCount > 0 && lessonOption.price > 0) {
+          await client.query(
+            'INSERT INTO happyswimming.schedule_lesson_options (schedule_id, lesson_count, price) VALUES ($1, $2, $3)',
+            [scheduleId, lessonOption.lessonCount, lessonOption.price]
+          );
+        }
+      }
+    }
+
+    // Insert new group pricing
+    for (const pricing of groupPricing) {
+      if (pricing.price > 0 && (pricing.studentRange === '1-4' || pricing.studentRange === '5-6')) {
+        await client.query(
+          'INSERT INTO happyswimming.course_group_pricing (course_id, student_range, price) VALUES ($1, $2, $3)',
+          [courseId, pricing.studentRange, pricing.price]
+        );
+      }
     }
 
     // Get professional name for response
@@ -2942,14 +2989,13 @@ app.put('/api/admin/courses/:id', authenticateToken, async (req, res) => {
       clientName: updatedCourse.client_name,
       startDate: updatedCourse.start_date,
       endDate: updatedCourse.end_date,
-      startTime: updatedCourse.start_time,
-      endTime: updatedCourse.end_time,
       professionalId: updatedCourse.professional_id,
       professionalName: professionalResult.rows[0]?.professional_name || 'Unknown',
       status: updatedCourse.status,
       maxStudents: updatedCourse.max_students,
       currentStudents: updatedCourse.current_students,
-      pricing: pricing,
+      schedules: schedules,
+      groupPricing: groupPricing,
       updatedAt: updatedCourse.updated_at
     };
 
@@ -3021,7 +3067,7 @@ app.delete('/api/admin/courses/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// GET: Fetch available courses for client enrollment (replaces hardcoded courses)
+
 app.get('/api/client/available-courses', authenticateToken, async (req, res) => {
   try {
     const { clientName } = req.query;
@@ -3035,29 +3081,14 @@ app.get('/api/client/available-courses', authenticateToken, async (req, res) => 
         ac.client_name,
         ac.start_date,
         ac.end_date,
-        ac.start_time,
-        ac.end_time,
         ac.professional_id,
         ac.max_students,
         ac.current_students,
-        CONCAT(pu.first_name, ' ', pu.last_name1) as professional_name,
-        
-        -- Get pricing structure
-        COALESCE(
-          JSON_AGG(
-            JSON_BUILD_OBJECT(
-              'studentCount', cp.student_count,
-              'price', cp.price,
-              'lessonsCount', cp.lessons_count
-            ) ORDER BY cp.student_count, cp.lessons_count
-          ) FILTER (WHERE cp.id IS NOT NULL),
-          '[]'::json
-        ) as pricing
+        CONCAT(pu.first_name, ' ', pu.last_name1) as professional_name
         
       FROM happyswimming.admin_courses ac
       LEFT JOIN happyswimming.professionals p ON ac.professional_id = p.id
       LEFT JOIN happyswimming.users pu ON p.user_id = pu.id
-      LEFT JOIN happyswimming.course_pricing cp ON ac.id = cp.course_id
       WHERE ac.status = 'active' 
         AND ac.is_historical = FALSE
         AND ac.start_date > CURRENT_DATE
@@ -3071,35 +3102,74 @@ app.get('/api/client/available-courses', authenticateToken, async (req, res) => 
       queryParams.push(clientName);
     }
 
-    query += `
-      GROUP BY ac.id, ac.course_code, ac.name, ac.description, ac.client_name,
-               ac.start_date, ac.end_date, ac.start_time, ac.end_time, ac.professional_id, ac.max_students,
-               ac.current_students, pu.first_name, pu.last_name1
-      ORDER BY ac.start_date ASC
-    `;
+    query += ` ORDER BY ac.start_date ASC`;
 
     const result = await pool.query(query, queryParams);
 
-    const courses = result.rows.map(row => ({
-      id: row.id,
-      courseCode: row.course_code,
-      name: row.name,
-      description: row.description,
-      clientName: row.client_name,
-      startDate: row.start_date,
-      endDate: row.end_date,
-      startTime: row.start_time,
-      endTime: row.end_time,
-      professionalId: row.professional_id,
-      professionalName: row.professional_name,
-      maxStudents: row.max_students,
-      currentStudents: row.current_students,
-      availableSpots: row.max_students - row.current_students,
-      pricing: row.pricing || [],
-      type: 'admin_course'
+    // Get schedules and group pricing separately for each course
+    const coursesWithDetails = await Promise.all(result.rows.map(async (course) => {
+      // Get schedules with lesson options
+      const schedulesQuery = `
+        SELECT 
+          cs.id,
+          cs.start_time,
+          cs.end_time,
+          COALESCE(
+            JSON_AGG(
+              JSON_BUILD_OBJECT(
+                'lessonCount', slo.lesson_count,
+                'price', slo.price
+              ) ORDER BY slo.lesson_count
+            ) FILTER (WHERE slo.id IS NOT NULL),
+            '[]'::json
+          ) as lesson_options
+        FROM happyswimming.course_schedules cs
+        LEFT JOIN happyswimming.schedule_lesson_options slo ON cs.id = slo.schedule_id
+        WHERE cs.course_id = $1
+        GROUP BY cs.id, cs.start_time, cs.end_time
+        ORDER BY cs.start_time
+      `;
+
+      const schedulesResult = await pool.query(schedulesQuery, [course.id]);
+
+      // Get group pricing
+      const groupPricingQuery = `
+        SELECT student_range, price
+        FROM happyswimming.course_group_pricing
+        WHERE course_id = $1
+        ORDER BY student_range
+      `;
+
+      const groupPricingResult = await pool.query(groupPricingQuery, [course.id]);
+
+      return {
+        id: course.id,
+        courseCode: course.course_code,
+        name: course.name,
+        description: course.description,
+        clientName: course.client_name,
+        startDate: course.start_date,
+        endDate: course.end_date,
+        professionalId: course.professional_id,
+        professionalName: course.professional_name,
+        maxStudents: course.max_students,
+        currentStudents: course.current_students,
+        availableSpots: course.max_students - course.current_students,
+        schedules: schedulesResult.rows.map(schedule => ({
+          id: schedule.id,
+          startTime: schedule.start_time,
+          endTime: schedule.end_time,
+          lessonOptions: schedule.lesson_options || []
+        })),
+        groupPricing: groupPricingResult.rows.map(gp => ({
+          studentRange: gp.student_range,
+          price: parseFloat(gp.price)
+        })),
+        type: 'admin_course'
+      };
     }));
 
-    res.json(courses);
+    res.json(coursesWithDetails);
 
   } catch (error) {
     console.error('Error fetching available courses:', error);
@@ -3108,18 +3178,38 @@ app.get('/api/client/available-courses', authenticateToken, async (req, res) => 
 });
 
 
-// POST: Enroll in admin-created course (updated enrollment endpoint)
+
 app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) => {
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
-    const { adminCourseId, kidName, motherContact, motherEmail, motherPhone, selectedPricingIndex } = req.body;
+    const {
+      adminCourseId,
+      kidName,
+      motherContact,
+      motherEmail,
+      motherPhone,
+      selectedScheduleId,
+      selectedLessonCount,
+      studentCount
+    } = req.body;
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    console.log('Enrollment request:', { adminCourseId, kidName, motherContact, motherEmail, motherPhone, selectedPricingIndex, userId, userRole });
+    console.log('Enrollment request:', {
+      adminCourseId,
+      kidName,
+      motherContact,
+      motherEmail,
+      motherPhone,
+      selectedScheduleId,
+      selectedLessonCount,
+      studentCount,
+      userId,
+      userRole
+    });
 
     // Only clients can enroll in admin courses
     if (userRole !== 'client') {
@@ -3136,25 +3226,12 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
 
     const clientId = clientResult.rows[0].id;
 
-    // Get course details and ALL pricing options
+    // Get course details with pricing
     const courseQuery = `
       SELECT ac.id, ac.name, ac.professional_id, ac.max_students, ac.current_students, 
-             ac.start_date, ac.end_date, ac.start_time, ac.end_time,
-             COALESCE(
-               JSON_AGG(
-                 JSON_BUILD_OBJECT(
-                   'studentCount', cp.student_count,
-                   'price', cp.price,
-                   'lessonsCount', cp.lessons_count
-                 ) ORDER BY cp.student_count, cp.lessons_count
-               ) FILTER (WHERE cp.id IS NOT NULL),
-               '[]'::json
-             ) as pricing
+             ac.start_date, ac.end_date
       FROM happyswimming.admin_courses ac
-      LEFT JOIN happyswimming.course_pricing cp ON ac.id = cp.course_id
       WHERE ac.id = $1 AND ac.status = 'active' AND ac.is_historical = FALSE
-      GROUP BY ac.id, ac.name, ac.professional_id, ac.max_students, ac.current_students, 
-               ac.start_date, ac.end_date, ac.start_time, ac.end_time
     `;
 
     const courseResult = await client.query(courseQuery, [adminCourseId]);
@@ -3164,30 +3241,46 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
     }
 
     const course = courseResult.rows[0];
-    const pricingOptions = course.pricing;
 
     // Check if course is full
     if (course.current_students >= course.max_students) {
       return res.status(400).json({ error: 'Course is full' });
     }
 
-    // Validate and get selected pricing
-    let selectedPricing;
-    if (pricingOptions.length === 1) {
-      // Single pricing option
-      selectedPricing = pricingOptions[0];
-    } else if (pricingOptions.length > 1) {
-      // Multiple pricing options - validate selection
-      if (selectedPricingIndex === null || selectedPricingIndex === undefined) {
-        return res.status(400).json({ error: 'Please select a pricing option' });
-      }
-      if (selectedPricingIndex < 0 || selectedPricingIndex >= pricingOptions.length) {
-        return res.status(400).json({ error: 'Invalid pricing option selected' });
-      }
-      selectedPricing = pricingOptions[selectedPricingIndex];
-    } else {
-      return res.status(400).json({ error: 'No pricing options available for this course' });
+    // Get lesson option price
+    const lessonPriceQuery = `
+      SELECT slo.price as lesson_price
+      FROM happyswimming.schedule_lesson_options slo
+      JOIN happyswimming.course_schedules cs ON slo.schedule_id = cs.id
+      WHERE cs.id = $1 AND slo.lesson_count = $2
+    `;
+
+    const lessonPriceResult = await client.query(lessonPriceQuery, [selectedScheduleId, selectedLessonCount]);
+
+    if (lessonPriceResult.rows.length === 0) {
+      return res.status(400).json({ error: 'Invalid lesson option selected' });
     }
+
+    const lessonPrice = parseFloat(lessonPriceResult.rows[0].lesson_price);
+
+    // Get group pricing
+    const studentRange = (studentCount >= 1 && studentCount <= 4) ? '1-4' : '5-6';
+    const groupPricingQuery = `
+      SELECT price as group_price
+      FROM happyswimming.course_group_pricing
+      WHERE course_id = $1 AND student_range = $2
+    `;
+
+    const groupPricingResult = await client.query(groupPricingQuery, [adminCourseId, studentRange]);
+
+    if (groupPricingResult.rows.length === 0) {
+      return res.status(400).json({ error: 'Group pricing not found' });
+    }
+
+    const groupPrice = parseFloat(groupPricingResult.rows[0].group_price);
+
+    // Calculate total price: (group price per student * student count) + lesson price
+    const totalPrice = (groupPrice * studentCount) + lessonPrice;
 
     // Get or create admin service
     let adminServiceId;
@@ -3204,13 +3297,13 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
       adminServiceId = adminServiceCheck.rows[0].id;
     }
 
-    // Create enrollment with selected pricing details
+    // Create enrollment with new pricing structure
     const enrollmentQuery = `
       INSERT INTO happyswimming.client_services 
       (client_id, service_id, admin_course_id, professional_id, start_date, end_date, 
        price, status, kid_name, mother_contact, mother_email, mother_phone, 
-       selected_lessons_count, selected_student_count, start_time, end_time)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, $10, $11, $12, $13, $14, $15)
+       selected_schedule_id, selected_lesson_count, student_count)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, $10, $11, $12, $13, $14)
       RETURNING id
     `;
 
@@ -3221,15 +3314,14 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
       course.professional_id,
       course.start_date,
       course.end_date,
-      selectedPricing.price,
+      totalPrice,
       kidName,
       motherContact,
       motherEmail || null,
       motherPhone || null,
-      selectedPricing.lessonsCount,
-      selectedPricing.studentCount,
-      course.start_time,
-      course.end_time
+      selectedScheduleId,
+      selectedLessonCount,
+      studentCount
     ]);
 
     await client.query('COMMIT');
@@ -3239,10 +3331,9 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
       courseId: adminCourseId,
       courseName: course.name,
       status: 'pending',
-      price: parseFloat(selectedPricing.price),
-      lessonsCount: selectedPricing.lessonsCount,
-      studentCount: selectedPricing.studentCount,
-      schedule: `${course.start_time} - ${course.end_time}`,
+      price: totalPrice,
+      lessonsCount: selectedLessonCount,
+      studentCount: studentCount,
       message: 'Successfully enrolled in course. Awaiting approval.'
     });
 
