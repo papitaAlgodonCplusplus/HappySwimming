@@ -730,11 +730,12 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return this.selectedCourse?.schedules || [];
   }
 
-  getAvailableLessonOptions(): LessonOption[] {
+  getAvailableLessonOptions(selectedStudentCount: number): LessonOption[] {
     const lessonOptions = this.selectedSchedule?.lessonOptions || [];
 
     const seen = new Set<string>();
     return lessonOptions.filter(option => {
+      console.log('LessonOptions:', lessonOptions)
       const key = `${option.lessonCount}-${option.price}`;
       if (seen.has(key)) return false;
       seen.add(key);

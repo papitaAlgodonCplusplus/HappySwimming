@@ -223,7 +223,7 @@
           <div *ngIf="selectedSchedule" class="form-section">
             <h4>{{ 'servicesManager.selectLessonPackage' | translate }}</h4>
             <div class="lesson-options-selection">
-              <div *ngFor="let option of getAvailableLessonOptions(); trackBy: trackByLessonOption"
+              <div *ngFor="let option of getAvailableLessonOptions(selectedStudentCount); trackBy: trackByLessonOption"
                 class="lesson-option-card">
                 <input type="radio" [id]="'lesson-' + option.lessonCount" [name]="'lesson-selection'"
                   [ngModel]="selectedLessonOption" (ngModelChange)="onLessonOptionChange(option)" [value]="option">
