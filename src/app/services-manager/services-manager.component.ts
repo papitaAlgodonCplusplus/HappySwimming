@@ -316,6 +316,15 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.enrollmentForm.price = this.calculatedPrice;
   }
 
+  getGroupRangeForLessonOption(option: LessonOption): string | null {
+    if (!this.selectedCourse?.groupPricing) return null;
+
+    // Match by price (or improve this if there's a better identifier)
+    const match = this.selectedCourse.groupPricing.find(gp => gp.price === option.price);
+    return match?.studentRange || null;
+  }
+
+
   // Get applicable group pricing based on student count
   public getApplicableGroupPricing(): GroupPricing | null {
     if (!this.selectedCourse?.groupPricing) return null;
@@ -659,9 +668,16 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       return 'No group pricing set';
     }
 
-    return course.groupPricing
-      .map(gp => `${gp.studentRange} students: €${gp.price}/student`)
-      .join(' | ');
+    // Remove duplicates based on studentRange and price
+    const uniquePricing = course.groupPricing.filter((gp, index, self) =>
+      index === self.findIndex(item =>
+        item.studentRange === gp.studentRange && item.price === gp.price
+      )
+    );
+
+    return uniquePricing
+      .map(gp => `${gp.studentRange} students: €${gp.price}`)
+      .join('<br>');
   }
 
   // Helper methods for enrollment form

@@ -127,7 +127,7 @@
           <div class="group-pricing-info">
             <h4>{{ 'servicesManager.groupPricing' | translate }}</h4>
             <div class="pricing-display">
-              <div class="group-pricing-text">{{ getGroupPricingDisplay(course) }}</div>
+              <div class="group-pricing-text" [innerHTML]="getGroupPricingDisplay(course)"></div>
               <div class="pricing-note">{{ 'servicesManager.pricesPerStudent' | translate }}</div>
             </div>
           </div>
@@ -229,10 +229,17 @@
                   [ngModel]="selectedLessonOption" (ngModelChange)="onLessonOptionChange(option)" [value]="option">
                 <label [for]="'lesson-' + option.lessonCount" class="lesson-option-label">
                   <div class="lesson-option-content">
-                    <span class="lesson-count">{{ option.lessonCount }} {{ option.lessonCount === 1 ?
-                      ('servicesManager.lesson' | translate) : ('servicesManager.lessons' | translate) }}</span>
+                    <span class="group-range" *ngIf="getGroupRangeForLessonOption(option)">
+                      {{ getGroupRangeForLessonOption(option) }} {{ 'servicesManager.students' | translate }}
+                    </span>
+                    <span class="lesson-count">
+                      {{ option.lessonCount }} {{ option.lessonCount === 1 ?
+                      ('servicesManager.lesson' | translate) :
+                      ('servicesManager.lessons' | translate) }}
+                    </span>
                     <span class="lesson-price">€{{ option.price }}</span>
                   </div>
+
                 </label>
               </div>
             </div>
@@ -277,12 +284,6 @@
               <label for="motherEmail">{{ 'servicesManager.motherEmail' | translate }} *</label>
               <input type="email" id="motherEmail" [(ngModel)]="enrollmentForm.motherEmail" name="motherEmail" required
                 class="form-control" placeholder="{{ 'servicesManager.motherEmail' | translate }}">
-            </div>
-
-            <!-- Notes (optional) -->
-            <div class="form-group">
-              <label for="notes">{{ 'servicesManager.notes' | translate }}</label>
-              <textarea id="notes" [(ngModel)]="enrollmentForm.notes" name="notes" class="form-control"></textarea>
             </div>
           </div>
 
