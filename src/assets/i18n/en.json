@@ -453,6 +453,7 @@
         "enrollmentDate": "Enrollment Date",
         "startDate": "Start Date",
         "price": "Price",
+        "addChildName": "Add Kid Name",
         "notes": "Name of the Kid/s",
         "cancel": "Cancel",
         "enrollInCourse": "Enroll in Course",

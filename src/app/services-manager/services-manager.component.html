@@ -263,9 +263,83 @@
             <!-- Child names (required for all courses) -->
             <div class="form-group">
               <label for="kidName">{{ 'servicesManager.childName' | translate }} *</label>
-              <textarea id="kidName" [(ngModel)]="enrollmentForm.kidName" name="kidName" required class="form-control"
-                placeholder="{{ 'servicesManager.enterChildName' | translate }}" rows="3"></textarea>
+              <div *ngFor="let childName of childNames; let i = index; trackBy: trackByIndex"
+                class="child-name-input mb-2">
+                <div class="input-group">
+                  <input type="text" [id]="'kidName_' + i" [(ngModel)]="childNames[i]" [name]="'kidName_' + i" required
+                    class="form-control" [placeholder]="'servicesManager.enterChildName' | translate" />
+                  <div class="input-group-append">
+                    <button type="button" class="btn btn-outline-secondary" (click)="removeChildName(i)"
+                      [disabled]="childNames.length <= 1" title="Remove child name">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-outline-primary btn-sm mt-2 add-child-btn" (click)="addChildName()"
+                title="Add another child name">
+                <i class="fas fa-plus me-1"></i> {{ 'servicesManager.addChildName' | translate }}
+              </button>
             </div>
+
+            <style>
+              .add-child-btn {
+                border: 2px solid #007bff;
+                background-color: transparent;
+                color: #007bff;
+                font-weight: 500;
+                padding: 8px 16px;
+                border-radius: 6px;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
+              }
+
+              .add-child-btn:hover {
+                background-color: #007bff;
+                color: white;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+              }
+
+              .add-child-btn:active {
+                transform: translateY(0);
+                box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+              }
+
+              .add-child-btn i {
+                font-size: 14px;
+              }
+
+              .child-name-input {
+                display: flex;
+                align-items: center;
+              }
+
+              .child-name-input .input-group {
+                flex: 1;
+              }
+
+              .child-name-input .btn-outline-secondary {
+                border-color: #dc3545;
+                width: 20px;
+                height: 20px;
+                margin: 10px;
+                color: #dc3545;
+                transition: all 0.2s ease;
+              }
+
+              .child-name-input .btn-outline-secondary:hover:not(:disabled) {
+                background-color: #dc3545;
+                border-color: #dc3545;
+                color: white;
+              }
+
+              .child-name-input .btn-outline-secondary:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+              }
+            </style>
 
             <!-- Mother contact (required for all courses) -->
             <div class="form-group">

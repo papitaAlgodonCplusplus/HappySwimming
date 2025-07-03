@@ -109,7 +109,9 @@ interface EnrollmentRequest {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ServicesManagerComponent implements OnInit, OnDestroy {
+  childNames: string[] = [''];
   private destroy$ = new Subject<void>();
+  private updateTimeout: any;
   private isDevelopment = window.location.hostname === 'localhost';
   private apiUrl = this.isDevelopment
     ? 'http://localhost:10000/api'
@@ -162,10 +164,53 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef
   ) { }
 
+
+  // Add these methods to your component class
+  addChildName(): void {
+    this.childNames.push('');
+  }
+
+  removeChildName(index: number): void {
+    if (this.childNames.length > 1) {
+      this.childNames.splice(index, 1);
+      this.updateKidNameField();
+    }
+  }
+
+  updateKidNameField(): void {
+    // Concatenate all child names with line breaks or comma separation
+    this.enrollmentForm.kidName = this.childNames
+      .filter(name => name.trim() !== '') // Remove empty names
+      .join('\n'); // Use '\n' for line breaks or ', ' for comma separation
+  }
+
+  trackByIndex(index: number, item: any): number {
+    return index;
+  }
+
+  onChildNameInput(event: any, index: number): void {
+    // Just debounce the kidName field update
+    if (this.updateTimeout) {
+      clearTimeout(this.updateTimeout);
+    }
+
+    this.updateTimeout = setTimeout(() => {
+      this.updateKidNameField();
+    }, 500);
+  }
+
   ngOnInit(): void {
     this.getUserInfo();
     this.loadAvailableCourses();
     this.loadEnrollments();
+
+    // If kidName already has data, split it into individual names
+    if (this.enrollmentForm.kidName) {
+      this.childNames = this.enrollmentForm.kidName.split('\n').filter(name => name.trim() !== '');
+      if (this.childNames.length === 0) {
+        this.childNames = [''];
+      }
+    }
   }
 
   ngOnDestroy(): void {
@@ -686,9 +731,17 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   }
 
   getAvailableLessonOptions(): LessonOption[] {
-    return this.selectedSchedule?.lessonOptions || [];
-  }
+    const lessonOptions = this.selectedSchedule?.lessonOptions || [];
 
+    const seen = new Set<string>();
+    return lessonOptions.filter(option => {
+      const key = `${option.lessonCount}-${option.price}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+  
   getSelectedLessonOptionDisplay(): string {
     if (!this.selectedLessonOption) return '';
     return `${this.selectedLessonOption.lessonCount} lesson${this.selectedLessonOption.lessonCount > 1 ? 's' : ''} - €${this.selectedLessonOption.price}`;
