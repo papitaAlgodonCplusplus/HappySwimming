@@ -843,12 +843,14 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       return 'No group pricing set';
     }
 
-    // Remove duplicates based on studentRange and price
-    const uniquePricing = course.groupPricing.filter((gp, index, self) =>
-      index === self.findIndex(item =>
-        item.studentRange === gp.studentRange && item.price === gp.price
-      )
-    );
+    // Remove duplicates using a Set with string keys
+    const seen = new Set<string>();
+    const uniquePricing = course.groupPricing.filter(gp => {
+      const key = `${gp.studentRange}-${gp.price}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
     return uniquePricing
       .map(gp => `${gp.studentRange} students: €${gp.price}`)
