@@ -263,12 +263,12 @@
 
         <!-- Current Schedules -->
         <div *ngIf="courseForm.schedules.length > 0" class="current-schedules-section styled-schedules">
-          <h4>{{ 'adminCourseManagement.currentSchedules' | translate }} ({{ courseForm.schedules.length }})</h4>
+          <h4>{{ 'adminCourseManagement.currentSchedules' | translate }} ({{ getUniqueCourseSchedules(courseForm.schedules).length }})</h4>
           <div class="schedules-list">
-            <div *ngFor="let schedule of courseForm.schedules; let scheduleIndex = index"
+            <div *ngFor="let schedule of getUniqueCourseSchedules(courseForm.schedules); let scheduleIndex = index"
               class="schedule-card styled-card">
               <div class="schedule-header">
-                <h5 class="schedule-title">{{ getScheduleDisplay(schedule) }}</h5>
+                <h5 class="schedule-title">{{ getScheduleDisplay([schedule]) }}</h5>
                 <button type="button" class="btn btn-danger btn-sm" (click)="removeSchedule(scheduleIndex)">
                   <span class="btn-icon">🗑️</span>
                   {{ 'adminCourseManagement.remove' | translate }}
@@ -276,11 +276,11 @@
               </div>
 
               <div class="schedule-lessons">
-                <h6>{{ 'adminCourseManagement.lessonOptions' | translate }} ({{ schedule.lessonOptions.length }})</h6>
+                <h6>{{ 'adminCourseManagement.lessonOptions' | translate }} ({{ getUniqueLessonOptions(schedule.lessonOptions).length }})</h6>
 
                 <!-- Existing Lesson Options -->
                 <div class="lesson-options-grid">
-                  <div *ngFor="let lessonOption of schedule.lessonOptions; let lessonIndex = index"
+                  <div *ngFor="let lessonOption of getUniqueLessonOptions(schedule.lessonOptions); let lessonIndex = index"
                     class="lesson-option-editor styled-editor">
                     <div class="lesson-option-controls">
                       <div class="control-group">
@@ -344,10 +344,10 @@
 
             <div class="summary-section">
               <h4>{{ 'adminCourseManagement.schedulesAndLessonOptions' | translate }}</h4>
-              <div *ngFor="let schedule of courseForm.schedules; let i = index" class="schedule-summary">
-                <h5>{{ getScheduleDisplay(schedule) }}</h5>
+              <div *ngFor="let schedule of getUniqueCourseSchedules(courseForm.schedules); let i = index" class="schedule-summary">
+                <h5>{{ getScheduleDisplay([schedule]) }}</h5>
                 <div class="lesson-summary-grid">
-                  <div *ngFor="let option of schedule.lessonOptions" class="lesson-summary-item">
+                  <div *ngFor="let option of getUniqueLessonOptions(schedule.lessonOptions)" class="lesson-summary-item">
                     <span>{{ option.lessonCount }} {{ option.lessonCount > 1 ? ('adminCourseManagement.lessons' |
                       translate) : ('adminCourseManagement.lesson' | translate) }}: €{{ option.price }}</span>
                   </div>
@@ -476,7 +476,7 @@
             <h4>{{ 'adminCourseManagement.schedules' | translate }} ({{ getUniqueSchedules(course).length }})</h4>
             <div class="schedules-preview-list">
               <div *ngFor="let schedule of getUniqueSchedules(course)" class="schedule-preview-item">
-                <div class="schedule-time">{{ getScheduleDisplay(schedule) }}</div>
+                <div class="schedule-time">{{ getScheduleDisplay([schedule]) }}</div>
                 <div class="schedule-lessons-count">
                   {{ schedule.lessonOptions.length || 0 }} {{ 'adminCourseManagement.lessonOptions' | translate |
                   lowercase }}

@@ -781,9 +781,21 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   }
 
   // Helper methods for display
-  getScheduleDisplay(schedule: Schedule): string {
-    return `${this.formatTimeDisplay(schedule.startTime)} - ${this.formatTimeDisplay(schedule.endTime)}`;
+  getScheduleDisplay(schedules: Schedule[]): string {
+    const seen = new Set<string>();
+    const uniqueDisplays: string[] = [];
+
+    schedules.forEach(schedule => {
+      const display = `${this.formatTimeDisplay(schedule.startTime)} - ${this.formatTimeDisplay(schedule.endTime)}`;
+      if (!seen.has(display)) {
+        seen.add(display);
+        uniqueDisplays.push(display);
+      }
+    });
+
+    return uniqueDisplays.join(', ');
   }
+
 
   getLessonOptionsDisplay(schedule: Schedule): string {
     if (!schedule.lessonOptions || schedule.lessonOptions.length === 0) {
@@ -792,6 +804,28 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     return schedule.lessonOptions
       .map(option => `${option.lessonCount} lessons (€${option.price})`)
       .join(', ');
+  }
+
+  getUniqueLessonOptions(lessonOptions: LessonOption[]): LessonOption[] {
+    const seen = new Set<string>();
+    return lessonOptions.filter(lessonOption => {
+      const key = `${lessonOption.lessonCount}`;
+      if (seen.has(key)) return false;
+      console.log("Adding: ", key)
+      seen.add(key);
+      return true;
+    });
+  }
+
+  getUniqueCourseSchedules(schedules: Schedule[]): Schedule[] {
+    const seen = new Set<string>();
+    return schedules.filter(schedule => {
+      const key = `${schedule.startTime}-${schedule.endTime}`;
+      if (seen.has(key)) return false;
+      console.log("Adding: ", key)
+      seen.add(key);
+      return true;
+    });
   }
 
   getUniqueSchedules(course: AdminCourse): Schedule[] {
