@@ -733,16 +733,45 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   getAvailableLessonOptions(selectedStudentCount: number): LessonOption[] {
     const lessonOptions = this.selectedSchedule?.lessonOptions || [];
 
-    const seen = new Set<string>();
-    return lessonOptions.filter(option => {
-      console.log('LessonOptions:', lessonOptions)
-      const key = `${option.lessonCount}-${option.price}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+    // Group options by lessonCount
+    const groupedByLessonCount = lessonOptions.reduce((acc, option) => {
+      if (!acc[option.lessonCount]) {
+        acc[option.lessonCount] = [];
+      }
+      acc[option.lessonCount].push(option);
+      return acc;
+    }, {} as Record<number, LessonOption[]>);
+
+    // For each lessonCount, select the option with highest or lowest price based on selectedStudentCount
+    const result: LessonOption[] = [];
+
+    for (const lessonCount in groupedByLessonCount) {
+      const optionsForLessonCount = groupedByLessonCount[lessonCount];
+
+      let selectedOption: LessonOption;
+
+      if (selectedStudentCount >= 1 && selectedStudentCount <= 4) {
+        // Select option with highest price
+        selectedOption = optionsForLessonCount.reduce((max, current) =>
+          current.price > max.price ? current : max
+        );
+      } else if (selectedStudentCount === 5 || selectedStudentCount === 6) {
+        // Select option with lowest price
+        selectedOption = optionsForLessonCount.reduce((min, current) =>
+          current.price < min.price ? current : min
+        );
+      } else {
+        // Default behavior for other student counts (you can modify this as needed)
+        selectedOption = optionsForLessonCount[0];
+      }
+
+      result.push(selectedOption);
+    }
+
+    console.log('LessonOptions:', result);
+    return result;
   }
-  
+
   getSelectedLessonOptionDisplay(): string {
     if (!this.selectedLessonOption) return '';
     return `${this.selectedLessonOption.lessonCount} lesson${this.selectedLessonOption.lessonCount > 1 ? 's' : ''} - €${this.selectedLessonOption.price}`;
