@@ -545,11 +545,31 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
     return true;
   }
-
+  
   openPaymentLink(): void {
-    const link = 'https://checkout.revolut.com/pay/ba1803cf-942b-4239-85fd-dea28e94b3fc';
-    window.open(link, '_blank');
+    const amount = this.calculatedPrice;
+    const description = `Course: ${this.selectedCourse?.name} for ${this.selectedStudentCount} student(s)`;
+
+    this.http.post<{ url: string }>(`${this.apiUrl}/create-revolut-payment`, {
+      amount,
+      description
+    }, {
+      headers: this.getAuthHeaders() // If needed
+    }).subscribe({
+      next: (res) => {
+        if (res?.url) {
+          window.open(res.url, '_blank');
+        } else {
+          this.error = 'Failed to generate payment link.';
+        }
+      },
+      error: (err) => {
+        console.error('Error generating Revolut payment link:', err);
+        this.error = 'Could not generate payment link. Please try again.';
+      }
+    });
   }
+
 
   // Get status badge class
   getStatusClass(status: string): string {

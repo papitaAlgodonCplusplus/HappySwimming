@@ -31,12 +31,12 @@ app.use(express.json());
 
 // Database connection DEV
 // const pool = new Pool({
-// user: process.env.DB_USER || 'postgres',
-// host: process.env.DB_HOST || 'localhost',
-// database: process.env.DB_NAME || 'happyswimming',
-// password: process.env.DB_PASSWORD || 'postgres',
-// port: process.env.DB_PORT || 5432,
-// schema: 'happyswimming'
+//   user: process.env.DB_USER || 'postgres',
+//   host: process.env.DB_HOST || 'localhost',
+//   database: process.env.DB_NAME || 'happyswimming',
+//   password: process.env.DB_PASSWORD || 'postgres',
+//   port: process.env.DB_PORT || 5432,
+//   schema: 'happyswimming'
 // });
 
 // Database connection PROD
@@ -146,6 +146,40 @@ function authenticateToken(req, res, next) {
     }
   });
 };
+
+const REVOLUT_API_KEY = 'sk_bI39lczR4ekuIZxvn2iXu8Zb77rAEh_rcp2oaPnP-INuDTn4EJ2MHgpkBKwGglD7';
+app.post('/api/create-revolut-payment', async (req, res) => {
+  console.log('[Revolut] Incoming Payment Request:', req.body);
+  const { amount, description } = req.body;
+
+  try {
+    const response = await fetch('https://merchant.revolut.com/api/orders', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${REVOLUT_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Revolut-Api-Version': '2023-10-01'
+      },
+      body: JSON.stringify({
+        amount: amount * 100, // cents
+        currency: 'EUR',
+        description: description
+      })
+    });
+
+    const data = await response.json();
+    console.log('[Revolut] API Response:', data);
+    if (data.checkout_url) {
+      res.json({ url: data.checkout_url });
+    } else {
+      res.status(400).json({ error: 'Failed to create Revolut link', details: data });
+    }
+  } catch (err) {
+    console.error('Revolut error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Register a new client
 app.post('/api/register/client', async (req, res) => {
@@ -2701,7 +2735,7 @@ app.get('/api/admin/clients', authenticateToken, isAdmin, async (req, res) => {
     `;
 
     const result = await pool.query(query);
-    
+
     const clients = result.rows.map(row => ({
       id: row.id,
       firstName: row.firstName,
