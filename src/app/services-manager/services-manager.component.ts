@@ -357,7 +357,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     }
 
     // Calculate: (group price per student * student count) + lesson option price
-    this.calculatedPrice = (groupPricing.price * this.selectedStudentCount) + this.selectedLessonOption.price;
+    this.calculatedPrice = (groupPricing.price * this.selectedStudentCount);
     this.enrollmentForm.price = this.calculatedPrice;
   }
 
@@ -763,7 +763,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     const studentCost = groupPricing.price * this.selectedStudentCount;
     const lessonCost = this.selectedLessonOption.price;
 
-    return `€${studentCost} (€${groupPricing.price} × ${this.selectedStudentCount}) + €${lessonCost} = Total: €${this.calculatedPrice}`;
+    return `€${studentCost} (€${groupPricing.price} × ${this.selectedStudentCount}) = Total: €${this.calculatedPrice}`;
   }
 
   // Track function for ngFor
