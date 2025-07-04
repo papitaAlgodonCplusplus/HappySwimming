@@ -219,11 +219,19 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   }
 
   private getUserInfo(): void {
-    this.authService.getCurrentUser().subscribe(user => {
-      this.userRole = (user.email === 'admin@gmail.com') ? 'admin' : 'client';
-      const userIdStr = user.id || localStorage.getItem('userId');
-      this.userId = userIdStr ? parseInt(userIdStr, 10) : null;
-    })
+    this.authService.getCurrentUser().subscribe({
+      next: user => {
+        this.userRole = (user.email === 'admin@gmail.com') ? 'admin' : 'client';
+        const userIdStr = user.id || localStorage.getItem('userId');
+        this.userId = userIdStr ? parseInt(userIdStr, 10) : null;
+      },
+      error: () => {
+        // Failed to load user, do nothing
+        this.userRole = 'client';
+        this.userId = null;
+        return;
+      }
+    });
   }
 
   private getAuthHeaders(): HttpHeaders {
