@@ -249,6 +249,7 @@
         "close": "Fechar",
         "firstName": "Nome",
         "lastName1": "Sobrenome 1",
+        "personalQR": "Código QR Pessoal",
         "lastName2": "Sobrenome 2",
         "companyName": "Nome da Empresa",
         "role": "Rol",

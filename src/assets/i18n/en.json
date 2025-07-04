@@ -39,6 +39,7 @@
         "notAssigned": "Not Assigned"
     },
     "userAuthorization": {
+        "personalQR": "Personal QR Code",
         "firstName": "Name",
         "lastName1": "Last Name 1",
         "lastName2": "Last Name 2",

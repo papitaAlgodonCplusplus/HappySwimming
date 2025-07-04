@@ -103,48 +103,48 @@ app.use(async (req, res, next) => {
 // Authentication middleware
 // Authentication middleware
 function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  // const authHeader = req.headers['authorization'];
+  // const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
+  // if (!token) {
+  //   return res.status(401).json({ error: 'Authentication required' });
+  // }
 
-  jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
-    }
+  // jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
+  //   if (err) {
+  //     return res.status(403).json({ error: 'Invalid or expired token' });
+  //   }
 
-    try {
-      // Get fresh user data to check authorization status
-      const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [user.id]);
+  //   try {
+  //     // Get fresh user data to check authorization status
+  //     const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [user.id]);
 
-      if (rows.length === 0) {
-        return res.status(403).json({ error: 'User not found' });
-      }
+  //     if (rows.length === 0) {
+  //       return res.status(403).json({ error: 'User not found' });
+  //     }
 
-      const userData = rows[0];
+  //     const userData = rows[0];
 
-      // Check if user is authorized - NEW CHECK
-      // Skip this check for admin user and specific endpoints like login and register
-      const isAdminRoute = req.path.includes('/admin/');
-      const isPublicRoute = req.path.includes('/login') || req.path.includes('/register');
+  //     // Check if user is authorized - NEW CHECK
+  //     // Skip this check for admin user and specific endpoints like login and register
+  //     const isAdminRoute = req.path.includes('/admin/');
+  //     const isPublicRoute = req.path.includes('/login') || req.path.includes('/register');
 
-      if (!userData.is_authorized && userData.email !== 'admin@gmail.com' && !isPublicRoute && !isAdminRoute) {
-        return res.status(403).json({
-          error: 'Your account is pending authorization',
-          authorizationPending: true
-        });
-      }
+  //     if (!userData.is_authorized && userData.email !== 'admin@gmail.com' && !isPublicRoute && !isAdminRoute) {
+  //       return res.status(403).json({
+  //         error: 'Your account is pending authorization',
+  //         authorizationPending: true
+  //       });
+  //     }
 
-      // Set user object on request
-      req.user = userData;
-      next();
-    } catch (error) {
-      console.error('Error in authentication middleware:', error);
-      return res.status(500).json({ error: 'Authentication error' });
-    }
-  });
+  //     // Set user object on request
+  //     req.user = userData;
+  //     next();
+  //   } catch (error) {
+  //     console.error('Error in authentication middleware:', error);
+  //     return res.status(500).json({ error: 'Authentication error' });
+  //   }
+  // });
 };
 
 const REVOLUT_API_KEY = 'sk_bI39lczR4ekuIZxvn2iXu8Zb77rAEh_rcp2oaPnP-INuDTn4EJ2MHgpkBKwGglD7';

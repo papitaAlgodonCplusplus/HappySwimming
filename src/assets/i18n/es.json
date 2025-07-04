@@ -260,6 +260,7 @@
         "errorSending": "Error al enviar el mensaje. Por favor, inténtalo de nuevo más tarde."
     },
     "userAuthorization": {
+        "personalQR": "Código QR Personal",
         "view": "Ver",
         "close": "Cerrar",
         "id": "ID",
