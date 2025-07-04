@@ -101,7 +101,6 @@ app.use(async (req, res, next) => {
 });
 
 // Authentication middleware
-// Authentication middleware
 function authenticateToken(req, res, next) {
   // const authHeader = req.headers['authorization'];
   // const token = authHeader && authHeader.split(' ')[1];
@@ -145,6 +144,8 @@ function authenticateToken(req, res, next) {
   //     return res.status(500).json({ error: 'Authentication error' });
   //   }
   // });
+
+  next();
 };
 
 const REVOLUT_API_KEY = 'sk_bI39lczR4ekuIZxvn2iXu8Zb77rAEh_rcp2oaPnP-INuDTn4EJ2MHgpkBKwGglD7';
