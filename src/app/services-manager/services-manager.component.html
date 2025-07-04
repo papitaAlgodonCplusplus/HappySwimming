@@ -81,12 +81,6 @@
                 }}</span>
             </div>
 
-            <!-- Duration -->
-            <div class="info-row">
-              <span class="info-label">{{ 'servicesManager.duration' | translate }}:</span>
-              <span class="info-value">{{ getCourseDuration(course) }}</span>
-            </div>
-
             <!-- Schedules Info -->
             <div class="info-row">
               <span class="info-label">{{ 'servicesManager.schedules' | translate }}:</span>
@@ -171,9 +165,6 @@
             </div>
             <div class="modal-detail">
               <strong>{{ 'servicesManager.professional' | translate }}:</strong> {{ selectedCourse.professionalName }}
-            </div>
-            <div class="modal-detail">
-              <strong>{{ 'servicesManager.duration' | translate }}:</strong> {{ getCourseDuration(selectedCourse) }}
             </div>
             <div class="modal-detail">
               <strong>{{ 'servicesManager.availability' | translate }}:</strong> {{ selectedCourse.availableSpots }} {{

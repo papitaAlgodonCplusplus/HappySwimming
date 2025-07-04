@@ -660,32 +660,32 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     }
 
     // Validate group pricing
-    for (const groupPricing of this.courseForm.groupPricing) {
-      if (groupPricing.price <= 0) {
-        this.error = `Price for ${groupPricing.studentRange} students must be greater than 0.`;
-        return false;
-      }
-    }
+    // for (const groupPricing of this.courseForm.groupPricing) {
+    //   if (groupPricing.price <= 0) {
+    //     this.error = `Price for ${groupPricing.studentRange} students must be greater than 0.`;
+    //     return false;
+    //   }
+    // }
 
     // Validate each schedule
-    for (let i = 0; i < this.courseForm.schedules.length; i++) {
-      const schedule = this.courseForm.schedules[i];
-      if (schedule.lessonOptions.length === 0) {
-        this.error = `Schedule ${i + 1} must have at least one lesson option.`;
-        return false;
-      }
+    // for (let i = 0; i < this.courseForm.schedules.length; i++) {
+    //   const schedule = this.courseForm.schedules[i];
+    //   if (schedule.lessonOptions.length === 0) {
+    //     this.error = `Schedule ${i + 1} must have at least one lesson option.`;
+    //     return false;
+    //   }
 
-      for (const lessonOption of schedule.lessonOptions) {
-        if (lessonOption.lessonCount < 1 || lessonOption.lessonCount > 20) {
-          this.error = `Lesson count must be between 1 and 20.`;
-          return false;
-        }
-        if (lessonOption.price <= 0) {
-          this.error = `All lesson prices must be greater than 0.`;
-          return false;
-        }
-      }
-    }
+    //   for (const lessonOption of schedule.lessonOptions) {
+    //     if (lessonOption.lessonCount < 1 || lessonOption.lessonCount > 20) {
+    //       this.error = `Lesson count must be between 1 and 20.`;
+    //       return false;
+    //     }
+    //     if (lessonOption.price <= 0) {
+    //       this.error = `All lesson prices must be greater than 0.`;
+    //       return false;
+    //     }
+    //   }
+    // }
 
     return true;
   }
@@ -871,8 +871,12 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       .join(' | ');
   }
 
-  getTotalSchedulesCount(course: AdminCourse): number {
-    return course.schedules ? course.schedules.length : 0;
+  getTotalSchedulesCount(course: AdminCourse): string {
+    const schedules = course.schedules ? course.schedules.length : 0;
+
+    const uniqueSchedules = this.getUniqueSchedules(course);
+    const uniqueCount = uniqueSchedules.length;
+    return uniqueCount.toString();
   }
 
   getTotalLessonOptionsCount(course: AdminCourse): number {
