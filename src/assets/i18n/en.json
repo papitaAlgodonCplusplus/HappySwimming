@@ -404,6 +404,7 @@
         "noTemplatesAvailable": "No existing courses available to use as templates. Create your first course manually."
     },
     "servicesManager": {
+        "lesson": "lesson",
         "availableSchedules": "Available Schedules",
         "lessonOptions": "Lesson Options",
         "selectSchedule": "Select Schedule",

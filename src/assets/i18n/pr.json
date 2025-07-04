@@ -90,6 +90,7 @@
         "noTemplatesAvailable": "Nenhum curso existente disponível para usar como modelos. Crie seu primeiro curso manualmente."
     },
     "servicesManager": {
+        "lesson": "aula",
         "view": "Ver",
         "selectSchedule": "Seleccione Horario",
         "howManyStudents": "Numerou de estudantes",

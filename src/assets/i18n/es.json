@@ -89,6 +89,7 @@
         "noTemplatesAvailable": "No hay cursos existentes disponibles para usar como plantillas. Crea tu primer curso manualmente."
     },
     "servicesManager": {
+        "lesson": "lección",
         "addChildName": "Añadir Nombre de Niño",
         "lessonOptions": "Opciones de Clase",
         "schedules": "Horarios",
