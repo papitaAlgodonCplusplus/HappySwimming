@@ -819,13 +819,16 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
 
   getUniqueCourseSchedules(schedules: Schedule[]): Schedule[] {
     const seen = new Set<string>();
-    return schedules.filter(schedule => {
+    const uniqueSchedules = schedules.filter(schedule => {
       const key = `${schedule.startTime}-${schedule.endTime}`;
       if (seen.has(key)) return false;
-      console.log("Adding: ", key)
       seen.add(key);
       return true;
     });
+
+    // Sort by startTime (earlier first)
+    uniqueSchedules.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    return uniqueSchedules;
   }
 
   getUniqueSchedules(course: AdminCourse): Schedule[] {

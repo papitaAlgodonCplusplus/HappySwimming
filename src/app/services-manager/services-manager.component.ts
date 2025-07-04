@@ -747,9 +747,18 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   // Helper methods for enrollment form
   getAvailableSchedules(): Schedule[] {
-    return this.selectedCourse?.schedules || [];
-  }
+    const schedules = this.selectedCourse?.schedules || [];
+    const uniqueSchedules: Record<string, Schedule> = {};
 
+    schedules.forEach(schedule => {
+      if (!uniqueSchedules[schedule.id || '']) {
+        uniqueSchedules[schedule.id || ''] = schedule;
+      }
+    });
+
+    return Object.values(uniqueSchedules);
+  }
+  
   getAvailableLessonOptions(selectedStudentCount: number): LessonOption[] {
     const lessonOptions = this.selectedSchedule?.lessonOptions || [];
 
