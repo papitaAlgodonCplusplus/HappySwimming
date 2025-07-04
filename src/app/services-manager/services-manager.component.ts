@@ -37,7 +37,7 @@ interface Course {
   type: 'client' | 'professional' | 'admin_course';
   price: number;
   duration?: number;
-  description?: string;
+  description: string;
   descriptionKey?: string;
   translationKey?: string;
   deliveryMode?: 'online' | 'in_person';

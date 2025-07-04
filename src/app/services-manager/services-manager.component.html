@@ -55,7 +55,7 @@
         <div *ngFor="let course of availableCourses; trackBy: trackByCourseId" class="course-card">
           <!-- Course Header -->
           <div class="course-header">
-            <h3 class="course-title">{{ course.name }}</h3>
+            <h3 class="course-title">{{ course.name | translate }}</h3>
             <div *ngIf="course.courseCode" class="course-code">{{ course.courseCode }}</div>
           </div>
 
@@ -163,8 +163,8 @@
 
       <div class="modal-body">
         <div *ngIf="selectedCourse" class="selected-course-info">
-          <h3>{{ selectedCourse.name }}</h3>
-          <p>{{ selectedCourse.description }}</p>
+          <h3>{{ selectedCourse.name | translate  }}</h3>
+          <p>{{ selectedCourse.description | translate }}</p>
           <div class="course-details-modal">
             <div class="modal-detail">
               <strong>{{ 'servicesManager.client' | translate }}:</strong> {{ selectedCourse.clientName }}
@@ -237,7 +237,6 @@
                       ('servicesManager.lesson' | translate) :
                       ('servicesManager.lessons' | translate) }}
                     </span>
-                    <span class="lesson-price">€{{ option.price }}</span>
                   </div>
 
                 </label>
@@ -372,9 +371,8 @@
             <button type="button" class="btn btn-secondary" (click)="cancelEnrollment()" [disabled]="isLoading">
               {{ 'servicesManager.cancel' | translate }}
             </button>
-            <button type="submit" class="btn btn-primary"
-              [disabled]="isLoading || !selectedSchedule || !selectedLessonOption || calculatedPrice <= 0">
-              <span *ngIf="isLoading" class="loading-spinner"></span>
+            <button type="submit" class="btn btn-primary">
+              <span class="loading-spinner"></span>
               {{ 'servicesManager.confirmEnrollment' | translate }}
             </button>
           </div>
