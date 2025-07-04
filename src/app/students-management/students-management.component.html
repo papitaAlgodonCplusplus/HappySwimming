@@ -20,14 +20,8 @@
     <button class="alert-close" (click)="clearMessages()">×</button>
   </div>
 
-  <!-- Access Denied for Non-Professional Users -->
-  <div *ngIf="!isProfessional" class="access-denied">
-    <h2>{{ 'studentsManagement.accessDenied' | translate }}</h2>
-    <p>{{ 'studentsManagement.professionalRequired' | translate }}</p>
-  </div>
-
   <!-- Professional Interface -->
-  <div *ngIf="isProfessional" class="professional-interface">
+  <div class="professional-interface">
     <!-- Action Bar -->
     <div class="action-bar">
       <div class="view-controls">

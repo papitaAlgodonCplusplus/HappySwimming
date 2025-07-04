@@ -31,12 +31,12 @@ app.use(express.json());
 
 // Database connection DEV
 // const pool = new Pool({
-//   user: process.env.DB_USER || 'postgres',
-//   host: process.env.DB_HOST || 'localhost',
-//   database: process.env.DB_NAME || 'happyswimming',
-//   password: process.env.DB_PASSWORD || 'postgres',
-//   port: process.env.DB_PORT || 5432,
-//   schema: 'happyswimming'
+// user: process.env.DB_USER || 'postgres',
+// host: process.env.DB_HOST || 'localhost',
+// database: process.env.DB_NAME || 'happyswimming',
+// password: process.env.DB_PASSWORD || 'postgres',
+// port: process.env.DB_PORT || 5432,
+// schema: 'happyswimming'
 // });
 
 // Database connection PROD

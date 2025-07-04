@@ -838,6 +838,16 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     });
   }
 
+  getUniqueGroupPricing(groupPricing: GroupPricing[]): GroupPricing[] {
+    const seen = new Set<string>();
+    return groupPricing.filter(gp => {
+      const key = `${gp.studentRange}-${gp.price}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
   getGroupPricingDisplay(course: AdminCourse): string {
     if (!course.groupPricing || course.groupPricing.length === 0) {
       return 'No group pricing set';
