@@ -28,8 +28,7 @@ export const routes: Routes = [
   },
   {
     path: 'services-manager',
-    loadComponent: () => import('./services-manager/services-manager.component').then(c => c.ServicesManagerComponent),
-    canActivate: [authGuard]
+    loadComponent: () => import('./services-manager/services-manager.component').then(c => c.ServicesManagerComponent)
   },
   {
     path: 'students-management',
