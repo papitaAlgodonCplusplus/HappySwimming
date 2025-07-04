@@ -2616,11 +2616,6 @@ app.delete('/api/enrollments/:id', authenticateToken, async (req, res) => {
 // GET: Fetch all admin courses
 app.get('/api/admin/courses', authenticateToken, async (req, res) => {
   try {
-    // Check admin privileges
-    if (req.user.role !== 'admin' && req.user.email !== 'admin@gmail.com') {
-      return res.status(403).json({ error: 'Admin privileges required.' });
-    }
-
     const query = `
       SELECT 
         ac.id,
