@@ -420,7 +420,7 @@
           <!-- Course Header -->
           <div class="course-header">
             <div class="course-title-section">
-              <h3 class="course-title">{{ course.name | translate }}</h3>
+              <h3 class="course-title">{{ course.name.trim() | translate }}</h3>
               <span class="course-code">{{ course.courseCode }}</span>
             </div>
           </div>
@@ -460,7 +460,7 @@
 
           <!-- Course Description -->
           <div class="course-description">
-            <p>{{ course.description | translate }}</p>
+            <p>{{ course.description.trim() | translate }}</p>
           </div>
 
           <!-- Group Pricing Preview -->
@@ -518,7 +518,7 @@
       <div class="template-courses-grid">
         <div *ngFor="let course of courses" class="template-course-card" (click)="applyCourseTemplate(course)">
           <div class="template-course-header">
-            <h4>{{ course.name | translate }}</h4>
+            <h4>{{ course.name.trim() | translate }}</h4>
           </div>
 
           <div class="template-course-details">
@@ -532,7 +532,7 @@
           </div>
 
           <div class="template-course-description">
-            <p>{{ course.description | translate }}</p>
+            <p>{{ course.description.trim() | translate }}</p>
           </div>
 
           <div class="template-apply-btn">

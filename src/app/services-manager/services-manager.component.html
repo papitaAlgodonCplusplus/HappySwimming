@@ -55,7 +55,7 @@
         <div *ngFor="let course of availableCourses; trackBy: trackByCourseId" class="course-card">
           <!-- Course Header -->
           <div class="course-header">
-            <h3 class="course-title">{{ course.name | translate }}</h3>
+            <h3 class="course-title">{{ course.name.trim() | translate }}</h3>
             <div *ngIf="course.courseCode" class="course-code">{{ course.courseCode }}</div>
           </div>
 
@@ -163,8 +163,8 @@
 
       <div class="modal-body">
         <div *ngIf="selectedCourse" class="selected-course-info">
-          <h3>{{ selectedCourse.name | translate  }}</h3>
-          <p>{{ selectedCourse.description | translate }}</p>
+          <h3>{{ selectedCourse.name.trim() | translate  }}</h3>
+          <p>{{ selectedCourse.description.trim() | translate }}</p>
           <div class="course-details-modal">
             <div class="modal-detail">
               <strong>{{ 'servicesManager.client' | translate }}:</strong> {{ selectedCourse.clientName }}
