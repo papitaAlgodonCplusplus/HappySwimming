@@ -1,4 +1,3 @@
-'// src/app/services-manager/services-manager.component.ts (Updated)
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -221,6 +220,11 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   private getUserInfo(): void {
     this.authService.getCurrentUser().subscribe({
       next: user => {
+        if (!this.authService.isAuthenticated() || !user || !user.email || !user.id) {
+          this.userRole = 'client';
+          this.userId = 37; // Default user ID for clients
+          return;
+        }
         this.userRole = (user.email === 'admin@gmail.com') ? 'admin' : 'client';
         const userIdStr = user.id || localStorage.getItem('userId');
         this.userId = userIdStr ? parseInt(userIdStr, 10) : null;
@@ -553,7 +557,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
     return true;
   }
-  
+
   openPaymentLink(): void {
     const amount = this.calculatedPrice;
     const description = `Course: ${this.selectedCourse?.name} for ${this.selectedStudentCount} student(s)`;
@@ -777,7 +781,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
     return Object.values(uniqueSchedules);
   }
-  
+
   getAvailableLessonOptions(selectedStudentCount: number): LessonOption[] {
     const lessonOptions = this.selectedSchedule?.lessonOptions || [];
 
@@ -860,4 +864,4 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   trackByLessonOption(index: number, option: LessonOption): string {
     return `${option.lessonCount}-${option.price}`;
   }
-}'
+}
