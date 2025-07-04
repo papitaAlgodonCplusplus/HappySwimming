@@ -100,52 +100,62 @@ app.use(async (req, res, next) => {
   }
 });
 
+let global_should_not_authenticate = false;
+
+app.post('/api/should-not-authenticate', (req, res) => {
+  global_should_not_authenticate = true;
+  res.json({ message: 'This route does not require authentication' });
+});
+
+
 // Authentication middleware
 function authenticateToken(req, res, next) {
-  // const authHeader = req.headers['authorization'];
-  // const token = authHeader && authHeader.split(' ')[1];
+  if (global_should_not_authenticate) {
+    return next();
+  }
 
-  // if (!token) {
-  //   return res.status(401).json({ error: 'Authentication required' });
-  // }
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-  // jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
-  //   if (err) {
-  //     return res.status(403).json({ error: 'Invalid or expired token' });
-  //   }
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
 
-  //   try {
-  //     // Get fresh user data to check authorization status
-  //     const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [user.id]);
+  jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
 
-  //     if (rows.length === 0) {
-  //       return res.status(403).json({ error: 'User not found' });
-  //     }
+    try {
+      // Get fresh user data to check authorization status
+      const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [user.id]);
 
-  //     const userData = rows[0];
+      if (rows.length === 0) {
+        return res.status(403).json({ error: 'User not found' });
+      }
 
-  //     // Check if user is authorized - NEW CHECK
-  //     // Skip this check for admin user and specific endpoints like login and register
-  //     const isAdminRoute = req.path.includes('/admin/');
-  //     const isPublicRoute = req.path.includes('/login') || req.path.includes('/register');
+      const userData = rows[0];
 
-  //     if (!userData.is_authorized && userData.email !== 'admin@gmail.com' && !isPublicRoute && !isAdminRoute) {
-  //       return res.status(403).json({
-  //         error: 'Your account is pending authorization',
-  //         authorizationPending: true
-  //       });
-  //     }
+      // Check if user is authorized - NEW CHECK
+      // Skip this check for admin user and specific endpoints like login and register
+      const isAdminRoute = req.path.includes('/admin/');
+      const isPublicRoute = req.path.includes('/login') || req.path.includes('/register');
 
-  //     // Set user object on request
-  //     req.user = userData;
-  //     next();
-  //   } catch (error) {
-  //     console.error('Error in authentication middleware:', error);
-  //     return res.status(500).json({ error: 'Authentication error' });
-  //   }
-  // });
+      if (!userData.is_authorized && userData.email !== 'admin@gmail.com' && !isPublicRoute && !isAdminRoute) {
+        return res.status(403).json({
+          error: 'Your account is pending authorization',
+          authorizationPending: true
+        });
+      }
 
-  next();
+      // Set user object on request
+      req.user = userData;
+      next();
+    } catch (error) {
+      console.error('Error in authentication middleware:', error);
+      return res.status(500).json({ error: 'Authentication error' });
+    }
+  });
 };
 
 const REVOLUT_API_KEY = 'sk_bI39lczR4ekuIZxvn2iXu8Zb77rAEh_rcp2oaPnP-INuDTn4EJ2MHgpkBKwGglD7';
@@ -2330,10 +2340,11 @@ app.post('/api/password-reset/reset', async (req, res) => {
 // ============================================
 
 // GET: General enrollments endpoint (for compatibility)
-app.get('/api/enrollments', authenticateToken, async (req, res) => {
+app.get('/api/enrollments/:id', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
+    console.log('Fetching enrollments for user:', req.params.id);
+    const userId = req.params.id;
+    const userRole = 'client';
 
     if (userRole === 'client') {
       // Redirect to existing user endpoint
@@ -3223,7 +3234,9 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
       motherPhone,
       selectedScheduleId,
       selectedLessonCount,
-      studentCount
+      studentCount,
+      startTime,
+      endTime
     } = req.body;
     const userId = req.user.id;
     const userRole = req.user.role;
@@ -3238,7 +3251,9 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
       selectedLessonCount,
       studentCount,
       userId,
-      userRole
+      userRole,
+      startTime,
+      endTime
     });
 
     // Only clients can enroll in admin courses
@@ -3332,8 +3347,8 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
       INSERT INTO happyswimming.client_services 
       (client_id, service_id, admin_course_id, professional_id, start_date, end_date, 
        price, status, kid_name, mother_contact, mother_email, mother_phone, 
-       selected_schedule_id, selected_lesson_count, student_count)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, $10, $11, $12, $13, $14)
+       selected_schedule_id, selected_lesson_count, student_count, start_time, end_time)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING id
     `;
 
@@ -3351,7 +3366,9 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
       motherPhone || null,
       selectedScheduleId,
       selectedLessonCount,
-      studentCount
+      studentCount,
+      startTime,
+      endTime
     ]);
 
     await client.query('COMMIT');

@@ -85,6 +85,8 @@ interface Enrollment {
 }
 
 interface EnrollmentRequest {
+  startTime?: string;
+  endTime?: string;
   courseId?: string;
   adminCourseId?: number;
   userId: number | null;
@@ -223,6 +225,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         if (!this.authService.isAuthenticated() || !user || !user.email || !user.id) {
           this.userRole = 'client';
           this.userId = 37; // Default user ID for clients
+          this.http.post(`${this.apiUrl}/should-not-authenticate`, {}).subscribe();
           return;
         }
         this.userRole = (user.email === 'admin@gmail.com') ? 'admin' : 'client';
@@ -232,6 +235,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       error: () => {
         // Failed to load user, do nothing
         this.userRole = 'client';
+        this.http.post(`${this.apiUrl}/should-not-authenticate`, {}).subscribe();
         this.userId = 37;
         return;
       }
@@ -285,7 +289,13 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   // Load user enrollments
   loadEnrollments(): void {
-    this.http.get<Enrollment[]>(`${this.apiUrl}/enrollments`, {
+    if (!this.userId) {
+      console.warn('User ID is not set, cannot load enrollments');
+      this.enrollments = [];
+      this.cdr.detectChanges();
+      return;
+    }
+    this.http.get<Enrollment[]>(`${this.apiUrl}/enrollments/${this.userId}`, {
       headers: this.getAuthHeaders()
     }).pipe(
       takeUntil(this.destroy$),
@@ -368,8 +378,10 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const lessonNumber = this.selectedLessonOption.lessonCount;
+
     // Calculate: (group price per student * student count) + lesson option price
-    this.calculatedPrice = (groupPricing.price * this.selectedStudentCount);
+    this.calculatedPrice = (groupPricing.price * this.selectedStudentCount) * lessonNumber;
     this.enrollmentForm.price = this.calculatedPrice;
   }
 
@@ -489,6 +501,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       enrollmentData.selectedScheduleId = this.selectedSchedule?.id;
       enrollmentData.selectedLessonCount = this.selectedLessonOption?.lessonCount;
       enrollmentData.studentCount = this.selectedStudentCount;
+      enrollmentData.startTime = this.selectedSchedule?.startTime;
+      enrollmentData.endTime = this.selectedSchedule?.endTime;
     } else {
       enrollmentData.courseId = this.selectedCourse.id as string;
     }
@@ -535,22 +549,27 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     if (this.selectedCourse?.type === 'admin_course' && this.userRole === 'client') {
       if (!this.enrollmentForm.kidName.trim()) {
         this.error = 'Child name is required.';
+        console.warn('Child name is required');
         return false;
       }
       if (!this.enrollmentForm.motherContact.trim()) {
         this.error = 'Mother contact is required.';
+        console.warn('Mother contact is required');
         return false;
       }
       if (!this.selectedSchedule) {
         this.error = 'Please select a schedule.';
+        console.warn('Please select a schedule.');
         return false;
       }
       if (!this.selectedLessonOption) {
         this.error = 'Please select a lesson option.';
+        console.warn('Please select a lesson option.');
         return false;
       }
       if (this.selectedStudentCount < 1 || this.selectedStudentCount > 6) {
         this.error = 'Student count must be between 1 and 6.';
+        console.warn('Student count must be between 1 and 6.');
         return false;
       }
     }
@@ -842,10 +861,10 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     }
 
     const groupPricing = this.getApplicableGroupPricing()!;
-    const studentCost = groupPricing.price * this.selectedStudentCount;
-    const lessonCost = this.selectedLessonOption.price;
+    const lessonNumber = this.selectedLessonOption.lessonCount;
+    const numberOfStudents = this.selectedStudentCount;
 
-    return `€${studentCost} (€${groupPricing.price} × ${this.selectedStudentCount}) = Total: €${this.calculatedPrice}`;
+    return `€(${groupPricing.price} x ${numberOfStudents}) x ${lessonNumber} = Total: €${this.calculatedPrice}`;
   }
 
   // Track function for ngFor

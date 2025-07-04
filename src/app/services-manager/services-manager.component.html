@@ -265,7 +265,7 @@
               <div *ngFor="let childName of childNames; let i = index; trackBy: trackByIndex"
                 class="child-name-input mb-2">
                 <div class="input-group">
-                  <input type="text" [id]="'kidName_' + i" [(ngModel)]="childNames[i]" [name]="'kidName_' + i" required
+                  <input type="text" [id]="'kidName_' + i" [(ngModel)]="enrollmentForm.kidName" [name]="'kidName_' + i" required
                     class="form-control" [placeholder]="'servicesManager.enterChildName' | translate" />
                   <div class="input-group-append">
                     <button type="button" class="btn btn-outline-secondary" (click)="removeChildName(i)"
@@ -441,25 +441,6 @@
               <div class="detail-item" *ngIf="selectedEnrollment.motherEmail">
                 <span class="detail-label">{{ 'servicesManager.motherEmail' | translate }}:</span>
                 <span class="detail-value">{{ selectedEnrollment.motherEmail }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Dates Information -->
-          <div class="details-section">
-            <h3>{{ 'servicesManager.datesInformation' | translate }}</h3>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">{{ 'servicesManager.enrollmentDate' | translate }}:</span>
-                <span class="detail-value">{{ selectedEnrollment.enrollmentDate | date:'short' }}</span>
-              </div>
-              <div class="detail-item" *ngIf="selectedEnrollment.startDate">
-                <span class="detail-label">{{ 'servicesManager.startDate' | translate }}:</span>
-                <span class="detail-value">{{ selectedEnrollment.startDate | date:'short' }}</span>
-              </div>
-              <div class="detail-item" *ngIf="selectedEnrollment.endDate">
-                <span class="detail-label">{{ 'servicesManager.endDate' | translate }}:</span>
-                <span class="detail-value">{{ selectedEnrollment.endDate | date:'short' }}</span>
               </div>
             </div>
           </div>
