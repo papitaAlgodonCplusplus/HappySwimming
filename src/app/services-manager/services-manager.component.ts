@@ -751,9 +751,20 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     const uniqueSchedules: Record<string, Schedule> = {};
 
     schedules.forEach(schedule => {
-      if (!uniqueSchedules[schedule.id || '']) {
-        uniqueSchedules[schedule.id || ''] = schedule;
+      const key = `${schedule.startTime}-${schedule.endTime}`;
+      if (!uniqueSchedules[key]) {
+        uniqueSchedules[key] = schedule;
       }
+      // Ensure lesson options are unique within the schedule
+      const uniqueOptions: Record<string, LessonOption> = {};
+      schedule.lessonOptions.forEach(option => {
+        const optionKey = `${option.lessonCount}-${option.price}`;
+        if (!uniqueOptions[optionKey]) {
+          uniqueOptions[optionKey] = option;
+        }
+      });
+      schedule.lessonOptions = Object.values(uniqueOptions);
+      uniqueSchedules[key] = schedule;
     });
 
     return Object.values(uniqueSchedules);

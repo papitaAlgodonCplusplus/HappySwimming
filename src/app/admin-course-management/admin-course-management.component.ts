@@ -793,6 +793,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       }
     });
 
+    uniqueDisplays.sort((a, b) => a.localeCompare(b));
     return uniqueDisplays.join(', ');
   }
 
