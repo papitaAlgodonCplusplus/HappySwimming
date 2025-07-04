@@ -1,4 +1,4 @@
-// src/app/services-manager/services-manager.component.ts (Updated)
+'// src/app/services-manager/services-manager.component.ts (Updated)
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -228,7 +228,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       error: () => {
         // Failed to load user, do nothing
         this.userRole = 'client';
-        this.userId = null;
+        this.userId = 37;
         return;
       }
     });
@@ -860,4 +860,4 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   trackByLessonOption(index: number, option: LessonOption): string {
     return `${option.lessonCount}-${option.price}`;
   }
-}
+}'
