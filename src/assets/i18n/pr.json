@@ -99,6 +99,7 @@
     "servicesManager": {
         "lessonsSelected": "Aulas Selecionadas",
         "lesson": "aula",
+        "registrations": "Inscrições",
         "view": "Ver",
         "pricingDetails": "Detalhes de Preços",
         "multipleEnrollments": "Inscrições Múltiplas",

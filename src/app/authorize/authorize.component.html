@@ -35,7 +35,7 @@
             <option value="professional">{{ 'userAuthorization.professionals' | translate }}</option>
           </select>
         </div>
-        
+
         <!-- Authorization Status Filter -->
         <div class="filter-item">
           <h3 class="filter-label">{{ 'userAuthorization.authorizationStatus' | translate }}</h3>
@@ -75,16 +75,17 @@
               <td>{{ client.country }}</td>
               <td>{{ client.registrationDate | date:'shortDate' }}</td>
               <td>
-                <span class="status-icon" [ngClass]="{ 'authorized-icon': client.isAuthorized, 'unauthorized-icon': !client.isAuthorized }">
+                <span class="status-icon"
+                  [ngClass]="{ 'authorized-icon': client.isAuthorized, 'unauthorized-icon': !client.isAuthorized }">
                   {{ client.isAuthorized ? '✓' : '✗' }}
                 </span>
               </td>
               <td>
-                <button (click)="authorizeUser(client)" class="authorize-btn" 
-                  [disabled]="client.isAuthorized"
+                <button (click)="authorizeUser(client)" class="authorize-btn" [disabled]="client.isAuthorized"
                   [ngClass]="{'disabled-btn': client.isAuthorized}">
                   <span class="icon">✓</span>
-                  {{ client.isAuthorized ? ('userAuthorization.alreadyAuthorized' | translate) : ('userAuthorization.authorize' | translate) }}
+                  {{ client.isAuthorized ? ('userAuthorization.alreadyAuthorized' | translate) :
+                  ('userAuthorization.authorize' | translate) }}
                 </button>
               </td>
               <td>
@@ -127,16 +128,17 @@
               <td>{{ professional.country }}</td>
               <td>{{ professional.registrationDate | date:'shortDate' }}</td>
               <td>
-                <span class="status-icon" [ngClass]="{ 'authorized-icon': professional.isAuthorized, 'unauthorized-icon': !professional.isAuthorized }">
+                <span class="status-icon"
+                  [ngClass]="{ 'authorized-icon': professional.isAuthorized, 'unauthorized-icon': !professional.isAuthorized }">
                   {{ professional.isAuthorized ? '✓' : '✗' }}
                 </span>
               </td>
               <td>
                 <button (click)="authorizeUser(professional)" class="authorize-btn"
-                  [disabled]="professional.isAuthorized"
-                  [ngClass]="{'disabled-btn': professional.isAuthorized}">
+                  [disabled]="professional.isAuthorized" [ngClass]="{'disabled-btn': professional.isAuthorized}">
                   <span class="icon">✓</span>
-                  {{ professional.isAuthorized ? ('userAuthorization.alreadyAuthorized' | translate) : ('userAuthorization.authorize' | translate) }}
+                  {{ professional.isAuthorized ? ('userAuthorization.alreadyAuthorized' | translate) :
+                  ('userAuthorization.authorize' | translate) }}
                 </button>
               </td>
               <td>
@@ -218,14 +220,31 @@
             </div>
             <div class="info-row">
               <span class="info-label">{{ 'userAuthorization.authorizationStatus' | translate }}:</span>
-              <span class="info-value" [ngClass]="{'status-authorized': selectedUser.isAuthorized, 'status-unauthorized': !selectedUser.isAuthorized}">
-                {{ selectedUser.isAuthorized ? ('userAuthorization.authorized' | translate) : ('userAuthorization.unauthorized' | translate) }}
+              <span class="info-value"
+                [ngClass]="{'status-authorized': selectedUser.isAuthorized, 'status-unauthorized': !selectedUser.isAuthorized}">
+                {{ selectedUser.isAuthorized ? ('userAuthorization.authorized' | translate) :
+                ('userAuthorization.unauthorized' | translate) }}
               </span>
             </div>
             <div class="info-row">
               <span class="info-label">{{ 'userAuthorization.personalQR' | translate }}:</span>
               <span class="info-value">
-                <img src="/assets/qr.png" alt="Personal QR Code" style="max-width: 100px; max-height: 100px; border: 1px solid #ddd; border-radius: 4px;">
+                <!-- Loading state -->
+                <div *ngIf="isQRCodeLoading()" class="qr-loading">
+                  <div class="spinner"></div>
+                  <span>Generating QR Code...</span>
+                </div>
+
+                <!-- QR Code display -->
+                <img [src]="getQRCodeUrl()" alt="Personal QR Code" class="qr-code-image" *ngIf="shouldShowQRCode()">
+
+                <!-- Error state -->
+                <div *ngIf="hasQRCodeError()" class="qr-error">
+                  <span>Failed to generate QR Code</span>
+                  <button type="button" (click)="retryQRCode()" class="retry-btn">
+                    Retry
+                  </button>
+                </div>
               </span>
             </div>
           </div>
@@ -242,14 +261,16 @@
     <div *ngIf="showConfirmationModal" class="modal-overlay">
       <div class="modal-container">
         <div class="modal-header">
-          <h2>{{ currentAction === 'authorize' ? ('userAuthorization.confirmAuthorization' | translate) : ('userAuthorization.confirmDeletion' | translate) }}</h2>
+          <h2>{{ currentAction === 'authorize' ? ('userAuthorization.confirmAuthorization' | translate) :
+            ('userAuthorization.confirmDeletion' | translate) }}</h2>
           <button class="close-btn" (click)="closeModal()">×</button>
         </div>
         <div class="modal-body">
           <div *ngIf="currentAction === 'authorize'">
             <p>{{ 'userAuthorization.confirmAuthorizationText' | translate }}</p>
             <div class="user-details">
-              <p><strong>{{ 'userAuthorization.name' | translate }}:</strong> {{ selectedUser?.firstName }} {{ selectedUser?.lastName1 }}</p>
+              <p><strong>{{ 'userAuthorization.name' | translate }}:</strong> {{ selectedUser?.firstName }} {{
+                selectedUser?.lastName1 }}</p>
               <p><strong>{{ 'userAuthorization.email' | translate }}:</strong> {{ selectedUser?.email }}</p>
               <p><strong>{{ 'userAuthorization.userType' | translate }}:</strong> {{ selectedUser?.role }}</p>
             </div>
@@ -257,7 +278,8 @@
           <div *ngIf="currentAction === 'delete'">
             <p>{{ 'userAuthorization.confirmDeletionText' | translate }}</p>
             <div class="user-details">
-              <p><strong>{{ 'userAuthorization.name' | translate }}:</strong> {{ selectedUser?.firstName }} {{ selectedUser?.lastName1 }}</p>
+              <p><strong>{{ 'userAuthorization.name' | translate }}:</strong> {{ selectedUser?.firstName }} {{
+                selectedUser?.lastName1 }}</p>
               <p><strong>{{ 'userAuthorization.email' | translate }}:</strong> {{ selectedUser?.email }}</p>
               <p><strong>{{ 'userAuthorization.userType' | translate }}:</strong> {{ selectedUser?.role }}</p>
             </div>
@@ -267,11 +289,10 @@
           <button class="btn btn-cancel" (click)="closeModal()">
             {{ 'userAuthorization.cancel' | translate }}
           </button>
-          <button 
-            [ngClass]="{'btn-confirm': currentAction === 'authorize', 'btn-delete': currentAction === 'delete'}"
-            class="btn" 
-            (click)="confirmAction()">
-            {{ currentAction === 'authorize' ? ('userAuthorization.confirm' | translate) : ('userAuthorization.delete' | translate) }}
+          <button [ngClass]="{'btn-confirm': currentAction === 'authorize', 'btn-delete': currentAction === 'delete'}"
+            class="btn" (click)="confirmAction()">
+            {{ currentAction === 'authorize' ? ('userAuthorization.confirm' | translate) : ('userAuthorization.delete' |
+            translate) }}
           </button>
         </div>
       </div>

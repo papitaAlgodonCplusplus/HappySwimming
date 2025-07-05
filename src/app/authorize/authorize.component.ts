@@ -8,6 +8,7 @@ import { TranslatePipe } from '../pipes/translate.pipe';
 import { AuthService } from '../services/auth.service';
 import { AdminService } from '../services/admin.service';
 import { Subscription } from 'rxjs';
+import * as QRCode from 'qrcode';
 
 interface User {
   id: number;
@@ -53,6 +54,11 @@ export class AuthorizeComponent implements OnInit, OnDestroy {
   showViewModal: boolean = false;
   selectedUser: User | null = null;
   currentAction: 'authorize' | 'delete' = 'authorize';
+  
+  // QR Code state
+  qrCodeDataUrl: string = '';
+  qrCodeLoading: boolean = false;
+  qrCodeError: boolean = false;
   
   // Subscriptions
   private langSubscription: Subscription | null = null;
@@ -184,12 +190,16 @@ export class AuthorizeComponent implements OnInit, OnDestroy {
   viewUser(user: User) {
     this.selectedUser = user;
     this.showViewModal = true;
+    this.generateQRCode();
     this.cdr.detectChanges();
   }
   
   closeViewModal() {
     this.showViewModal = false;
     this.selectedUser = null;
+    this.qrCodeDataUrl = '';
+    this.qrCodeLoading = false;
+    this.qrCodeError = false;
     this.cdr.detectChanges();
   }
   
@@ -303,6 +313,78 @@ export class AuthorizeComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
+  }
+  
+  /**
+   * Generate QR code using the qrcode library
+   */
+  async generateQRCode(): Promise<void> {
+    if (!this.selectedUser?.id) {
+      return;
+    }
+
+    this.qrCodeLoading = true;
+    this.qrCodeError = false;
+    this.qrCodeDataUrl = '';
+    this.cdr.detectChanges();
+
+    try {
+      const url = `https://www.happyswimming.net/services-manager?userId=${this.selectedUser.id}`;
+      
+      this.qrCodeDataUrl = await QRCode.toDataURL(url, {
+        width: 100,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        },
+        errorCorrectionLevel: 'M'
+      });
+      
+      this.qrCodeLoading = false;
+      this.cdr.detectChanges();
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      this.qrCodeError = true;
+      this.qrCodeLoading = false;
+      this.qrCodeDataUrl = '';
+      this.cdr.detectChanges();
+    }
+  }
+  
+  /**
+   * Retry QR code generation
+   */
+  retryQRCode(): void {
+    this.generateQRCode();
+  }
+  
+  /**
+   * Get QR code URL for display
+   */
+  getQRCodeUrl(): string {
+    return this.qrCodeDataUrl;
+  }
+  
+  /**
+   * Check if QR code should be displayed
+   */
+  shouldShowQRCode(): boolean {
+    return !this.qrCodeLoading && !this.qrCodeError && !!this.qrCodeDataUrl;
+  }
+  
+  /**
+   * Check if QR code is loading
+   */
+  isQRCodeLoading(): boolean {
+    return this.qrCodeLoading;
+  }
+  
+  /**
+   * Check if QR code has error
+   */
+  hasQRCodeError(): boolean {
+    return this.qrCodeError;
   }
   
   // Helper method to get user's display name
