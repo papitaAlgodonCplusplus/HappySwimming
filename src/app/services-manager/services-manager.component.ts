@@ -740,11 +740,22 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       return 'NA';
     }
 
-    if (course.schedules.length === 1) {
-      return this.getScheduleDisplay(course);
-    }
+    const uniqueSchedules = Array.from(new Set(course.schedules.map(schedule => schedule.id)));
 
-    return `${course.schedules.length}`;
+    return `${uniqueSchedules.length}`;
+  }
+
+
+  getAvailableSpots(course: Course): number {
+    const numberOfEnrollments = this.enrollments.filter(e =>
+      e.courseId === course.id.toString() ||
+      e.courseId === `admin_course_${course.id}`
+    ).length;
+    const totalAvailableSchedules = course.schedules?.length || 0;
+    const maxNumberOfEnrollments = totalAvailableSchedules;
+    const maxSpotsPerSchedule = 6; // Assuming max 6 students per schedule
+    const totalSpots = maxNumberOfEnrollments * maxSpotsPerSchedule;
+    return totalSpots - (numberOfEnrollments * maxSpotsPerSchedule);
   }
 
   // Get lesson options display for course card
@@ -755,7 +766,15 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       total + (schedule.lessonOptions?.length || 0), 0
     );
 
-    return `${totalOptions}`;
+    const uniqueOptions = new Set();
+    course.schedules.forEach(schedule => {
+      schedule.lessonOptions?.forEach(option => {
+        uniqueOptions.add(`${option.lessonCount}-${option.price}`);
+      });
+    });
+
+    const uniqueOptionsCount = uniqueOptions.size;
+    return `${uniqueOptionsCount}`;
   }
 
   // Get group pricing display

@@ -89,6 +89,14 @@ interface Client {
 })
 export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  // NEW: Global lesson options management
+  globalLessonOption = {
+    lessonCount: 1,
+    price: 0
+  };
+
+  globalLessonOptions: LessonOption[] = [];
+  editingGlobalLessonIndex: number | null = null;
   private isDevelopment = window.location.hostname === 'localhost';
   private apiUrl = this.isDevelopment
     ? 'http://localhost:10000/api'
@@ -208,36 +216,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.selectedCourseTemplate = null;
   }
 
-  // NEW: Apply course template
-  applyCourseTemplate(course: AdminCourse): void {
-    if (!course) return;
-
-    // Copy course data to form, excluding dates and course-specific info
-    this.courseForm = {
-      name: course.name + ' - Copy',
-      description: course.description,
-      clientName: course.clientName,
-      startDate: '', // Don't copy dates
-      endDate: '',   // Don't copy dates
-      professionalId: course.professionalId,
-      schedules: course.schedules ? course.schedules.map(schedule => ({
-        ...schedule,
-        id: undefined // Remove ID so new schedules are created
-      })) : [],
-      groupPricing: course.groupPricing ? [...course.groupPricing] : []
-    };
-
-    // Initialize group pricing if empty
-    if (this.courseForm.groupPricing.length === 0) {
-      this.initializeGroupPricing();
-    }
-
-    this.hideCourseTemplateSelection();
-    this.clearMessages();
-    this.successMessage = `Template from "${course.name}" applied successfully. Please update the dates and course name as needed.`;
-    this.cdr.detectChanges();
-  }
-
   // Initialize default group pricing structure
   private initializeGroupPricing(): void {
     this.courseForm.groupPricing = [
@@ -294,27 +272,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.clientOptions = Array.from(clients).sort();
   }
 
-  // Schedule management methods
-  addSchedule(): void {
-    if (!this.validateNewSchedule()) {
-      return;
-    }
-
-    // Generate unique ID for the schedule
-    const scheduleId = Date.now().toString();
-    const newSchedule: Schedule = {
-      id: scheduleId,
-      startTime: this.newSchedule.startTime,
-      endTime: this.newSchedule.endTime,
-      lessonOptions: [...this.newSchedule.lessonOptions]
-    };
-
-    this.courseForm.schedules.push(newSchedule);
-    this.resetNewSchedule();
-    this.clearMessages();
-    this.cdr.detectChanges();
-  }
-
   private validateNewSchedule(): boolean {
     if (!this.newSchedule.startTime) {
       this.error = 'Start time is required for the schedule.';
@@ -343,11 +300,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     }
 
     return true;
-  }
-
-  removeSchedule(index: number): void {
-    this.courseForm.schedules.splice(index, 1);
-    this.cdr.detectChanges();
   }
 
   // Lesson option management
@@ -480,23 +432,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     };
   }
 
-  resetForm(): void {
-    this.courseForm = {
-      name: '',
-      description: '',
-      clientName: '',
-      startDate: '',
-      endDate: '',
-      professionalId: null,
-      schedules: [],
-      groupPricing: []
-    };
-    this.initializeGroupPricing();
-    this.resetNewSchedule();
-    this.resetNewLessonOption();
-    this.error = '';
-  }
-
   // Create new course
   createCourse(): void {
     if (!this.validateCourseForm()) {
@@ -545,10 +480,291 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     return groupPricing ? groupPricing.price : 0;
   }
 
-  // Helper method to check if form is invalid for submit button
+  // NEW: Global lesson options management methods
+  addGlobalLessonOption(): void {
+    if (!this.validateGlobalLessonOption()) {
+      return;
+    }
+
+    // Check for duplicate lesson counts
+    const duplicate = this.globalLessonOptions.find(option =>
+      option.lessonCount === this.globalLessonOption.lessonCount
+    );
+
+    if (duplicate) {
+      this.error = `Lesson option for ${this.globalLessonOption.lessonCount} lessons already exists`;
+      return;
+    }
+
+    this.globalLessonOptions.push({
+      lessonCount: this.globalLessonOption.lessonCount,
+      price: this.globalLessonOption.price
+    });
+
+    // Sort by lesson count
+    this.globalLessonOptions.sort((a, b) => a.lessonCount - b.lessonCount);
+
+    // Apply to all existing schedules
+    this.applyGlobalLessonOptionToAllSchedules(this.globalLessonOptions[this.globalLessonOptions.length - 1]);
+
+    this.resetGlobalLessonOption();
+    this.clearMessages();
+    this.cdr.detectChanges();
+  }
+
+  private validateGlobalLessonOption(): boolean {
+    if (this.globalLessonOption.lessonCount < 1 || this.globalLessonOption.lessonCount > 20) {
+      this.error = 'Lesson count must be between 1 and 20.';
+      return false;
+    }
+    if (this.globalLessonOption.price <= 0) {
+      this.error = 'Price must be greater than 0.';
+      return false;
+    }
+    return true;
+  }
+
+  editGlobalLessonOption(index: number): void {
+    const option = this.globalLessonOptions[index];
+    if (!option) return;
+
+    this.globalLessonOption = {
+      lessonCount: option.lessonCount,
+      price: option.price
+    };
+
+    this.editingGlobalLessonIndex = index;
+    this.cdr.detectChanges();
+  }
+
+  removeGlobalLessonOption(index: number): void {
+    if (index < 0 || index >= this.globalLessonOptions.length) return;
+
+    const removedOption = this.globalLessonOptions[index];
+    this.globalLessonOptions.splice(index, 1);
+
+    // Remove from all schedules
+    this.courseForm.schedules.forEach(schedule => {
+      schedule.lessonOptions = schedule.lessonOptions.filter(option =>
+        option.lessonCount !== removedOption.lessonCount
+      );
+    });
+
+    this.clearMessages();
+    this.cdr.detectChanges();
+  }
+
+  private resetGlobalLessonOption(): void {
+    this.globalLessonOption = {
+      lessonCount: 1,
+      price: 0
+    };
+    this.editingGlobalLessonIndex = null;
+  }
+
+  private applyGlobalLessonOptionToAllSchedules(lessonOption: LessonOption): void {
+    this.courseForm.schedules.forEach(schedule => {
+      // Check if this lesson count already exists in the schedule
+      const exists = schedule.lessonOptions.find(option =>
+        option.lessonCount === lessonOption.lessonCount
+      );
+
+      if (!exists) {
+        schedule.lessonOptions.push({ ...lessonOption });
+        // Sort by lesson count
+        schedule.lessonOptions.sort((a, b) => a.lessonCount - b.lessonCount);
+      }
+    });
+  }
+
+  getGlobalLessonOptions(): LessonOption[] {
+    return this.globalLessonOptions;
+  }
+
+  // UPDATED: Add schedule method to include global lesson options
+  addSchedule(): void {
+    const scheduleId = Date.now().toString();
+    const newSchedule: Schedule = {
+      id: scheduleId,
+      startTime: this.newSchedule.startTime,
+      endTime: this.newSchedule.endTime,
+      lessonOptions: [...this.globalLessonOptions] // Apply all global lesson options
+    };
+
+    this.courseForm.schedules.push(newSchedule);
+    this.resetNewSchedule();
+    this.clearMessages();
+    this.cdr.detectChanges();
+  }
+
+  // UPDATED: Remove schedule method
+  removeSchedule(index: number): void {
+    const uniqueSchedules = this.getUniqueCourseSchedules(this.courseForm.schedules);
+    if (index < 0 || index >= uniqueSchedules.length) return;
+
+    const scheduleToRemove = uniqueSchedules[index];
+
+    // Remove all schedules with matching time
+    this.courseForm.schedules = this.courseForm.schedules.filter(schedule =>
+      !(schedule.startTime === scheduleToRemove.startTime &&
+        schedule.endTime === scheduleToRemove.endTime)
+    );
+
+    this.cdr.detectChanges();
+  }
+
+  // UPDATED: Initialize global lesson options when editing course
+  editCourse(course: AdminCourse): void {
+    this.editingCourse = course;
+
+    this.courseForm = {
+      name: course.name,
+      description: course.description,
+      clientName: course.clientName,
+      startDate: course.startDate,
+      endDate: course.endDate,
+      professionalId: course.professionalId,
+      schedules: course.schedules ? [...course.schedules] : [],
+      groupPricing: course.groupPricing ? [...course.groupPricing] : []
+    };
+
+    // Initialize group pricing if not present
+    if (this.courseForm.groupPricing.length === 0) {
+      this.initializeGroupPricing();
+    }
+
+    // Extract global lesson options from existing schedules
+    this.extractGlobalLessonOptions();
+
+    this.showCreateForm = true;
+    this.error = '';
+    this.successMessage = '';
+  }
+
+  // NEW: Extract global lesson options from existing schedules
+  private extractGlobalLessonOptions(): void {
+    const allLessonOptions = new Map<number, LessonOption>();
+
+    // Collect all unique lesson options across schedules
+    this.courseForm.schedules.forEach(schedule => {
+      schedule.lessonOptions.forEach(option => {
+        if (!allLessonOptions.has(option.lessonCount)) {
+          allLessonOptions.set(option.lessonCount, { ...option });
+        }
+      });
+    });
+
+    this.globalLessonOptions = Array.from(allLessonOptions.values())
+      .sort((a, b) => a.lessonCount - b.lessonCount);
+  }
+
+  // UPDATED: Reset form method
+  resetForm(): void {
+    this.courseForm = {
+      name: '',
+      description: '',
+      clientName: '',
+      startDate: '',
+      endDate: '',
+      professionalId: null,
+      schedules: [],
+      groupPricing: []
+    };
+    this.initializeGroupPricing();
+    this.resetNewSchedule();
+    this.resetNewLessonOption();
+    this.resetGlobalLessonOption();
+    this.globalLessonOptions = [];
+    this.error = '';
+  }
+
+  // UPDATED: Cancel edit method
+  cancelEdit(): void {
+    this.editingCourse = null;
+    this.showCreateForm = false;
+    this.resetForm();
+  }
+
+  // UPDATED: Apply course template method
+  applyCourseTemplate(course: AdminCourse): void {
+    if (!course) return;
+
+    // Copy course data to form, excluding dates and course-specific info
+    this.courseForm = {
+      name: course.name + ' - Copy',
+      description: course.description,
+      clientName: course.clientName,
+      startDate: '', // Don't copy dates
+      endDate: '',   // Don't copy dates
+      professionalId: course.professionalId,
+      schedules: course.schedules ? course.schedules.map(schedule => ({
+        ...schedule,
+        id: undefined // Remove ID so new schedules are created
+      })) : [],
+      groupPricing: course.groupPricing ? [...course.groupPricing] : []
+    };
+
+    // Initialize group pricing if empty
+    if (this.courseForm.groupPricing.length === 0) {
+      this.initializeGroupPricing();
+    }
+
+    // Extract global lesson options from template
+    this.extractGlobalLessonOptions();
+
+    this.hideCourseTemplateSelection();
+    this.clearMessages();
+    this.successMessage = `Template from "${course.name}" applied successfully. Please update the dates and course name as needed.`;
+    this.cdr.detectChanges();
+  }
+
+  // UPDATED: Validate course form to check for global lesson options
+  private validateCourseForm(): boolean {
+    if (!this.courseForm.name.trim()) {
+      this.error = 'Course name is required.';
+      return false;
+    }
+    if (!this.courseForm.description.trim()) {
+      this.error = 'Course description is required.';
+      return false;
+    }
+    if (!this.courseForm.clientName.trim()) {
+      this.error = 'Client name is required.';
+      return false;
+    }
+    if (!this.courseForm.startDate) {
+      this.error = 'Start date is required.';
+      return false;
+    }
+    if (!this.courseForm.endDate) {
+      this.error = 'End date is required.';
+      return false;
+    }
+    if (new Date(this.courseForm.startDate) >= new Date(this.courseForm.endDate)) {
+      this.error = 'End date must be after start date.';
+      return false;
+    }
+    if (!this.courseForm.professionalId) {
+      this.error = 'Please assign a professional to this course.';
+      return false;
+    }
+    if (this.courseForm.schedules.length === 0) {
+      this.error = 'At least one schedule is required.';
+      return false;
+    }
+    if (this.globalLessonOptions.length === 0) {
+      this.error = 'At least one lesson option is required.';
+      return false;
+    }
+
+    return true;
+  }
+
+  // UPDATED: Form invalid check
   isFormInvalid(): boolean {
     return this.isLoading ||
       this.courseForm.schedules.length === 0 ||
+      this.globalLessonOptions.length === 0 ||
       this.courseForm.groupPricing.some(gp => gp.price <= 0);
   }
 
@@ -622,104 +838,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       this.isLoading = false;
       this.cdr.detectChanges();
     });
-  }
-
-  // Form validation
-  private validateCourseForm(): boolean {
-    if (!this.courseForm.name.trim()) {
-      this.error = 'Course name is required.';
-      return false;
-    }
-    if (!this.courseForm.description.trim()) {
-      this.error = 'Course description is required.';
-      return false;
-    }
-    if (!this.courseForm.clientName.trim()) {
-      this.error = 'Client name is required.';
-      return false;
-    }
-    if (!this.courseForm.startDate) {
-      this.error = 'Start date is required.';
-      return false;
-    }
-    if (!this.courseForm.endDate) {
-      this.error = 'End date is required.';
-      return false;
-    }
-    if (new Date(this.courseForm.startDate) >= new Date(this.courseForm.endDate)) {
-      this.error = 'End date must be after start date.';
-      return false;
-    }
-    if (!this.courseForm.professionalId) {
-      this.error = 'Please assign a professional to this course.';
-      return false;
-    }
-    if (this.courseForm.schedules.length === 0) {
-      this.error = 'At least one schedule is required.';
-      return false;
-    }
-
-    // Validate group pricing
-    // for (const groupPricing of this.courseForm.groupPricing) {
-    //   if (groupPricing.price <= 0) {
-    //     this.error = `Price for ${groupPricing.studentRange} students must be greater than 0.`;
-    //     return false;
-    //   }
-    // }
-
-    // Validate each schedule
-    // for (let i = 0; i < this.courseForm.schedules.length; i++) {
-    //   const schedule = this.courseForm.schedules[i];
-    //   if (schedule.lessonOptions.length === 0) {
-    //     this.error = `Schedule ${i + 1} must have at least one lesson option.`;
-    //     return false;
-    //   }
-
-    //   for (const lessonOption of schedule.lessonOptions) {
-    //     if (lessonOption.lessonCount < 1 || lessonOption.lessonCount > 20) {
-    //       this.error = `Lesson count must be between 1 and 20.`;
-    //       return false;
-    //     }
-    //     if (lessonOption.price <= 0) {
-    //       this.error = `All lesson prices must be greater than 0.`;
-    //       return false;
-    //     }
-    //   }
-    // }
-
-    return true;
-  }
-
-  // Edit course
-  editCourse(course: AdminCourse): void {
-    this.editingCourse = course;
-
-    this.courseForm = {
-      name: course.name,
-      description: course.description,
-      clientName: course.clientName,
-      startDate: course.startDate,
-      endDate: course.endDate,
-      professionalId: course.professionalId,
-      schedules: course.schedules ? [...course.schedules] : [],
-      groupPricing: course.groupPricing ? [...course.groupPricing] : []
-    };
-
-    // Initialize group pricing if not present
-    if (this.courseForm.groupPricing.length === 0) {
-      this.initializeGroupPricing();
-    }
-
-    this.showCreateForm = true;
-    this.error = '';
-    this.successMessage = '';
-  }
-
-  // Cancel edit
-  cancelEdit(): void {
-    this.editingCourse = null;
-    this.showCreateForm = false;
-    this.resetForm();
   }
 
   // Get filtered courses

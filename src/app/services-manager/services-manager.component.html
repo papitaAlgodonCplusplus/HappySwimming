@@ -98,7 +98,7 @@
             <!-- Enrollment info -->
             <div class="info-row">
               <span class="info-label">{{ 'servicesManager.enrollment' | translate }}:</span>
-              <span class="info-value">{{ course.currentStudents || 0 }}/{{ course.maxStudents || 6 }} {{
+              <span class="info-value">{{ course.currentStudents || 0 }} {{
                 'servicesManager.students' | translate }}</span>
             </div>
 
@@ -106,7 +106,7 @@
             <div class="info-row">
               <span class="info-label">{{ 'servicesManager.availability' | translate }}:</span>
               <span class="info-value" [ngClass]="hasAvailableSpots(course) ? 'text-success' : 'text-danger'">
-                {{ hasAvailableSpots(course) ? (course.availableSpots + ' ' + ('servicesManager.spotsAvailable' |
+                {{ hasAvailableSpots(course) ? (getAvailableSpots(course) + ' ' + ('servicesManager.spotsAvailable' |
                 translate)) : ('servicesManager.courseFull' | translate) }}
               </span>
             </div>

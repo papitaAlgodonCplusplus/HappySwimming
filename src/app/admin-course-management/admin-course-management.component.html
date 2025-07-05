@@ -195,133 +195,426 @@
             </div>
           </div>
 
-          <!-- Lesson Options for New Schedule -->
-          <div class="lesson-options-section">
-            <h5>{{ 'adminCourseManagement.lessonOptionsForSchedule' | translate }}</h5>
-
-            <!-- Add Lesson Option -->
-            <div class="lesson-option-add">
-              <div class="form-grid">
-                <div class="form-group">
-                  <label for="newLessonCount">{{ 'adminCourseManagement.numberOfLessons' | translate }} *</label>
-                  <select id="newLessonCount" [(ngModel)]="newLessonOption.lessonCount" name="newLessonCount"
-                    class="form-control">
-                    <option *ngFor="let count of getLessonCountOptions()" [value]="count">
-                      {{ count }} {{ count === 1 ? ('adminCourseManagement.lesson' | translate) :
-                      ('adminCourseManagement.lessons' | translate) }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label for="newLessonPrice">
-                    {{ 'adminCourseManagement.priceForLessons' | translate }} {{ newLessonOption.lessonCount }}
-                    {{ newLessonOption.lessonCount > 1 ? ('adminCourseManagement.lessons' | translate) :
-                    ('adminCourseManagement.lesson' | translate) }} (€) *
-                  </label>
-                  <input type="number" id="newLessonPrice" [(ngModel)]="newLessonOption.price" name="newLessonPrice"
-                    min="0" step="0.01" class="form-control" placeholder="0.00">
-                </div>
-
-                <div class="form-group">
-                  <button type="button" class="btn btn-secondary btn-sm lesson-add-btn"
-                    (click)="addLessonOptionToNewSchedule()">
-                    <span class="btn-icon">+</span>
-                    {{ 'adminCourseManagement.addLessonOption' | translate }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Current Lesson Options for New Schedule -->
-            <div *ngIf="newSchedule.lessonOptions.length > 0" class="current-lesson-options styled-list">
-              <h6>{{ 'adminCourseManagement.currentLessonOptions' | translate }} ({{ newSchedule.lessonOptions.length
-                }})</h6>
-              <div class="lesson-options-list">
-                <div *ngFor="let option of newSchedule.lessonOptions; let i = index"
-                  class="lesson-option-item styled-item">
-                  <span class="lesson-option-text">
-                    {{ option.lessonCount }} {{ option.lessonCount === 1 ? ('adminCourseManagement.lesson' | translate)
-                    : ('adminCourseManagement.lessons' | translate) }} - €{{ option.price }}
-                  </span>
-                  <button type="button" class="btn btn-danger btn-xs"
-                    (click)="removeLessonOptionFromNewSchedule(i)">×</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <!-- Add Schedule Button -->
           <div class="add-schedule-actions">
             <button type="button" class="btn btn-primary add-schedule-btn" (click)="addSchedule()"
-              [disabled]="!newSchedule.startTime || !newSchedule.endTime || newSchedule.lessonOptions.length === 0">
+              [disabled]="!newSchedule.startTime || !newSchedule.endTime">
               <span class="btn-icon">+</span>
               {{ 'adminCourseManagement.addThisSchedule' | translate }}
             </button>
           </div>
         </div>
 
-        <!-- Current Schedules -->
-
+        <!-- Updated Current Schedules Section -->
         <div *ngIf="courseForm.schedules.length > 0" class="current-schedules-section styled-schedules">
           <h4>{{ 'adminCourseManagement.currentSchedules' | translate }} ({{
             getUniqueCourseSchedules(courseForm.schedules).length }})</h4>
-          <div class="schedules-list">
-            <div *ngFor="let schedule of getUniqueCourseSchedules(courseForm.schedules); let scheduleIndex = index"
-              class="schedule-card styled-card">
-              <div class="schedule-header">
-                <h5 class="schedule-title">{{ getScheduleDisplay([schedule]) }}</h5>
+
+          <!-- Schedule Times Section -->
+          <div class="schedule-times-section">
+            <h5 class="section-subtitle">{{ 'adminCourseManagement.availableScheduleTimes' | translate }}</h5>
+            <div class="schedule-times-grid">
+              <div *ngFor="let schedule of getUniqueCourseSchedules(courseForm.schedules); let scheduleIndex = index"
+                class="schedule-time-card">
+                <div class="schedule-time-display">
+                  <span class="time-icon">🕒</span>
+                  <span class="time-text">{{ getScheduleDisplay([schedule]) }}</span>
+                </div>
                 <button type="button" class="btn btn-danger btn-sm" (click)="removeSchedule(scheduleIndex)">
                   <span class="btn-icon">🗑️</span>
                   {{ 'adminCourseManagement.remove' | translate }}
                 </button>
               </div>
+            </div>
+          </div>
 
-              <div class="schedule-lessons">
-                <h6>{{ 'adminCourseManagement.lessonOptions' | translate }} ({{ schedule.lessonOptions.length }})</h6>
+          <!-- Lesson Options Section -->
+          <div class="lesson-options-section-global">
+            <h5 class="section-subtitle">{{ 'adminCourseManagement.globalLessonOptions' | translate }}</h5>
 
-                <!-- Existing Lesson Options - REMOVED getUniqueLessonOptions() -->
-                <div class="lesson-options-grid">
-                  <div *ngFor="let lessonOption of schedule.lessonOptions; let lessonIndex = index"
-                    class="lesson-option-editor styled-editor">
-                    <div class="lesson-option-controls">
-                      <div class="control-group">
-                        <label>{{ 'adminCourseManagement.lessons' | translate }}</label>
-                        <select [(ngModel)]="lessonOption.lessonCount"
-                          [name]="'lessonCount_' + scheduleIndex + '_' + lessonIndex"
-                          (ngModelChange)="updateLessonOption(scheduleIndex, lessonIndex, 'lessonCount', $event)"
-                          class="form-control form-control-sm">
-                          <option *ngFor="let count of getLessonCountOptions()" [value]="count">{{ count }}</option>
-                        </select>
-                      </div>
+            <!-- Add New Lesson Option -->
+            <div class="add-lesson-option-section">
+              <div class="lesson-option-form">
+                <div class="form-grid-compact">
+                  <div class="form-group">
+                    <label for="globalLessonCount">{{ 'adminCourseManagement.numberOfLessons' | translate }} *</label>
+                    <select id="globalLessonCount" [(ngModel)]="globalLessonOption.lessonCount" name="globalLessonCount"
+                      class="form-control">
+                      <option *ngFor="let count of getLessonCountOptions()" [value]="count">
+                        {{ count }} {{ count === 1 ? ('adminCourseManagement.lesson' | translate) :
+                        ('adminCourseManagement.lessons' | translate) }}
+                      </option>
+                    </select>
+                  </div>
 
-                      <div class="control-group">
-                        <label>{{ 'adminCourseManagement.pricePerStudent' | translate }}</label>
-                        <input type="number" [(ngModel)]="lessonOption.price"
-                          [name]="'lessonPrice_' + scheduleIndex + '_' + lessonIndex"
-                          (ngModelChange)="updateLessonOption(scheduleIndex, lessonIndex, 'price', $event)" min="0"
-                          step="0.01" class="form-control form-control-sm">
-                      </div>
+                  <div class="form-group">
+                    <label for="globalLessonPrice">
+                      {{ 'adminCourseManagement.priceForLessons' | translate }} (€) *
+                    </label>
+                    <input type="number" id="globalLessonPrice" [(ngModel)]="globalLessonOption.price"
+                      name="globalLessonPrice" min="0" step="0.01" class="form-control" placeholder="0.00">
+                  </div>
 
-                      <div class="control-group">
-                        <button type="button" class="btn btn-danger btn-xs"
-                          (click)="removeLessonOptionFromSchedule(scheduleIndex, lessonIndex)">×</button>
-                      </div>
-                    </div>
+                  <div class="form-group">
+                    <button type="button" class="btn btn-primary btn-add-lesson" (click)="addGlobalLessonOption()">
+                      <span class="btn-icon">+</span>
+                      {{ 'adminCourseManagement.addLessonOption' | translate }}
+                    </button>
                   </div>
                 </div>
-
-                <!-- Add Lesson Option to Existing Schedule -->
-                <button type="button" class="btn btn-secondary btn-sm lesson-add-btn"
-                  (click)="addLessonOptionToSchedule(scheduleIndex)">
-                  <span class="btn-icon">+</span>
-                  {{ 'adminCourseManagement.addLessonOption' | translate }}
-                </button>
               </div>
+            </div>
+
+            <!-- Current Global Lesson Options -->
+            <div *ngIf="getGlobalLessonOptions().length > 0" class="global-lesson-options-display">
+              <h6>{{ 'adminCourseManagement.availableLessonOptions' | translate }} ({{ getGlobalLessonOptions().length
+                }})</h6>
+              <div class="lesson-options-grid-global">
+                <div *ngFor="let option of getGlobalLessonOptions(); let optionIndex = index"
+                  class="lesson-option-global-card">
+                  <div class="lesson-option-content">
+                    <div class="lesson-count-display">
+                      <span class="lesson-icon">📚</span>
+                      <span class="lesson-text">
+                        {{ option.lessonCount }} {{ option.lessonCount === 1 ?
+                        ('adminCourseManagement.lesson' | translate) : ('adminCourseManagement.lessons' | translate) }}
+                      </span>
+                    </div>
+                    <div class="lesson-price-display">
+                      <span class="price-text">€{{ option.price }}</span>
+                      <span class="price-label">{{ 'adminCourseManagement.perStudent' | translate }}</span>
+                    </div>
+                  </div>
+                  <div class="lesson-option-actions">
+                    <button type="button" class="btn btn-secondary btn-xs"
+                      (click)="editGlobalLessonOption(optionIndex)">
+                      <span class="btn-icon">✏️</span>
+                    </button>
+                    <button type="button" class="btn btn-danger btn-xs" (click)="removeGlobalLessonOption(optionIndex)">
+                      <span class="btn-icon">×</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- No Lesson Options Warning -->
+            <div *ngIf="getGlobalLessonOptions().length === 0" class="no-lesson-options-warning">
+              <p>⚠️ {{ 'adminCourseManagement.noLessonOptionsWarning' | translate }}</p>
             </div>
           </div>
         </div>
-        
+
+        <style>
+          /* Current Schedules Section */
+          .current-schedules-section.styled-schedules {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 2px solid #b3e5fc;
+            margin-top: 2rem;
+            box-shadow: 0 6px 24px rgba(179, 229, 252, 0.3);
+          }
+
+          .current-schedules-section h4 {
+            color: #0277bd;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+          }
+
+          .current-schedules-section h4::before {
+            content: '📋';
+            font-size: 1.2rem;
+          }
+
+          /* Schedule Times Section */
+          .schedule-times-section {
+            margin-bottom: 3rem;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #e1f5fe;
+          }
+
+          .section-subtitle {
+            color: #01579b;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+
+          .section-subtitle::before {
+            content: '⏰';
+            font-size: 1rem;
+          }
+
+          .schedule-times-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+          }
+
+          .schedule-time-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fdff 100%);
+            border: 2px solid #b3e5fc;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+          }
+
+          .schedule-time-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(3, 169, 244, 0.2);
+            border-color: #29b6f6;
+          }
+
+          .schedule-time-display {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+          }
+
+          .time-icon {
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            background: #e1f5fe;
+            border-radius: 6px;
+          }
+
+          .time-text {
+            font-weight: 600;
+            color: #01579b;
+            font-size: 1.1rem;
+          }
+
+          /* Global Lesson Options Section */
+          .lesson-options-section-global {
+            padding: 1.5rem;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #e8f5e8;
+          }
+
+          .lesson-options-section-global .section-subtitle {
+            color: #2e7d32;
+            margin-bottom: 0.5rem;
+          }
+
+          .lesson-options-section-global .section-subtitle::before {
+            content: '📚';
+          }
+
+          .section-description {
+            color: #546e7a;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+          }
+
+          /* Add Lesson Option Form */
+          .add-lesson-option-section {
+            background: #f8fffe;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #e0f2f1;
+            margin-bottom: 2rem;
+          }
+
+          .form-grid-compact {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+          }
+
+          .btn-add-lesson {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+            min-height: 44px;
+          }
+
+          .btn-add-lesson:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+          }
+
+          /* Global Lesson Options Display */
+          .global-lesson-options-display {
+            margin-top: 1.5rem;
+          }
+
+          .global-lesson-options-display h6 {
+            color: #2e7d32;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+
+          .global-lesson-options-display h6::before {
+            content: '✅';
+            font-size: 1rem;
+          }
+
+          .lesson-options-grid-global {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+          }
+
+          .lesson-option-global-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            background: linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%);
+            border: 2px solid #c8e6c9;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+          }
+
+          .lesson-option-global-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(139, 195, 74, 0.25);
+            border-color: #8bc34a;
+          }
+
+          .lesson-option-content {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex: 1;
+          }
+
+          .lesson-count-display {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+
+          .lesson-icon {
+            font-size: 1.1rem;
+            padding: 0.25rem;
+            background: #c8e6c9;
+            border-radius: 4px;
+          }
+
+          .lesson-text {
+            font-weight: 600;
+            color: #1b5e20;
+          }
+
+          .lesson-price-display {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .price-text {
+            font-weight: 700;
+            color: #2e7d32;
+            font-size: 1.1rem;
+          }
+
+          .price-label {
+            font-size: 0.8rem;
+            color: #388e3c;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+
+          .lesson-option-actions {
+            display: flex;
+            gap: 0.5rem;
+          }
+
+          /* Warning Messages */
+          .no-lesson-options-warning {
+            background: linear-gradient(135deg, #fff8e1 0%, #fff3c4 100%);
+            color: #e65100;
+            border: 2px solid #ffcc02;
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            margin-top: 1rem;
+          }
+
+          .no-lesson-options-warning p {
+            margin: 0;
+            font-weight: 600;
+          }
+
+          /* Responsive Design */
+          @media (max-width: 768px) {
+            .schedule-times-grid {
+              grid-template-columns: 1fr;
+            }
+
+            .form-grid-compact {
+              grid-template-columns: 1fr;
+              gap: 1rem;
+            }
+
+            .btn-add-lesson {
+              width: 100%;
+            }
+
+            .lesson-options-grid-global {
+              grid-template-columns: 1fr;
+            }
+
+            .schedule-time-card {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 1rem;
+            }
+
+            .lesson-option-global-card {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 1rem;
+            }
+
+            .lesson-option-actions {
+              align-self: flex-end;
+            }
+          }
+
+          @media (max-width: 480px) {
+            .current-schedules-section.styled-schedules {
+              padding: 1rem;
+            }
+
+            .schedule-times-section,
+            .lesson-options-section-global {
+              padding: 1rem;
+            }
+
+            .add-lesson-option-section {
+              padding: 1rem;
+            }
+          }
+        </style>
+
         <!-- No Schedules Warning -->
         <div *ngIf="courseForm.schedules.length === 0" class="no-schedules-warning styled-warning">
           <p>⚠️ {{ 'adminCourseManagement.noSchedulesWarning' | translate }}</p>

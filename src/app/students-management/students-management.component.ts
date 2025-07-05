@@ -143,11 +143,6 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
 
   // Load courses assigned to the professional
   loadProfessionalCourses(): void {
-    if (!this.isProfessional) {
-      this.error = 'Access denied. Professional access required.';
-      return;
-    }
-
     this.isLoading = true;
     this.error = '';
 
