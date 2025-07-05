@@ -92,7 +92,7 @@
             <div class="info-row">
               <span class="info-label">{{ 'servicesManager.enrollment' | translate }}:</span>
               <span class="info-value">{{ course.currentStudents || 0 }} {{
-                'servicesManager.students' | translate }}</span>
+                'servicesManager.registrations' | translate }}</span>
             </div>
 
             <!-- Availability -->
@@ -121,13 +121,47 @@
 
           <!-- Course Actions -->
           <div class="course-actions">
-            <!-- If enrolled - show enrollment details button -->
-            <div *ngIf="getEnrollmentStatus(course.id)">
-              <button class="btn btn-info" (click)="showEnrollmentDetails(course)" [disabled]="isLoading">
-                <span class="btn-icon">📋</span>
-                {{ 'servicesManager.enrollmentDetails' | translate }}
-              </button>
+            <!-- Show enrollment details - updated to handle multiple enrollments -->
+            <div *ngIf="getEnrollmentsForCourse(course.id).length > 0">
+              <!-- If single enrollment, show details button -->
+              <div *ngIf="getEnrollmentsForCourse(course.id).length === 1">
+                <button class="btn btn-info" (click)="showEnrollmentDetails(course)" [disabled]="isLoading">
+                  <span class="btn-icon">📋</span>
+                  {{ 'servicesManager.enrollmentDetails' | translate }}
+                </button>
+              </div>
+
+              <!-- If multiple enrollments, show list with individual actions -->
+              <div *ngIf="getEnrollmentsForCourse(course.id).length > 1" class="multiple-enrollments">
+                <h5>{{ 'servicesManager.multipleEnrollments' | translate }} ({{
+                  getEnrollmentsForCourse(course.id).length }})</h5>
+                <div *ngFor="let enrollment of getEnrollmentsForCourse(course.id); trackBy: trackByEnrollmentId"
+                  class="enrollment-item">
+                  <div class="enrollment-summary">
+                    <span class="status-badge" [ngClass]="getStatusClass(enrollment.status)">
+                      {{ getLocalizedStatus(enrollment.status) }}
+                    </span>
+                    <span class="enrollment-date">
+                      {{ enrollment.enrollmentDate | date:'mediumDate' }}
+                    </span>
+                    <span class="enrollment-price">€{{ enrollment.price }}</span>
+                  </div>
+                  <div class="enrollment-actions">
+                    <button class="btn btn-sm btn-info" (click)="showSpecificEnrollmentDetails(enrollment)"
+                      [disabled]="isLoading">
+                      <span class="btn-icon">👁️</span>
+                      {{ 'servicesManager.view' | translate }}
+                    </button>
+                    <button *ngIf="enrollment.status === 'pending'" class="btn btn-sm btn-danger"
+                      (click)="cancelEnrollmentById(enrollment.id)" [disabled]="isLoading">
+                      <span class="btn-icon">❌</span>
+                      {{ 'servicesManager.cancel' | translate }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
+
             <br />
             <button *ngIf="hasAvailableSpots(course)" class="btn btn-primary" (click)="selectCourse(course)"
               [disabled]="isLoading">
@@ -150,7 +184,7 @@
 
       <div class="modal-body">
         <div *ngIf="selectedCourse" class="selected-course-info">
-          <h3>{{ selectedCourse.name.trim() | translate  }}</h3>
+          <h3>{{ selectedCourse.name.trim() | translate }}</h3>
           <p>{{ selectedCourse.description.trim() | translate }}</p>
           <div class="course-details-modal">
             <div class="modal-detail">
@@ -249,8 +283,9 @@
               <div *ngFor="let childName of childNames; let i = index; trackBy: trackByIndex"
                 class="child-name-input mb-2">
                 <div class="input-group">
-                  <input type="text" [id]="'kidName_' + i" [(ngModel)]="enrollmentForm.kidName" [name]="'kidName_' + i" required
-                    class="form-control" [placeholder]="'servicesManager.enterChildName' | translate" />
+                  <input type="text" [id]="'kidName_' + i" [(ngModel)]="childNames[i]" [name]="'kidName_' + i"
+                    (ngModelChange)="onChildNameChange(i, $event)" required class="form-control"
+                    [placeholder]="'servicesManager.enterChildName' | translate" />
                   <div class="input-group-append">
                     <button type="button" class="btn btn-outline-secondary" (click)="removeChildName(i)"
                       [disabled]="childNames.length <= 1" title="Remove child name">
@@ -363,6 +398,7 @@
       </div>
     </div>
   </div>
+  
   <!-- Enrollment Details Modal -->
   <div *ngIf="showEnrollmentDetailsModal" class="modal-overlay" (click)="closeEnrollmentDetails()">
     <div class="modal-content" (click)="$event.stopPropagation()">
@@ -392,16 +428,33 @@
                 <span class="detail-value">{{ selectedEnrollment.professionalName }}</span>
               </div>
               <div class="detail-item">
-                <span class="detail-label">{{ 'servicesManager.price' | translate }}:</span>
-                <span class="detail-value">€{{ selectedEnrollment.price }}</span>
+                <span class="detail-label">{{ 'servicesManager.enrollmentDate' | translate }}:</span>
+                <span class="detail-value">{{ selectedEnrollment.enrollmentDate | date:'mediumDate' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pricing Details Section -->
+          <div class="details-section">
+            <h3>{{ 'servicesManager.pricingDetails' | translate }}</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">{{ 'servicesManager.totalPrice' | translate }}:</span>
+                <span class="detail-value pricing-highlight">€{{ selectedEnrollment.price }}</span>
               </div>
               <div class="detail-item" *ngIf="selectedEnrollment.studentCount">
                 <span class="detail-label">{{ 'servicesManager.studentCount' | translate }}:</span>
                 <span class="detail-value">{{ selectedEnrollment.studentCount }}</span>
               </div>
               <div class="detail-item" *ngIf="selectedEnrollment.selectedLessonCount">
-                <span class="detail-label">{{ 'servicesManager.lessons' | translate }}:</span>
+                <span class="detail-label">{{ 'servicesManager.lessonsSelected' | translate }}:</span>
                 <span class="detail-value">{{ selectedEnrollment.selectedLessonCount }}</span>
+              </div>
+              <!-- Show pricing breakdown -->
+              <div class="detail-item pricing-breakdown"
+                *ngIf="selectedEnrollment.selectedLessonCount && selectedEnrollment.studentCount">
+                <span class="detail-label">{{ 'servicesManager.pricingBreakdown' | translate }}:</span>
+                <span class="detail-value">{{ getEnrollmentPricingDetails(selectedEnrollment) }}</span>
               </div>
             </div>
           </div>
@@ -412,7 +465,11 @@
             <div class="detail-grid">
               <div class="detail-item" *ngIf="selectedEnrollment.kidName">
                 <span class="detail-label">{{ 'servicesManager.childName' | translate }}:</span>
-                <span class="detail-value">{{ selectedEnrollment.kidName }}</span>
+                <div class="detail-value child-names">
+                  <div *ngFor="let name of selectedEnrollment.kidName.split('\n')" class="child-name">
+                    {{ name.trim() }}
+                  </div>
+                </div>
               </div>
               <div class="detail-item" *ngIf="selectedEnrollment.motherContact">
                 <span class="detail-label">{{ 'servicesManager.motherContact' | translate }}:</span>
@@ -448,7 +505,7 @@
             <button *ngIf="selectedEnrollment.status === 'pending'" class="btn btn-danger"
               (click)="cancelEnrollmentFromDetails()" [disabled]="isLoading">
               <span class="btn-icon">❌</span>
-              {{ 'servicesManager.cancelEnrollment' | translate }}
+              {{ 'servicesManager.cancel' | translate }}
             </button>
 
             <!-- Close button -->

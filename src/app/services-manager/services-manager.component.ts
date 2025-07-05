@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Subject } from 'rxjs';
-import { takeUntil, catchError } from 'rxjs/operators';
+import { takeUntil, catchError, min } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
@@ -59,6 +59,9 @@ interface Course {
 }
 
 interface Enrollment {
+  // For better pricing display
+  groupPricingRange?: string; // e.g., "1-4" or "5-6"
+  pricePerStudent?: number;
   motherContact?: string;
   kidName?: string;
   motherEmail?: string;
@@ -165,16 +168,27 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef
   ) { }
 
-
-  // Add these methods to your component class
+  // Fix 4: Child names handling
   addChildName(): void {
     this.childNames.push('');
+  }
+
+  // New method to handle individual child name changes
+  onChildNameChange(index: number, value: string): void {
+    this.childNames[index] = value;
+    // Don't auto-update enrollmentForm.kidName here
+  }
+
+  // Method to concatenate all child names before enrollment
+  private updateKidNameForEnrollment(): void {
+    this.enrollmentForm.kidName = this.childNames
+      .filter(name => name.trim() !== '') // Remove empty names
+      .join('\n'); // Use line breaks to separate names
   }
 
   removeChildName(index: number): void {
     if (this.childNames.length > 1) {
       this.childNames.splice(index, 1);
-      this.updateKidNameField();
     }
   }
 
@@ -304,6 +318,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         return of([]);
       })
     ).subscribe(enrollments => {
+      console.log('Loaded enrollments:', enrollments);
       this.enrollments = enrollments;
       this.cdr.detectChanges();
     });
@@ -326,6 +341,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.error = '';
     this.successMessage = '';
     this.resetEnrollmentForm();
+    this.childNames = [''];
     this.resetSelections();
   }
 
@@ -414,17 +430,39 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   // Show enrollment details modal
   showEnrollmentDetails(course: Course): void {
-    const enrollment = this.enrollments.find(e =>
+    // Get ALL enrollments for this course for the current user
+    const courseEnrollments = this.enrollments.filter(e =>
       e.courseId === course.id.toString() ||
       e.courseId === `admin_course_${course.id}`
     );
 
-    if (enrollment) {
-      this.selectedEnrollment = enrollment;
-      this.showEnrollmentDetailsModal = true;
-      this.error = '';
-      this.successMessage = '';
+    if (courseEnrollments.length === 0) {
+      this.error = 'No enrollments found for this course';
+      return;
     }
+
+    if (courseEnrollments.length === 1) {
+      // If only one enrollment, show it directly
+      this.selectedEnrollment = courseEnrollments[0];
+      this.showEnrollmentDetailsModal = true;
+    } else {
+      // If multiple enrollments, show selection dialog or show the most recent
+      this.selectedEnrollment = courseEnrollments.sort((a, b) =>
+        new Date(b.enrollmentDate || 0).getTime() - new Date(a.enrollmentDate || 0).getTime()
+      )[0];
+      this.showEnrollmentDetailsModal = true;
+    }
+
+    this.error = '';
+    this.successMessage = '';
+  }
+
+  // New method to show specific enrollment details
+  showSpecificEnrollmentDetails(enrollment: Enrollment): void {
+    this.selectedEnrollment = enrollment;
+    this.showEnrollmentDetailsModal = true;
+    this.error = '';
+    this.successMessage = '';
   }
 
   // Close enrollment details modal
@@ -441,10 +479,11 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!confirm('Are you sure you want to cancel this enrollment?')) {
+    if (!confirm('Are you sure you want to cancel this specific enrollment?')) {
       return;
     }
 
+    // Cancel only the specific enrollment ID
     this.cancelEnrollmentById(this.selectedEnrollment.id);
   }
 
@@ -459,6 +498,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       motherContact: '',
       studentCount: 1
     };
+    this.childNames = [''];
     this.resetSelections();
   }
 
@@ -471,12 +511,24 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.successMessage = '';
   }
 
+  getEnrollmentPricingDetails(enrollment: Enrollment): string {
+    if (!enrollment.selectedLessonCount || !enrollment.studentCount) {
+      return `Total: €${enrollment.price}`;
+    }
+
+    return `${enrollment.selectedLessonCount} lesson${enrollment.selectedLessonCount > 1 ? 's' : ''} × ${enrollment.studentCount} student${enrollment.studentCount > 1 ? 's' : ''} = €${enrollment.price}`;
+  }
+
+
   // Enroll in course
   enrollInCourse(): void {
     if (!this.selectedCourse || !this.validateEnrollmentForm()) {
       console.warn('Invalid course selection or form data', this.selectedCourse, this.enrollmentForm);
       return;
     }
+
+    // Update kidName with all child names before submitting
+    this.updateKidNameForEnrollment();
 
     this.isLoading = true;
     this.error = '';
@@ -665,15 +717,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return true;
   }
 
-  // Get enrollment status for a course
-  getEnrollmentStatus(courseId: string | number): string | null {
-    const enrollment = this.enrollments.find(e =>
-      e.courseId === courseId.toString() ||
-      e.courseId === `admin_course_${courseId}`
-    );
-    return enrollment?.status || null;
-  }
-
   // Check if already enrolled in course
   isEnrolledInCourse(courseId: string | number): boolean {
     return this.getEnrollmentStatus(courseId) !== null;
@@ -709,6 +752,46 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       this.isLoading = false;
       this.cdr.detectChanges();
     });
+  }
+
+  // Fix 3: Get enrollment status for a specific course (handle multiple enrollments)
+  getEnrollmentStatus(courseId: string | number): string | null {
+    const enrollments = this.enrollments.filter(e =>
+      e.courseId === courseId.toString() ||
+      e.courseId === `admin_course_${courseId}`
+    );
+
+    if (enrollments.length === 0) return null;
+
+    // If multiple enrollments, show the most recent active one
+    const activeEnrollments = enrollments.filter(e => e.status !== 'cancelled');
+    if (activeEnrollments.length > 0) {
+      return activeEnrollments.sort((a, b) =>
+        new Date(b.enrollmentDate || 0).getTime() - new Date(a.enrollmentDate || 0).getTime()
+      )[0].status;
+    }
+
+    // If all are cancelled, return the most recent status
+    return enrollments.sort((a, b) =>
+      new Date(b.enrollmentDate || 0).getTime() - new Date(a.enrollmentDate || 0).getTime()
+    )[0].status;
+  }
+
+  // Method to get all enrollments for a course
+  getEnrollmentsForCourse(courseId: string | number): Enrollment[] {
+    const all = this.enrollments.filter(e =>
+      e.courseId === courseId.toString() ||
+      e.courseId === `admin_course_${courseId}`
+    );
+
+    const uniqueEnrollments: Record<string, Enrollment> = {};
+    all.forEach(enrollment => {
+      const key = `${enrollment.id}-${enrollment.status}`;
+      if (!uniqueEnrollments[key]) {
+        uniqueEnrollments[key] = enrollment;
+      }
+    });
+    return Object.values(uniqueEnrollments);
   }
 
   // Clear messages
@@ -756,19 +839,19 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       uniqueSchedules[key] = schedule;
     });
 
+    console.log('Unique schedules:', uniqueSchedules);
     return Object.values(uniqueSchedules).length.toString();
   }
 
 
   getAvailableSpots(course: Course): number {
-    const numberOfEnrollments = this.enrollments.filter(e =>
-      e.courseId === course.id.toString() ||
-      e.courseId === `admin_course_${course.id}`
-    ).length;
-    const totalAvailableSchedules = parseInt(this.getSchedulesDisplay(course), 10) || 0;
+    let numberOfEnrollments = course.currentStudents || 0;
+    let totalAvailableSchedules = parseInt(this.getSchedulesDisplay(course), 10) || 0;
     const maxNumberOfEnrollments = totalAvailableSchedules;
     const maxSpotsPerSchedule = 6; // Assuming max 6 students per schedule
     const totalSpots = maxNumberOfEnrollments * maxSpotsPerSchedule;
+    numberOfEnrollments = Math.min(numberOfEnrollments, totalAvailableSchedules);
+    console.log(`Total spots for course ${course.id}: ${totalSpots}, Enrollments: ${numberOfEnrollments}, Max per schedule: ${maxSpotsPerSchedule}`);
     return totalSpots - (numberOfEnrollments * maxSpotsPerSchedule);
   }
 

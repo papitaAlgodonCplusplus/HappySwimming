@@ -83,6 +83,7 @@
         "schedules": "Horários",
         "totalLessonOptions": "Total de Opções de Aulas",
         "edit": "Editar",
+        "registrations": "Registros",
         "availableScheduleTimes": "Horários Disponíveis",
         "globalLessonOptions": "Opções de Aula",
         "globalLessonOptionsDescription": "Essas opções de aula serão aplicadas a todos os horários disponíveis. Os alunos podem escolher qualquer pacote de aulas para qualquer horário disponível.",
@@ -96,8 +97,11 @@
         "noTemplatesAvailable": "Nenhum curso existente disponível para usar como modelos. Crie seu primeiro curso manualmente."
     },
     "servicesManager": {
+        "lessonsSelected": "Aulas Selecionadas",
         "lesson": "aula",
         "view": "Ver",
+        "pricingDetails": "Detalhes de Preços",
+        "multipleEnrollments": "Inscrições Múltiplas",
         "selectSchedule": "Seleccione Horario",
         "howManyStudents": "Numerou de estudantes",
         "numberOfStudents": "Calculo de Tarifa",

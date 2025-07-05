@@ -31,12 +31,12 @@ app.use(express.json());
 
 // Database connection DEV
 // const pool = new Pool({
-// user: process.env.DB_USER || 'postgres',
-// host: process.env.DB_HOST || 'localhost',
-// database: process.env.DB_NAME || 'happyswimming',
-// password: process.env.DB_PASSWORD || 'postgres',
-// port: process.env.DB_PORT || 5432,
-// schema: 'happyswimming'
+//   user: process.env.DB_USER || 'postgres',
+//   host: process.env.DB_HOST || 'localhost',
+//   database: process.env.DB_NAME || 'happyswimming',
+//   password: process.env.DB_PASSWORD || 'postgres',
+//   port: process.env.DB_PORT || 5432,
+//   schema: 'happyswimming'
 // });
 
 // Database connection PROD
@@ -1389,23 +1389,21 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
+    console.log('Fetching professional admin courses for user:', userId, 'Role:', userRole);
 
-    if (userRole !== 'professional') {
-      return res.status(403).json({ error: 'Professional access required' });
-    }
+    if (userRole === 'professional') {
+      // Get professional ID
+      const professionalQuery = 'SELECT id FROM happyswimming.professionals WHERE user_id = $1';
+      const professionalResult = await pool.query(professionalQuery, [userId]);
 
-    // Get professional ID
-    const professionalQuery = 'SELECT id FROM happyswimming.professionals WHERE user_id = $1';
-    const professionalResult = await pool.query(professionalQuery, [userId]);
+      if (professionalResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Professional profile not found' });
+      }
 
-    if (professionalResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Professional profile not found' });
-    }
+      const professionalId = professionalResult.rows[0].id;
 
-    const professionalId = professionalResult.rows[0].id;
-
-    // Get all admin courses assigned to this professional with enrolled students
-    const query = `
+      // Get all admin courses assigned to this professional with enrolled students
+      const query = `
       SELECT 
         cs.id as enrollment_id,
         cs.client_id,
@@ -1444,36 +1442,105 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
       ORDER BY ac.start_date DESC, cs.created_at DESC
     `;
 
-    const result = await pool.query(query, [professionalId]);
+      const result = await pool.query(query, [professionalId]);
 
-    const enrollments = result.rows.map(row => ({
-      id: row.enrollment_id,
-      admin_course_id: row.admin_course_id,
-      courseId: row.course_id,
-      courseName: row.course_name,
-      courseCode: row.course_code,
-      courseDescription: row.course_description,
-      clientName: row.client_name,
-      courseStartDate: row.course_start_date,
-      courseEndDate: row.course_end_date,
-      courseStatus: row.course_status,
-      maxStudents: row.max_students,
-      kid_name: row.kid_name,
-      mother_contact: row.mother_contact,
-      status: row.status,
-      startDate: row.start_date,
-      endDate: row.end_date,
-      price: parseFloat(row.price),
-      calification: row.calification,
-      assistance: row.assistance,
-      notes: row.notes,
-      enrollmentDate: row.enrollment_date,
-      professionalId: professionalId
-    }));
+      const enrollments = result.rows.map(row => ({
+        id: row.enrollment_id,
+        admin_course_id: row.admin_course_id,
+        courseId: row.course_id,
+        courseName: row.course_name,
+        courseCode: row.course_code,
+        courseDescription: row.course_description,
+        clientName: row.client_name,
+        courseStartDate: row.course_start_date,
+        courseEndDate: row.course_end_date,
+        courseStatus: row.course_status,
+        maxStudents: row.max_students,
+        kid_name: row.kid_name,
+        mother_contact: row.mother_contact,
+        status: row.status,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        price: parseFloat(row.price),
+        calification: row.calification,
+        assistance: row.assistance,
+        notes: row.notes,
+        enrollmentDate: row.enrollment_date,
+        professionalId: professionalId
+      }));
 
-    console.log('Professional admin courses result:', enrollments);
-    res.json(enrollments);
+      console.log('Professional admin courses result:', enrollments);
+      res.json(enrollments);
 
+    } else if (userRole === 'admin') {
+      // Admin can see all courses and students
+      const query = `
+        SELECT 
+          cs.id as enrollment_id,
+          cs.client_id,
+          cs.admin_course_id,
+          cs.start_date,
+          cs.end_date,
+          cs.status,
+          cs.price,
+          cs.notes,
+          cs.calification,
+          cs.assistance,
+          cs.kid_name,
+          cs.mother_contact,
+          cs.created_at as enrollment_date,
+
+          -- Admin course details
+          ac.id as course_id,
+          ac.course_code,
+          ac.name as course_name,
+          ac.description as course_description,
+          ac.client_name,
+          ac.start_date as course_start_date,
+          ac.end_date as course_end_date,
+          ac.status as course_status,
+          ac.max_students,
+
+          -- Client details
+          CONCAT(cu.first_name, ' ', cu.last_name1) as client_name_full
+
+        FROM happyswimming.client_services cs
+        JOIN happyswimming.admin_courses ac ON cs.admin_course_id = ac.id
+        JOIN happyswimming.clients c ON cs.client_id = c.id
+        JOIN happyswimming.users cu ON c.user_id = cu.id
+        WHERE ac.is_historical = FALSE
+        ORDER BY ac.start_date DESC, cs.created_at DESC
+      `;
+
+      const result = await pool.query(query);
+
+      const enrollments = result.rows.map(row => ({
+        id: row.enrollment_id,
+        admin_course_id: row.admin_course_id,
+        courseId: row.course_id,
+        courseName: row.course_name,
+        courseCode: row.course_code,
+        courseDescription: row.course_description,
+        clientName: row.client_name_full,
+        courseStartDate: row.course_start_date,
+        courseEndDate: row.course_end_date,
+        courseStatus: row.course_status,
+        maxStudents: row.max_students,
+        kid_name: row.kid_name,
+        mother_contact: row.mother_contact,
+        status: row.status,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        price: parseFloat(row.price),
+        calification: row.calification !== null ? parseFloat(row.calification) : undefined,
+        assistance: row.assistance !== null ? parseFloat(row.assistance) : undefined,
+        notes: row.notes || '',
+        enrollmentDate: row.enrollment_date
+      }));
+
+      console.log('Admin courses result:', enrollments);
+      res.json(enrollments);
+    }
   } catch (error) {
     console.error('Error fetching professional admin courses:', error);
     res.status(500).json({ error: 'Failed to fetch courses and students' });
@@ -2345,13 +2412,14 @@ app.get('/api/enrollments/:id', authenticateToken, async (req, res) => {
     console.log('Fetching enrollments for user:', req.params.id);
     const userId = req.params.id;
     const userRole = 'client';
+    console.log('User role:', userRole, 'User ID:', userId);  
 
     if (userRole === 'client') {
       // Redirect to existing user endpoint
       const query = `
         SELECT cs.id, cs.service_id, s.name as service_name, cs.status,
           cs.created_at as enrollment_date, cs.start_date, cs.end_date,
-          cs.professional_id, c.is_outsourcing,
+          cs.professional_id, c.is_outsourcing, cs.selected_lesson_count,
           CONCAT(u.first_name, ' ', u.last_name1) as professional_name,
           cs.price, cs.admin_course_id, cs.kid_name, cs.mother_contact
         FROM happyswimming.client_services cs
@@ -2380,7 +2448,8 @@ app.get('/api/enrollments/:id', authenticateToken, async (req, res) => {
         userId: userId,
         notes: row.notes,
         kidName: row.kid_name,
-        motherContact: row.mother_contact
+        motherContact: row.mother_contact,
+        selectedLessonCount: row.selected_lesson_count
       }));
 
       res.json(enrollments);
@@ -2799,10 +2868,10 @@ app.post('/api/admin/courses', authenticateToken, async (req, res) => {
       const uniquePricing = [];
       const seen = new Set();
       for (const gp of groupPricing) {
-      if ((gp.studentRange === '1-4' || gp.studentRange === '5-6') && !seen.has(gp.studentRange)) {
-        uniquePricing.push(gp);
-        seen.add(gp.studentRange);
-      }
+        if ((gp.studentRange === '1-4' || gp.studentRange === '5-6') && !seen.has(gp.studentRange)) {
+          uniquePricing.push(gp);
+          seen.add(gp.studentRange);
+        }
       }
       // Overwrite groupPricing with unique entries
       groupPricing = uniquePricing;
@@ -3332,7 +3401,7 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
     const groupPrice = parseFloat(groupPricingResult.rows[0].group_price);
 
     // Calculate total price: (group price per student * student count) + lesson price
-    const totalPrice = (groupPrice * studentCount) + lessonPrice;
+    const totalPrice = (groupPrice * studentCount) * lessonPrice;
 
     // Get or create admin service
     let adminServiceId;
