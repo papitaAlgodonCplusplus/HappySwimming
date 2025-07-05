@@ -765,7 +765,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       e.courseId === course.id.toString() ||
       e.courseId === `admin_course_${course.id}`
     ).length;
-    const totalAvailableSchedules = course.schedules?.length || 0;
+    const totalAvailableSchedules = parseInt(this.getSchedulesDisplay(course), 10) || 0;
     const maxNumberOfEnrollments = totalAvailableSchedules;
     const maxSpotsPerSchedule = 6; // Assuming max 6 students per schedule
     const totalSpots = maxNumberOfEnrollments * maxSpotsPerSchedule;
