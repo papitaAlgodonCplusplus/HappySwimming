@@ -524,46 +524,13 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     return groupPricing ? groupPricing.price : 0;
   }
 
-  // NEW: Global lesson options management methods
-  addGlobalLessonOption(): void {
-    if (!this.validateGlobalLessonOption()) {
-      return;
-    }
-
-    // Check for duplicate lesson counts
-    const duplicate = this.globalLessonOptions.find(option =>
-      option.lessonCount === this.globalLessonOption.lessonCount
-    );
-
-    if (duplicate) {
-      this.error = `Lesson option for ${this.globalLessonOption.lessonCount} lessons already exists`;
-      return;
-    }
-
-    this.globalLessonOptions.push({
-      lessonCount: this.globalLessonOption.lessonCount,
-      price: this.globalLessonOption.price
-    });
-
-    // Sort by lesson count
-    this.globalLessonOptions.sort((a, b) => a.lessonCount - b.lessonCount);
-
-    // Apply to all existing schedules
-    this.applyGlobalLessonOptionToAllSchedules(this.globalLessonOptions[this.globalLessonOptions.length - 1]);
-
-    this.resetGlobalLessonOption();
-    this.clearMessages();
-    this.cdr.detectChanges();
-  }
-
   private validateGlobalLessonOption(): boolean {
     if (this.globalLessonOption.lessonCount < 1 || this.globalLessonOption.lessonCount > 20) {
       this.error = 'Lesson count must be between 1 and 20.';
       return false;
     }
-    if (this.globalLessonOption.price <= 0) {
-      this.error = 'Price must be greater than 0.';
-      return false;
+    if (this.globalLessonOption.price <= 0 || isNaN(this.globalLessonOption.price)) {
+      this.globalLessonOption.price = 0; // Reset price to 0 if invalid
     }
     return true;
   }
@@ -581,22 +548,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  removeGlobalLessonOption(index: number): void {
-    if (index < 0 || index >= this.globalLessonOptions.length) return;
-
-    const removedOption = this.globalLessonOptions[index];
-    this.globalLessonOptions.splice(index, 1);
-
-    // Remove from all schedules
-    this.courseForm.schedules.forEach(schedule => {
-      schedule.lessonOptions = schedule.lessonOptions.filter(option =>
-        option.lessonCount !== removedOption.lessonCount
-      );
-    });
-
-    this.clearMessages();
-    this.cdr.detectChanges();
-  }
 
   private resetGlobalLessonOption(): void {
     this.globalLessonOption = {
@@ -604,21 +555,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       price: 0
     };
     this.editingGlobalLessonIndex = null;
-  }
-
-  private applyGlobalLessonOptionToAllSchedules(lessonOption: LessonOption): void {
-    this.courseForm.schedules.forEach(schedule => {
-      // Check if this lesson count already exists in the schedule
-      const exists = schedule.lessonOptions.find(option =>
-        option.lessonCount === lessonOption.lessonCount
-      );
-
-      if (!exists) {
-        schedule.lessonOptions.push({ ...lessonOption });
-        // Sort by lesson count
-        schedule.lessonOptions.sort((a, b) => a.lessonCount - b.lessonCount);
-      }
-    });
   }
 
   getGlobalLessonOptions(): LessonOption[] {
@@ -656,52 +592,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
 
     this.cdr.detectChanges();
   }
-
-  // UPDATED: Initialize global lesson options when editing course
-  editCourse(course: AdminCourse): void {
-    this.editingCourse = course;
-
-    this.courseForm = {
-      name: course.name,
-      description: course.description,
-      clientName: course.clientName,
-      startDate: course.startDate,
-      endDate: course.endDate,
-      professionalId: course.professionalId,
-      schedules: course.schedules ? [...course.schedules] : [],
-      groupPricing: course.groupPricing ? [...course.groupPricing] : []
-    };
-
-    // Initialize group pricing if not present
-    if (this.courseForm.groupPricing.length === 0) {
-      this.initializeGroupPricing();
-    }
-
-    // Extract global lesson options from existing schedules
-    this.extractGlobalLessonOptions();
-
-    this.showCreateForm = true;
-    this.error = '';
-    this.successMessage = '';
-  }
-
-  // NEW: Extract global lesson options from existing schedules
-  private extractGlobalLessonOptions(): void {
-    const allLessonOptions = new Map<number, LessonOption>();
-
-    // Collect all unique lesson options across schedules
-    this.courseForm.schedules.forEach(schedule => {
-      schedule.lessonOptions.forEach(option => {
-        if (!allLessonOptions.has(option.lessonCount)) {
-          allLessonOptions.set(option.lessonCount, { ...option });
-        }
-      });
-    });
-
-    this.globalLessonOptions = Array.from(allLessonOptions.values())
-      .sort((a, b) => a.lessonCount - b.lessonCount);
-  }
-
   // UPDATED: Reset form method
   resetForm(): void {
     this.courseForm = {
@@ -762,7 +652,120 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // UPDATED: Validate course form to check for global lesson options
+  // UPDATED: Form invalid check
+  isFormInvalid(): boolean {
+    return this.isLoading ||
+      this.courseForm.schedules.length === 0 ||
+      this.globalLessonOptions.length === 0 ||
+      this.courseForm.groupPricing.some(gp => gp.price <= 0);
+  }
+
+  // Updated admin-course-management.component.ts - Fix updateCourse method
+
+  // UPDATED: Update course method with better data preparation and debugging
+  updateCourse(): void {
+    if (!this.editingCourse || !this.validateCourseForm()) {
+      console.warn('Update course validation failed');
+      return;
+    }
+
+    this.isLoading = true;
+    this.error = '';
+    this.successMessage = '';
+
+    // CRITICAL: Ensure lesson options are properly structured
+    const preparedCourseData = this.prepareCourseDataForUpdate();
+
+    console.log('=== UPDATE COURSE DEBUG ===');
+    console.log('Original form data:', JSON.stringify(this.courseForm, null, 2));
+    console.log('Global lesson options:', JSON.stringify(this.globalLessonOptions, null, 2));
+    console.log('Prepared course data:', JSON.stringify(preparedCourseData, null, 2));
+    console.log('========================');
+
+    const courseData: Partial<AdminCourse> = {
+      ...preparedCourseData,
+      id: this.editingCourse.id,
+      courseCode: this.editingCourse.courseCode,
+      createdAt: this.editingCourse.createdAt,
+      isHistorical: this.editingCourse.isHistorical
+    };
+
+    this.http.put<AdminCourse>(`${this.apiUrl}/admin/courses/${this.editingCourse.id}`, courseData, {
+      headers: this.getAuthHeaders()
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Error updating course:', error);
+        this.error = error.error?.message || 'Failed to update course. Please try again.';
+        this.isLoading = false;
+        this.cdr.detectChanges();
+        return of(null);
+      })
+    ).subscribe(updatedCourse => {
+      if (updatedCourse) {
+        console.log('Course updated successfully:', updatedCourse);
+        const index = this.courses.findIndex(c => c.id === updatedCourse.id);
+        if (index !== -1) {
+          this.courses[index] = updatedCourse;
+        }
+        this.extractClientOptions();
+        this.cancelEdit();
+        this.successMessage = `Course "${updatedCourse.name}" updated successfully.`;
+      }
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    });
+  }
+
+  // NEW: Method to properly prepare course data for update
+  private prepareCourseDataForUpdate(): any {
+    // Start with a clean copy of the form data
+    const cleanedData = JSON.parse(JSON.stringify(this.courseForm));
+
+    // CRITICAL: Ensure all schedules have the global lesson options
+    const processedSchedules: Schedule[] = [];
+
+    // Get unique schedules by time
+    const uniqueScheduleTimes = new Map<string, Schedule>();
+    cleanedData.schedules.forEach((schedule: Schedule) => {
+      const key = `${schedule.startTime}-${schedule.endTime}`;
+      if (!uniqueScheduleTimes.has(key)) {
+        uniqueScheduleTimes.set(key, {
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          lessonOptions: []
+        });
+      }
+    });
+
+    // Apply global lesson options to each unique schedule
+    uniqueScheduleTimes.forEach((schedule) => {
+      schedule.lessonOptions = [...this.globalLessonOptions];
+      processedSchedules.push(schedule);
+    });
+
+    cleanedData.schedules = processedSchedules;
+
+    console.log('Processed schedules with lesson options:', processedSchedules);
+
+    // Clean group pricing (remove duplicates)
+    const uniqueGroupPricing = new Map<string, GroupPricing>();
+    cleanedData.groupPricing.forEach((pricing: GroupPricing) => {
+      uniqueGroupPricing.set(pricing.studentRange, {
+        studentRange: pricing.studentRange,
+        price: pricing.price
+      });
+    });
+
+    cleanedData.groupPricing = Array.from(uniqueGroupPricing.values());
+
+    // Add maxStudents
+    cleanedData.maxStudents = 6;
+
+    return cleanedData;
+  }
+
+  // UPDATED: Enhanced validation for global lesson options
   private validateCourseForm(): boolean {
     if (!this.courseForm.name.trim()) {
       this.error = 'Course name is required.';
@@ -797,60 +800,163 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       return false;
     }
     if (this.globalLessonOptions.length === 0) {
-      this.error = 'At least one lesson option is required.';
+      this.error = 'At least one lesson option is required. Please add lesson options first.';
       return false;
     }
 
+    // Validate that each global lesson option has valid data
+    for (const option of this.globalLessonOptions) {
+      if (!option.lessonCount || option.lessonCount < 1 || option.lessonCount > 20) {
+        this.error = `Invalid lesson count: ${option.lessonCount}. Must be between 1 and 20.`;
+        return false;
+      }
+      if (option.price < 0) {
+        this.error = `Invalid price: ${option.price}. Price cannot be negative.`;
+        return false;
+      }
+    }
+
+    console.log('Form validation passed. Global lesson options:', this.globalLessonOptions);
     return true;
   }
 
-  // UPDATED: Form invalid check
-  isFormInvalid(): boolean {
-    return this.isLoading ||
-      this.courseForm.schedules.length === 0 ||
-      this.globalLessonOptions.length === 0 ||
-      this.courseForm.groupPricing.some(gp => gp.price <= 0);
-  }
-
-  // Update existing course
-  updateCourse(): void {
-    if (!this.editingCourse || !this.validateCourseForm()) {
+  // UPDATED: Enhanced add global lesson option with better validation
+  addGlobalLessonOption(): void {
+    if (!this.validateGlobalLessonOption()) {
       return;
     }
 
-    this.isLoading = true;
-    this.error = '';
-    this.successMessage = '';
+    // Check for duplicate lesson counts
+    const duplicate = this.globalLessonOptions.find(option =>
+      option.lessonCount === this.globalLessonOption.lessonCount
+    );
 
-    const courseData = {
-      ...this.courseForm,
-      id: this.editingCourse.id
+    if (duplicate) {
+      this.error = `Lesson option for ${this.globalLessonOption.lessonCount} lessons already exists`;
+      return;
+    }
+
+    const newOption: LessonOption = {
+      lessonCount: this.globalLessonOption.lessonCount,
+      price: this.globalLessonOption.price
     };
 
-    this.http.put<AdminCourse>(`${this.apiUrl}/admin/courses/${this.editingCourse.id}`, courseData, {
-      headers: this.getAuthHeaders()
-    }).pipe(
-      takeUntil(this.destroy$),
-      catchError(error => {
-        console.error('Error updating course:', error);
-        this.error = error.error?.message || 'Failed to update course. Please try again.';
-        this.isLoading = false;
-        this.cdr.detectChanges();
-        return of(null);
-      })
-    ).subscribe(updatedCourse => {
-      if (updatedCourse) {
-        const index = this.courses.findIndex(c => c.id === updatedCourse.id);
-        if (index !== -1) {
-          this.courses[index] = updatedCourse;
-        }
-        this.extractClientOptions();
-        this.cancelEdit();
-        this.successMessage = `Course "${updatedCourse.name}" updated successfully.`;
-      }
-      this.isLoading = false;
-      this.cdr.detectChanges();
+    this.globalLessonOptions.push(newOption);
+
+    // Sort by lesson count
+    this.globalLessonOptions.sort((a, b) => a.lessonCount - b.lessonCount);
+
+    // Apply to all existing schedules in the form
+    this.applyGlobalLessonOptionToAllSchedules(newOption);
+
+    console.log('Added global lesson option:', newOption);
+    console.log('Updated global lesson options:', this.globalLessonOptions);
+
+    this.resetGlobalLessonOption();
+    this.clearMessages();
+    this.cdr.detectChanges();
+  }
+
+  // UPDATED: Enhanced global lesson option removal
+  removeGlobalLessonOption(index: number): void {
+    if (index < 0 || index >= this.globalLessonOptions.length) return;
+
+    const removedOption = this.globalLessonOptions[index];
+    this.globalLessonOptions.splice(index, 1);
+
+    // Remove from all schedules in the form
+    this.courseForm.schedules.forEach(schedule => {
+      schedule.lessonOptions = schedule.lessonOptions.filter(option =>
+        option.lessonCount !== removedOption.lessonCount
+      );
     });
+
+    console.log('Removed global lesson option:', removedOption);
+    console.log('Updated global lesson options:', this.globalLessonOptions);
+
+    this.clearMessages();
+    this.cdr.detectChanges();
+  }
+
+  // UPDATED: Enhanced application of global lesson options to schedules
+  private applyGlobalLessonOptionToAllSchedules(lessonOption: LessonOption): void {
+    this.courseForm.schedules.forEach(schedule => {
+      // Check if this lesson count already exists in the schedule
+      const exists = schedule.lessonOptions.find(option =>
+        option.lessonCount === lessonOption.lessonCount
+      );
+
+      if (!exists) {
+        schedule.lessonOptions.push({ ...lessonOption });
+        // Sort by lesson count
+        schedule.lessonOptions.sort((a, b) => a.lessonCount - b.lessonCount);
+      }
+    });
+
+    console.log('Applied lesson option to all schedules:', lessonOption);
+  }
+
+  // UPDATED: Extract global lesson options with better logging
+  private extractGlobalLessonOptions(): void {
+    const allLessonOptions = new Map<number, LessonOption>();
+
+    console.log('Extracting global lesson options from schedules:', this.courseForm.schedules);
+
+    // Collect all unique lesson options across schedules
+    this.courseForm.schedules.forEach(schedule => {
+      if (schedule.lessonOptions && Array.isArray(schedule.lessonOptions)) {
+        schedule.lessonOptions.forEach(option => {
+          if (option.lessonCount && !allLessonOptions.has(option.lessonCount)) {
+            allLessonOptions.set(option.lessonCount, {
+              lessonCount: option.lessonCount,
+              price: option.price || 0
+            });
+          }
+        });
+      }
+    });
+
+    this.globalLessonOptions = Array.from(allLessonOptions.values())
+      .sort((a, b) => a.lessonCount - b.lessonCount);
+
+    console.log('Extracted global lesson options:', this.globalLessonOptions);
+  }
+
+  // UPDATED: Enhanced edit course method
+  editCourse(course: AdminCourse): void {
+    console.log('=== EDIT COURSE DEBUG ===');
+    console.log('Original course data:', JSON.stringify(course, null, 2));
+
+    this.editingCourse = course;
+
+    this.courseForm = {
+      name: course.name,
+      description: course.description,
+      clientName: course.clientName,
+      startDate: course.startDate,
+      endDate: course.endDate,
+      professionalId: course.professionalId,
+      schedules: course.schedules ? JSON.parse(JSON.stringify(course.schedules)) : [],
+      groupPricing: course.groupPricing ? JSON.parse(JSON.stringify(course.groupPricing)) : []
+    };
+
+    console.log('Form schedules after copy:', this.courseForm.schedules);
+
+    // Initialize group pricing if not present
+    if (this.courseForm.groupPricing.length === 0) {
+      this.initializeGroupPricing();
+    }
+
+    // Extract global lesson options from existing schedules
+    this.extractGlobalLessonOptions();
+
+    console.log('Final global lesson options:', this.globalLessonOptions);
+    console.log('=========================');
+
+    this.showCreateForm = true;
+    this.error = '';
+    this.successMessage = '';
+    this.cdr.detectChanges();
   }
 
   // Delete course (mark as historical)

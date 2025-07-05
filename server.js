@@ -2412,7 +2412,7 @@ app.get('/api/enrollments/:id', authenticateToken, async (req, res) => {
     console.log('Fetching enrollments for user:', req.params.id);
     const userId = req.params.id;
     const userRole = 'client';
-    console.log('User role:', userRole, 'User ID:', userId);  
+    console.log('User role:', userRole, 'User ID:', userId);
 
     if (userRole === 'client') {
       // Redirect to existing user endpoint
@@ -3011,6 +3011,8 @@ app.put('/api/admin/courses/:id', authenticateToken, async (req, res) => {
       groupPricing
     } = req.body;
 
+    console.log('Updating course with schedules:', JSON.stringify(schedules, null, 2));
+
     // Similar validation as create
     if (!name || !description || !clientName || !startDate || !endDate || !professionalId) {
       return res.status(400).json({ error: 'All basic fields are required' });
@@ -3048,41 +3050,90 @@ app.put('/api/admin/courses/:id', authenticateToken, async (req, res) => {
 
     const updatedCourse = updateResult.rows[0];
 
-    // Delete existing schedules, lesson options, and group pricing
-    await client.query('DELETE FROM happyswimming.schedule_lesson_options WHERE schedule_id IN (SELECT id FROM happyswimming.course_schedules WHERE course_id = $1)', [courseId]);
-    await client.query('DELETE FROM happyswimming.course_schedules WHERE course_id = $1', [courseId]);
-    await client.query('DELETE FROM happyswimming.course_group_pricing WHERE course_id = $1', [courseId]);
+    // *** CRITICAL FIX: Delete ALL existing related data first ***
+    console.log('Deleting existing lesson options for course:', courseId);
 
-    // Insert new schedules and lesson options (same logic as create)
+    // Get all schedule IDs for this course first
+    const existingSchedulesResult = await client.query(
+      'SELECT id FROM happyswimming.course_schedules WHERE course_id = $1',
+      [courseId]
+    );
+
+    console.log('Found existing schedules:', existingSchedulesResult.rows);
+
+    // Delete lesson options for all schedules of this course
+    if (existingSchedulesResult.rows.length > 0) {
+      const scheduleIds = existingSchedulesResult.rows.map(row => row.id);
+      const deleteOptionsQuery = `
+        DELETE FROM happyswimming.schedule_lesson_options 
+        WHERE schedule_id = ANY($1::int[])
+      `;
+      const deleteOptionsResult = await client.query(deleteOptionsQuery, [scheduleIds]);
+      console.log('Deleted lesson options result:', deleteOptionsResult.rowCount);
+    }
+
+    // Delete all schedules for this course
+    const deleteSchedulesResult = await client.query(
+      'DELETE FROM happyswimming.course_schedules WHERE course_id = $1',
+      [courseId]
+    );
+    console.log('Deleted schedules result:', deleteSchedulesResult.rowCount);
+
+    // Delete existing group pricing
+    const deleteGroupPricingResult = await client.query(
+      'DELETE FROM happyswimming.course_group_pricing WHERE course_id = $1',
+      [courseId]
+    );
+    console.log('Deleted group pricing result:', deleteGroupPricingResult.rowCount);
+
+    // *** NOW INSERT ALL NEW DATA ***
+
+    // Insert new schedules and lesson options
     for (const schedule of schedules) {
-      if (!schedule.startTime || !schedule.endTime || !schedule.lessonOptions || schedule.lessonOptions.length === 0) {
+      console.log('Processing schedule:', schedule);
+
+      if (!schedule.startTime || !schedule.endTime) {
+        console.log('Skipping invalid schedule:', schedule);
         continue;
       }
 
+      // Insert schedule
       const scheduleResult = await client.query(
         'INSERT INTO happyswimming.course_schedules (course_id, start_time, end_time) VALUES ($1, $2, $3) RETURNING id',
         [courseId, schedule.startTime, schedule.endTime]
       );
 
       const scheduleId = scheduleResult.rows[0].id;
+      console.log('Created new schedule with ID:', scheduleId);
 
-      for (const lessonOption of schedule.lessonOptions) {
-        if (lessonOption.lessonCount > 0 && lessonOption.price > 0) {
-          await client.query(
-            'INSERT INTO happyswimming.schedule_lesson_options (schedule_id, lesson_count, price) VALUES ($1, $2, $3)',
-            [scheduleId, lessonOption.lessonCount, lessonOption.price]
-          );
+      // Insert lesson options for this schedule
+      if (schedule.lessonOptions && Array.isArray(schedule.lessonOptions)) {
+        console.log('Adding lesson options for schedule:', scheduleId, schedule.lessonOptions);
+
+        for (const lessonOption of schedule.lessonOptions) {
+          if (lessonOption.lessonCount > 0 && lessonOption.price >= 0) {
+            const insertOptionResult = await client.query(
+              'INSERT INTO happyswimming.schedule_lesson_options (schedule_id, lesson_count, price) VALUES ($1, $2, $3) RETURNING id',
+              [scheduleId, lessonOption.lessonCount, lessonOption.price]
+            );
+            console.log('Created lesson option with ID:', insertOptionResult.rows[0].id);
+          } else {
+            console.log('Skipping invalid lesson option:', lessonOption);
+          }
         }
+      } else {
+        console.log('No lesson options found for schedule:', scheduleId);
       }
     }
 
     // Insert new group pricing
     for (const pricing of groupPricing) {
-      if (pricing.price > 0 && (pricing.studentRange === '1-4' || pricing.studentRange === '5-6')) {
-        await client.query(
-          'INSERT INTO happyswimming.course_group_pricing (course_id, student_range, price) VALUES ($1, $2, $3)',
+      if (pricing.price >= 0 && (pricing.studentRange === '1-4' || pricing.studentRange === '5-6')) {
+        const insertPricingResult = await client.query(
+          'INSERT INTO happyswimming.course_group_pricing (course_id, student_range, price) VALUES ($1, $2, $3) RETURNING id',
           [courseId, pricing.studentRange, pricing.price]
         );
+        console.log('Created group pricing with ID:', insertPricingResult.rows[0].id);
       }
     }
 
@@ -3096,6 +3147,7 @@ app.put('/api/admin/courses/:id', authenticateToken, async (req, res) => {
     const professionalResult = await client.query(professionalQuery, [professionalId]);
 
     await client.query('COMMIT');
+    console.log('Course update completed successfully');
 
     // Return the updated course object
     const responseData = {
@@ -3121,7 +3173,7 @@ app.put('/api/admin/courses/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error updating course:', error);
-    res.status(500).json({ error: 'Failed to update course' });
+    res.status(500).json({ error: 'Failed to update course: ' + error.message });
   } finally {
     client.release();
   }
