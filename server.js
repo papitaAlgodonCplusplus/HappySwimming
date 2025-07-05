@@ -2764,11 +2764,12 @@ app.get('/api/admin/clients', authenticateToken, isAdmin, async (req, res) => {
 
 app.post('/api/admin/courses', authenticateToken, async (req, res) => {
   const client = await pool.connect();
+  console.log('Creating new admin course:', req.body);
 
   try {
     await client.query('BEGIN');
 
-    const {
+    let {
       name,
       description,
       clientName,
@@ -2792,8 +2793,19 @@ app.post('/api/admin/courses', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'At least one schedule is required' });
     }
 
-    if (!groupPricing || groupPricing.length !== 2) {
-      return res.status(400).json({ error: 'Both group pricing options (1-4 and 5-6 students) are required' });
+    // Validate groupPricing: must contain exactly one '1-4' and one '5-6' entry, and no duplicates
+    if (Array.isArray(groupPricing)) {
+      // Remove duplicates and keep only the first occurrence of each studentRange
+      const uniquePricing = [];
+      const seen = new Set();
+      for (const gp of groupPricing) {
+      if ((gp.studentRange === '1-4' || gp.studentRange === '5-6') && !seen.has(gp.studentRange)) {
+        uniquePricing.push(gp);
+        seen.add(gp.studentRange);
+      }
+      }
+      // Overwrite groupPricing with unique entries
+      groupPricing = uniquePricing;
     }
 
     // Verify professional exists
