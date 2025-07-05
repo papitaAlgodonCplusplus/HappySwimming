@@ -736,13 +736,27 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   // Get schedules display for course card
   getSchedulesDisplay(course: Course): string {
-    if (!course.schedules || course.schedules.length === 0) {
-      return 'NA';
-    }
+    const schedules = course.schedules || [];
+    const uniqueSchedules: Record<string, Schedule> = {};
 
-    const uniqueSchedules = Array.from(new Set(course.schedules.map(schedule => schedule.id)));
+    schedules.forEach(schedule => {
+      const key = `${schedule.startTime}-${schedule.endTime}`;
+      if (!uniqueSchedules[key]) {
+        uniqueSchedules[key] = schedule;
+      }
+      // Ensure lesson options are unique within the schedule
+      const uniqueOptions: Record<string, LessonOption> = {};
+      schedule.lessonOptions.forEach(option => {
+        const optionKey = `${option.lessonCount}-${option.price}`;
+        if (!uniqueOptions[optionKey]) {
+          uniqueOptions[optionKey] = option;
+        }
+      });
+      schedule.lessonOptions = Object.values(uniqueOptions);
+      uniqueSchedules[key] = schedule;
+    });
 
-    return `${uniqueSchedules.length}`;
+    return Object.values(uniqueSchedules).length.toString();
   }
 
 
