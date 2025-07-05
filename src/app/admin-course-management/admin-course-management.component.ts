@@ -432,7 +432,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     };
   }
 
-  // Create new course
+  // 6. FIX: Update the createCourse method to clean data before sending
   createCourse(): void {
     if (!this.validateCourseForm()) {
       console.warn('Course form validation failed:', this.error);
@@ -443,14 +443,12 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.error = '';
     this.successMessage = '';
 
-    const courseData = {
-      ...this.courseForm,
-      maxStudents: 6 // Updated max students to 6
-    };
+    // FIXED: Clean and deduplicate data before sending
+    const cleanedCourseData = this.cleanCourseDataForSubmission();
 
-    console.log('Creating course with data:', courseData);
+    console.log('Creating course with cleaned data:', cleanedCourseData);
 
-    this.http.post<AdminCourse>(`${this.apiUrl}/admin/courses`, courseData, {
+    this.http.post<AdminCourse>(`${this.apiUrl}/admin/courses`, cleanedCourseData, {
       headers: this.getAuthHeaders()
     }).pipe(
       takeUntil(this.destroy$),
@@ -473,6 +471,52 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
   }
+
+  // 7. NEW: Method to clean course data before submission
+  private cleanCourseDataForSubmission(): any {
+    // Deep clone to avoid modifying original data
+    const cleanedData = JSON.parse(JSON.stringify(this.courseForm));
+
+    // Remove duplicate schedules based on time slots
+    const uniqueSchedules = new Map<string, Schedule>();
+    cleanedData.schedules.forEach((schedule: Schedule) => {
+      const key = `${schedule.startTime}-${schedule.endTime}`;
+      if (!uniqueSchedules.has(key)) {
+        // Clean lesson options for this schedule
+        const uniqueLessonOptions = new Map<number, LessonOption>();
+        schedule.lessonOptions.forEach((option: LessonOption) => {
+          uniqueLessonOptions.set(option.lessonCount, {
+            lessonCount: option.lessonCount,
+            price: option.price
+          });
+        });
+
+        schedule.lessonOptions = Array.from(uniqueLessonOptions.values())
+          .sort((a, b) => a.lessonCount - b.lessonCount);
+
+        uniqueSchedules.set(key, schedule);
+      }
+    });
+
+    cleanedData.schedules = Array.from(uniqueSchedules.values());
+
+    // Remove duplicate group pricing
+    const uniqueGroupPricing = new Map<string, GroupPricing>();
+    cleanedData.groupPricing.forEach((pricing: GroupPricing) => {
+      uniqueGroupPricing.set(pricing.studentRange, {
+        studentRange: pricing.studentRange,
+        price: pricing.price
+      });
+    });
+
+    cleanedData.groupPricing = Array.from(uniqueGroupPricing.values());
+
+    // Add maxStudents
+    cleanedData.maxStudents = 6;
+
+    return cleanedData;
+  }
+
 
   // Helper method to get group pricing value
   getGroupPricingValue(range: '1-4' | '5-6'): number {
