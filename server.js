@@ -2766,11 +2766,6 @@ app.post('/api/admin/courses', authenticateToken, async (req, res) => {
   const client = await pool.connect();
 
   try {
-    // Check admin privileges
-    if (req.user.role !== 'admin' && req.user.email !== 'admin@gmail.com') {
-      return res.status(403).json({ error: 'Admin privileges required.' });
-    }
-
     await client.query('BEGIN');
 
     const {
