@@ -1537,14 +1537,32 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       )
     );
 
-    const students = this.translateService.translate('servicesManager.students');
+    let currentLang = '';
+    const langValue = this.translateService.getCurrentLang();
+    if (typeof langValue === 'string') {
+      currentLang = langValue;
+    } else if (langValue && typeof langValue.subscribe === 'function') {
+      // Synchronously get the value if possible (not recommended for real async Observables)
+      langValue.subscribe((val: string) => currentLang = val).unsubscribe();
+    }
 
+    if (currentLang === 'en') {
+      return uniquePricing
+        .map(gp => `${gp.studentRange} students: €${gp.price}/student`)
+        .join('<br>');
+    } else if (currentLang === 'pr') {
+      return uniquePricing
+        .map(gp => `${gp.studentRange} alunos: €${gp.price}/aluno`)
+        .join('<br>');
+    } else if (currentLang === 'es') {
+      return uniquePricing
+        .map(gp => `${gp.studentRange} estudiantes: €${gp.price}/estudiante`)
+        .join('<br>');
+    }
     return uniquePricing
-      .map(gp => `${gp.studentRange} ${students}: €${gp.price}`)
+      .map(gp => `${gp.studentRange} students: €${gp.price}/student`)
       .join('<br>');
   }
-
-
 
   // FIXED: Get available schedules with proper deduplication
   getAvailableSchedules(): Schedule[] {
