@@ -92,9 +92,8 @@
         </div>
 
         <!-- Course Duration -->
-        <div class="form-section">
+        <div class="form-section" *ngIf="!editingCourse">
           <h3 class="section-title">{{ 'adminCourseManagement.courseDuration' | translate }}</h3>
-          <p class="section-subtitle">{{ 'adminCourseManagement.courseDurationSubtitle' | translate }}</p>
 
           <div class="form-grid">
             <div class="form-group">
@@ -102,15 +101,21 @@
               <input type="date" id="startDate" [(ngModel)]="courseForm.startDate" name="startDate" required
                 class="form-control">
             </div>
-
-            <div class="form-group">
-              <label for="endDate">{{ 'adminCourseManagement.endDate' | translate }} *</label>
-              <input type="date" id="endDate" [(ngModel)]="courseForm.endDate" name="endDate" required
-                class="form-control">
-            </div>
           </div>
         </div>
 
+        <div class="form-section" *ngIf="editingCourse">
+          <div class="form-grid">
+            <div class="form-group">
+              <label
+                style="width: 100%; display: block; background-color: #3b4753; color:#ffffff; padding: 0.5rem; border-radius: 4px;">{{'adminCourseManagement.startDate'
+                | translate }}</label>
+              <span class="form-control-static" style="display: block; padding: 0.5rem; background-color: #f0f4f8; border-radius: 4px; align-items: center;">
+                {{ courseForm.startDate | date: 'dd/MM/yyyy' }}
+              </span>
+            </div>
+          </div>
+        </div>
         <!-- Professional Assignment -->
         <div class="form-section">
           <h3 class="section-title">{{ 'adminCourseManagement.professionalAssignment' | translate }}</h3>
@@ -273,7 +278,8 @@
                       </span>
                     </div>
                     <div class="lesson-remove-action">
-                      <button type="button" class="btn btn-danger" (click)="removeGlobalLessonOption(optionIndex)" style="margin-left: 0.5rem; width: 32px; height: 32px;">
+                      <button type="button" class="btn btn-danger" (click)="removeGlobalLessonOption(optionIndex)"
+                        style="margin-left: 0.5rem; width: 32px; height: 32px;">
                         <span class="btn-icon">🗑️</span>
                       </button>
                     </div>

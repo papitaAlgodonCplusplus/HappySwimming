@@ -6,6 +6,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Subject } from 'rxjs';
 import { takeUntil, catchError, min } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { TranslationService } from '../services/translation.service';
 import { AuthService } from '../services/auth.service';
 
 // Components
@@ -85,6 +86,8 @@ interface Enrollment {
   selectedScheduleId?: string;
   selectedLessonCount?: number;
   studentCount?: number;
+  scheduleStartTime?: string;
+  scheduleEndTime?: string;
 }
 
 interface EnrollmentRequest {
@@ -101,6 +104,18 @@ interface EnrollmentRequest {
   selectedScheduleId?: string;
   selectedLessonCount?: number;
   studentCount?: number;
+}
+
+interface CourseFilter {
+  date?: string;
+  time?: string;
+  title?: string;
+}
+
+interface ScheduleConflict {
+  startTime: string;
+  endTime: string;
+  occupiedStudents: number;
 }
 
 @Component({
@@ -152,6 +167,16 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   selectedStudentCount: number = 1;
   calculatedPrice: number = 0;
 
+  // Filter state
+  filters: CourseFilter = {
+    date: '',
+    time: '',
+    title: ''
+  };
+
+  // Schedule conflict tracking
+  private scheduleConflicts: ScheduleConflict[] = [];
+
   // Enrollment form data
   enrollmentForm = {
     kidName: '',
@@ -165,6 +190,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   constructor(
     private http: HttpClient,
+    private translateService: TranslationService,
     private cdr: ChangeDetectorRef
   ) { }
 
@@ -289,6 +315,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     ).subscribe(courses => {
       this.adminCourses = courses.filter(course => course.type === 'admin_course');
       this.clientCourses = [...this.adminCourses];
+      this.calculateScheduleConflicts();
       console.log('Loaded admin courses:', this.adminCourses);
       this.isLoading = false;
       this.cdr.detectChanges();
@@ -320,18 +347,135 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     ).subscribe(enrollments => {
       console.log('Loaded enrollments:', enrollments);
       this.enrollments = enrollments;
+      this.calculateScheduleConflicts();
       this.cdr.detectChanges();
     });
   }
 
-  // Get courses based on user role
+  // NEW: Calculate schedule conflicts based on enrollments
+  private calculateScheduleConflicts(): void {
+    this.scheduleConflicts = [];
+    
+    this.enrollments.forEach(enrollment => {
+      if (enrollment.scheduleStartTime && enrollment.scheduleEndTime && 
+          enrollment.status !== 'cancelled' && enrollment.studentCount) {
+        
+        const existingConflict = this.scheduleConflicts.find(conflict =>
+          conflict.startTime === enrollment.scheduleStartTime &&
+          conflict.endTime === enrollment.scheduleEndTime
+        );
+
+        if (existingConflict) {
+          existingConflict.occupiedStudents += enrollment.studentCount;
+        } else {
+          this.scheduleConflicts.push({
+            startTime: enrollment.scheduleStartTime,
+            endTime: enrollment.scheduleEndTime,
+            occupiedStudents: enrollment.studentCount
+          });
+        }
+      }
+    });
+
+    console.log('Schedule conflicts calculated:', this.scheduleConflicts);
+  }
+
+  // NEW: Check if a schedule conflicts with existing enrollments
+  private hasScheduleConflict(schedule: Schedule): boolean {
+    return this.scheduleConflicts.some(conflict =>
+      this.timeRangesOverlap(schedule.startTime, schedule.endTime, conflict.startTime, conflict.endTime) &&
+      conflict.occupiedStudents >= 6
+    );
+  }
+
+  // NEW: Get available spots for a specific schedule
+  public getAvailableSpotsForSchedule(schedule: Schedule): number {
+    const conflict = this.scheduleConflicts.find(c =>
+      this.timeRangesOverlap(schedule.startTime, schedule.endTime, c.startTime, c.endTime)
+    );
+    
+    return conflict ? Math.max(0, 6 - conflict.occupiedStudents) : 6;
+  }
+
+  // NEW: Check if time ranges overlap
+  private timeRangesOverlap(start1: string, end1: string, start2: string, end2: string): boolean {
+    const start1Time = this.timeToMinutes(start1);
+    const end1Time = this.timeToMinutes(end1);
+    const start2Time = this.timeToMinutes(start2);
+    const end2Time = this.timeToMinutes(end2);
+
+    return start1Time < end2Time && start2Time < end1Time;
+  }
+
+  // NEW: Convert time string to minutes for comparison
+  private timeToMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  // Get courses based on user role with filters applied
   get availableCourses(): Course[] {
+    let courses: Course[] = [];
+    
     if (this.userRole === 'client') {
-      return this.clientCourses;
+      courses = this.clientCourses;
     } else if (this.userRole === 'professional') {
-      return this.professionalCourses;
+      courses = this.professionalCourses;
     }
-    return [];
+
+    // Apply filters
+    return this.applyFilters(courses);
+  }
+
+  // NEW: Apply filters to courses
+  private applyFilters(courses: Course[]): Course[] {
+    return courses.filter(course => {
+      // Date filter
+      if (this.filters.date && course.startDate) {
+        const courseDate = new Date(course.startDate).toISOString().split('T')[0];
+        if (courseDate !== this.filters.date) {
+          return false;
+        }
+      }
+
+      // Title filter
+      if (this.filters.title && !course.name.toLowerCase().includes(this.filters.title.toLowerCase())) {
+        return false;
+      }
+
+      // Time filter - check if course has schedules available at specified time
+      if (this.filters.time && course.schedules) {
+        const hasAvailableScheduleAtTime = course.schedules.some(schedule => {
+          const scheduleStart = this.timeToMinutes(schedule.startTime);
+          const scheduleEnd = this.timeToMinutes(schedule.endTime);
+          const filterTime = this.timeToMinutes(this.filters.time!);
+          
+          return filterTime >= scheduleStart && filterTime < scheduleEnd && 
+                 !this.hasScheduleConflict(schedule);
+        });
+
+        if (!hasAvailableScheduleAtTime) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }
+
+  // NEW: Clear all filters
+  clearFilters(): void {
+    this.filters = {
+      date: '',
+      time: '',
+      title: ''
+    };
+    this.cdr.detectChanges();
+  }
+
+  // NEW: Apply filters (called from template)
+  applyFiltersManually(): void {
+    this.cdr.detectChanges();
   }
 
   // Select course for enrollment
@@ -409,7 +553,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return match?.studentRange || null;
   }
 
-
   // Get applicable group pricing based on student count
   public getApplicableGroupPricing(): GroupPricing | null {
     if (!this.selectedCourse?.groupPricing) return null;
@@ -423,17 +566,22 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return null;
   }
 
-  // Get available student count options
+  // UPDATED: Get available student count options based on schedule conflicts
   getStudentCountOptions(): number[] {
-    return Array.from({ length: 6 }, (_, i) => i + 1);
+    if (!this.selectedSchedule) {
+      return Array.from({ length: 6 }, (_, i) => i + 1);
+    }
+
+    const availableSpots = this.getAvailableSpotsForSchedule(this.selectedSchedule);
+    return Array.from({ length: Math.min(6, availableSpots) }, (_, i) => i + 1);
   }
 
   // Show enrollment details modal
   showEnrollmentDetails(course: Course): void {
-    // Get ALL enrollments for this course for the current user
+    // Get ALL enrollments for this course for the current user, excluding cancelled ones
     const courseEnrollments = this.enrollments.filter(e =>
-      e.courseId === course.id.toString() ||
-      e.courseId === `admin_course_${course.id}`
+    (e.courseId === course.id.toString() ||
+      e.courseId === `admin_course_${course.id}`)
     );
 
     if (courseEnrollments.length === 0) {
@@ -446,7 +594,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       this.selectedEnrollment = courseEnrollments[0];
       this.showEnrollmentDetailsModal = true;
     } else {
-      // If multiple enrollments, show selection dialog or show the most recent
+      // If multiple enrollments, show the most recent
       this.selectedEnrollment = courseEnrollments.sort((a, b) =>
         new Date(b.enrollmentDate || 0).getTime() - new Date(a.enrollmentDate || 0).getTime()
       )[0];
@@ -518,7 +666,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
     return `${enrollment.selectedLessonCount} lesson${enrollment.selectedLessonCount > 1 ? 's' : ''} × ${enrollment.studentCount} student${enrollment.studentCount > 1 ? 's' : ''} = €${enrollment.price}`;
   }
-
 
   // Enroll in course
   enrollInCourse(): void {
@@ -600,9 +747,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   private validateEnrollmentForm(): boolean {
     if (this.selectedCourse?.type === 'admin_course' && this.userRole === 'client') {
       if (!this.enrollmentForm.kidName.trim()) {
-        this.error = 'Child name is required.';
-        console.warn('Child name is required');
-        return false;
+        this.enrollmentForm.kidName = this.childNames.join(', ').trim();
       }
       if (!this.enrollmentForm.motherContact.trim()) {
         this.error = 'Mother contact is required.';
@@ -622,6 +767,13 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       if (this.selectedStudentCount < 1 || this.selectedStudentCount > 6) {
         this.error = 'Student count must be between 1 and 6.';
         console.warn('Student count must be between 1 and 6.');
+        return false;
+      }
+
+      // Check if selected schedule has available spots
+      const availableSpots = this.getAvailableSpotsForSchedule(this.selectedSchedule);
+      if (this.selectedStudentCount > availableSpots) {
+        this.error = `Only ${availableSpots} spots available for this schedule.`;
         return false;
       }
     }
@@ -652,7 +804,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       }
     });
   }
-
 
   // Get status badge class
   getStatusClass(status: string): string {
@@ -709,10 +860,13 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return '';
   }
 
-  // Check if course has available spots
+  // UPDATED: Check if course has available spots considering schedule conflicts
   hasAvailableSpots(course: Course): boolean {
     if (course.type === 'admin_course') {
-      return (course.availableSpots || 0) > 0;
+      // Check if any schedule in the course has available spots
+      return course.schedules?.some(schedule => 
+        this.getAvailableSpotsForSchedule(schedule) > 0
+      ) || false;
     }
     return true;
   }
@@ -777,21 +931,26 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     )[0].status;
   }
 
-  // Method to get all enrollments for a course
-  getEnrollmentsForCourse(courseId: string | number): Enrollment[] {
-    const all = this.enrollments.filter(e =>
-      e.courseId === courseId.toString() ||
-      e.courseId === `admin_course_${courseId}`
+  // NEW: Get schedule enrollments for a course (replaces multiple enrollments section)
+  getScheduleEnrollments(courseId: string | number): Array<{schedule: string, students: number}> {
+    const enrollments = this.enrollments.filter(e =>
+      (e.courseId === courseId.toString() || e.courseId === `admin_course_${courseId}`) &&
+      e.status !== 'cancelled' &&
+      e.scheduleStartTime && e.scheduleEndTime
     );
 
-    const uniqueEnrollments: Record<string, Enrollment> = {};
-    all.forEach(enrollment => {
-      const key = `${enrollment.id}-${enrollment.status}`;
-      if (!uniqueEnrollments[key]) {
-        uniqueEnrollments[key] = enrollment;
-      }
+    const scheduleMap = new Map<string, number>();
+    
+    enrollments.forEach(enrollment => {
+      const scheduleKey = `${enrollment.scheduleStartTime} - ${enrollment.scheduleEndTime}`;
+      const currentStudents = scheduleMap.get(scheduleKey) || 0;
+      scheduleMap.set(scheduleKey, currentStudents + (enrollment.studentCount || 1));
     });
-    return Object.values(uniqueEnrollments);
+
+    return Array.from(scheduleMap.entries()).map(([schedule, students]) => ({
+      schedule,
+      students
+    }));
   }
 
   // Clear messages
@@ -843,16 +1002,43 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return Object.values(uniqueSchedules).length.toString();
   }
 
+  /**
+   * Converts a full name to initials
+   * @param fullName - The full name to convert (e.g., "John Doe")
+   * @returns The initials (e.g., "J. D.")
+   */
+  getInitials(fullName: string): string {
+    if (!fullName || fullName.trim() === '') {
+      return '';
+    }
 
+    return fullName
+      .trim()
+      .split(' ')
+      .filter(name => name.length > 0)
+      .map(name => name.charAt(0).toUpperCase())
+      .join('. ') + '.';
+  }
+
+  // UPDATED: Get available spots considering schedule conflicts
   getAvailableSpots(course: Course): number {
-    let numberOfEnrollments = course.currentStudents || 0;
-    let totalAvailableSchedules = parseInt(this.getSchedulesDisplay(course), 10) || 0;
-    const maxNumberOfEnrollments = totalAvailableSchedules;
-    const maxSpotsPerSchedule = 6; // Assuming max 6 students per schedule
-    const totalSpots = maxNumberOfEnrollments * maxSpotsPerSchedule;
-    numberOfEnrollments = Math.min(numberOfEnrollments, totalAvailableSchedules);
-    console.log(`Total spots for course ${course.id}: ${totalSpots}, Enrollments: ${numberOfEnrollments}, Max per schedule: ${maxSpotsPerSchedule}`);
-    return totalSpots - (numberOfEnrollments * maxSpotsPerSchedule);
+    if (!course.schedules || course.schedules.length === 0) {
+      return 0;
+    }
+
+    // Calculate total available spots across all schedules
+    let totalAvailableSpots = 0;
+    const uniqueSchedules: Record<string, Schedule> = {};
+
+    course.schedules.forEach(schedule => {
+      const key = `${schedule.startTime}-${schedule.endTime}`;
+      if (!uniqueSchedules[key]) {
+        uniqueSchedules[key] = schedule;
+        totalAvailableSpots += this.getAvailableSpotsForSchedule(schedule);
+      }
+    });
+
+    return totalAvailableSpots;
   }
 
   // Get lesson options display for course card
@@ -887,31 +1073,33 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       )
     );
 
+    const students = this.translateService.translate('servicesManager.students');
+
     return uniquePricing
-      .map(gp => `${gp.studentRange} students: €${gp.price}`)
+      .map(gp => `${gp.studentRange} ${students}: €${gp.price}`)
       .join('<br>');
   }
 
-  // Helper methods for enrollment form
+  // UPDATED: Helper methods for enrollment form - only show available schedules
   getAvailableSchedules(): Schedule[] {
     const schedules = this.selectedCourse?.schedules || [];
     const uniqueSchedules: Record<string, Schedule> = {};
 
     schedules.forEach(schedule => {
       const key = `${schedule.startTime}-${schedule.endTime}`;
-      if (!uniqueSchedules[key]) {
+      if (!uniqueSchedules[key] && this.getAvailableSpotsForSchedule(schedule) > 0) {
+        uniqueSchedules[key] = schedule;
+        // Ensure lesson options are unique within the schedule
+        const uniqueOptions: Record<string, LessonOption> = {};
+        schedule.lessonOptions.forEach(option => {
+          const optionKey = `${option.lessonCount}-${option.price}`;
+          if (!uniqueOptions[optionKey]) {
+            uniqueOptions[optionKey] = option;
+          }
+        });
+        schedule.lessonOptions = Object.values(uniqueOptions);
         uniqueSchedules[key] = schedule;
       }
-      // Ensure lesson options are unique within the schedule
-      const uniqueOptions: Record<string, LessonOption> = {};
-      schedule.lessonOptions.forEach(option => {
-        const optionKey = `${option.lessonCount}-${option.price}`;
-        if (!uniqueOptions[optionKey]) {
-          uniqueOptions[optionKey] = option;
-        }
-      });
-      schedule.lessonOptions = Object.values(uniqueOptions);
-      uniqueSchedules[key] = schedule;
     });
 
     return Object.values(uniqueSchedules);

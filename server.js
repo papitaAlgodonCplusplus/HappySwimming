@@ -31,12 +31,12 @@ app.use(express.json());
 
 // Database connection DEV
 // const pool = new Pool({
-// user: process.env.DB_USER || 'postgres',
-// host: process.env.DB_HOST || 'localhost',
-// database: process.env.DB_NAME || 'happyswimming',
-// password: process.env.DB_PASSWORD || 'postgres',
-// port: process.env.DB_PORT || 5432,
-// schema: 'happyswimming'
+//   user: process.env.DB_USER || 'postgres',
+//   host: process.env.DB_HOST || 'localhost',
+//   database: process.env.DB_NAME || 'happyswimming',
+//   password: process.env.DB_PASSWORD || 'postgres',
+//   port: process.env.DB_PORT || 5432,
+//   schema: 'happyswimming'
 // });
 
 // Database connection PROD
@@ -2420,13 +2420,16 @@ app.get('/api/enrollments/:id', authenticateToken, async (req, res) => {
         SELECT cs.id, cs.service_id, s.name as service_name, cs.status,
           cs.created_at as enrollment_date, cs.start_date, cs.end_date,
           cs.professional_id, c.is_outsourcing, cs.selected_lesson_count,
+          cs.student_count, 
           CONCAT(u.first_name, ' ', u.last_name1) as professional_name,
-          cs.price, cs.admin_course_id, cs.kid_name, cs.mother_contact
+          cs.price, cs.admin_course_id, cs.kid_name, cs.mother_contact,
+          sched.start_time, sched.end_time
         FROM happyswimming.client_services cs
         JOIN happyswimming.services s ON cs.service_id = s.id
         JOIN happyswimming.clients c ON cs.client_id = c.id
         LEFT JOIN happyswimming.professionals p ON cs.professional_id = p.id
         LEFT JOIN happyswimming.users u ON p.user_id = u.id
+        LEFT JOIN happyswimming.course_schedules sched ON cs.selected_schedule_id = sched.id
         WHERE c.user_id = $1
         ORDER BY cs.created_at DESC
       `;
@@ -2449,7 +2452,10 @@ app.get('/api/enrollments/:id', authenticateToken, async (req, res) => {
         notes: row.notes,
         kidName: row.kid_name,
         motherContact: row.mother_contact,
-        selectedLessonCount: row.selected_lesson_count
+        studentCount: row.student_count,
+        selectedLessonCount: row.selected_lesson_count,
+        scheduleStartTime: row.start_time,
+        scheduleEndTime: row.end_time
       }));
 
       res.json(enrollments);
@@ -3397,6 +3403,7 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
       return res.status(404).json({ error: 'Client profile not found' });
     }
 
+    console.log('Client ID found:', clientResult.rows[0].id);
     const clientId = clientResult.rows[0].id;
 
     // Get course details with pricing
@@ -3407,6 +3414,7 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
       WHERE ac.id = $1 AND ac.status = 'active' AND ac.is_historical = FALSE
     `;
 
+    console.log('Fetching course details for ID:', adminCourseId);
     const courseResult = await client.query(courseQuery, [adminCourseId]);
 
     if (courseResult.rows.length === 0) {
@@ -3414,6 +3422,7 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
     }
 
     const course = courseResult.rows[0];
+    console.log('Course details:', course);
 
     // Check if course is full
     if (course.current_students >= course.max_students) {
@@ -3499,6 +3508,14 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
       endTime
     ]);
 
+    console.log('Enrollment created with ID:', enrollmentResult.rows[0].id);
+
+    // Update admin_courses.current_students
+    await client.query(
+      'UPDATE happyswimming.admin_courses SET current_students = current_students + $1 WHERE id = $2',
+      [studentCount, adminCourseId]
+    );
+    console.log('Updated current students for course ID:', adminCourseId);
     await client.query('COMMIT');
 
     res.status(201).json({

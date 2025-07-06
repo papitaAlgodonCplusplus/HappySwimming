@@ -1,4 +1,4 @@
-<!-- src/app/services-manager/services-manager.component.html (Updated with Translations) - PART 1 -->
+<!-- src/app/services-manager/services-manager.component.html (Updated with Filters and Schedule Table) -->
 <app-header></app-header>
 
 <div class="services-manager-container">
@@ -15,12 +15,54 @@
     <button class="alert-close" (click)="clearMessages()">×</button>
   </div>
 
-  <!-- Refresh Button -->
-  <div class="action-bar">
-    <button class="btn btn-secondary" (click)="refreshData()" [disabled]="isLoading">
-      <span class="btn-icon">🔄</span>
-      {{ 'servicesManager.refresh' | translate }}
-    </button>
+  <!-- Filter Section -->
+  <div class="filter-section">
+    <div class="filter-header">
+      <h3>{{ 'servicesManager.filterCourses' | translate }}</h3>
+    </div>
+    <div class="filter-controls">
+      <div class="filter-group">
+        <label for="dateFilter">{{ 'servicesManager.filterByDate' | translate }}:</label>
+        <input 
+          type="date" 
+          id="dateFilter"
+          [(ngModel)]="filters.date"
+          (ngModelChange)="applyFiltersManually()"
+          class="form-control">
+      </div>
+      
+      <div class="filter-group">
+        <label for="timeFilter">{{ 'servicesManager.filterByTime' | translate }}:</label>
+        <input 
+          type="time" 
+          id="timeFilter"
+          [(ngModel)]="filters.time"
+          (ngModelChange)="applyFiltersManually()"
+          class="form-control">
+      </div>
+      
+      <div class="filter-group">
+        <label for="titleFilter">{{ 'servicesManager.filterByTitle' | translate }}:</label>
+        <input 
+          type="text" 
+          id="titleFilter"
+          [(ngModel)]="filters.title"
+          (ngModelChange)="applyFiltersManually()"
+          [placeholder]="'servicesManager.searchCourses' | translate"
+          class="form-control">
+      </div>
+      
+      <div class="filter-actions">
+        <button class="btn btn-secondary" (click)="clearFilters()">
+          <span class="btn-icon">🗑️</span>
+          {{ 'servicesManager.clearFilters' | translate }}
+        </button>
+        <button class="btn btn-secondary" (click)="refreshData()" [disabled]="isLoading">
+          <span class="btn-icon">🔄</span>
+          {{ 'servicesManager.refresh' | translate }}
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Loading State -->
@@ -35,8 +77,7 @@
     <div class="section">
       <div class="section-header">
         <h2 class="section-title">{{ 'servicesManager.availableCourses' | translate }}</h2>
-        <span class="course-count">{{ availableCourses.length }} {{ 'servicesManager.coursesAvailable' | translate
-          }}</span>
+        <span class="course-count">{{ availableCourses.length }} {{ 'servicesManager.coursesAvailable' | translate }}</span>
       </div>
 
       <!-- No courses available -->
@@ -59,13 +100,6 @@
             <div *ngIf="course.courseCode" class="course-code">{{ course.courseCode }}</div>
           </div>
 
-          <!-- Enrollment Status Badge -->
-          <div *ngIf="getEnrollmentStatus(course.id)" class="enrollment-status-badge">
-            <span class="status-badge" [ngClass]="getStatusClass(getEnrollmentStatus(course.id)!)">
-              {{ getLocalizedStatus(getEnrollmentStatus(course.id)!) }}
-            </span>
-          </div>
-
           <!-- Course Info -->
           <div class="course-info">
             <!-- Client name -->
@@ -77,30 +111,20 @@
             <!-- Professional assignment -->
             <div class="info-row">
               <span class="info-label">{{ 'servicesManager.professional' | translate }}:</span>
-              <span class="info-value">{{ course.professionalName || ('servicesManager.notAssigned' | translate)
-                }}</span>
+              <span class="info-value">{{ course.professionalName || ('servicesManager.notAssigned' | translate) }}</span>
             </div>
 
             <!-- Schedules Info -->
             <div class="info-row">
               <span class="info-label">{{ 'servicesManager.schedules' | translate }}:</span>
-              <span class="info-value">{{ getSchedulesDisplay(course) + ' ' + (('servicesManager.schedules' |
-                translate)) }}</span>
-            </div>
-
-            <!-- Enrollment info -->
-            <div class="info-row">
-              <span class="info-label">{{ 'servicesManager.enrollment' | translate }}:</span>
-              <span class="info-value">{{ course.currentStudents || 0 }} {{
-                'servicesManager.registrations' | translate }}</span>
+              <span class="info-value">{{ getSchedulesDisplay(course) + ' ' + (('servicesManager.schedules' | translate)) }}</span>
             </div>
 
             <!-- Availability -->
             <div class="info-row">
               <span class="info-label">{{ 'servicesManager.availability' | translate }}:</span>
               <span class="info-value" [ngClass]="hasAvailableSpots(course) ? 'text-success' : 'text-danger'">
-                {{ hasAvailableSpots(course) ? (getAvailableSpots(course) + ' ' + ('servicesManager.spotsAvailable' |
-                translate)) : ('servicesManager.courseFull' | translate) }}
+                {{ hasAvailableSpots(course) ? (getAvailableSpots(course) + ' ' + ('servicesManager.spotsAvailable' | translate)) : ('servicesManager.courseFull' | translate) }}
               </span>
             </div>
           </div>
@@ -119,52 +143,32 @@
             </div>
           </div>
 
+          <!-- Schedule Enrollments Table (replaces multiple enrollments section) -->
+          <div *ngIf="getScheduleEnrollments(course.id).length > 0" class="schedule-enrollments">
+            <h5>{{ 'servicesManager.currentEnrollments' | translate }}</h5>
+            <div class="schedule-table">
+              <table class="enrollments-table">
+                <thead>
+                  <tr>
+                    <th>{{ 'servicesManager.schedule' | translate }}</th>
+                    <th>{{ 'servicesManager.students' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let scheduleEnrollment of getScheduleEnrollments(course.id); trackBy: trackByIndex">
+                    <td class="schedule-time">{{ scheduleEnrollment.schedule }}</td>
+                    <td class="student-count">
+                      <span class="count-badge">{{ scheduleEnrollment.students }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- Course Actions -->
           <div class="course-actions">
-            <!-- Show enrollment details - updated to handle multiple enrollments -->
-            <div *ngIf="getEnrollmentsForCourse(course.id).length > 0">
-              <!-- If single enrollment, show details button -->
-              <div *ngIf="getEnrollmentsForCourse(course.id).length === 1">
-                <button class="btn btn-info" (click)="showEnrollmentDetails(course)" [disabled]="isLoading">
-                  <span class="btn-icon">📋</span>
-                  {{ 'servicesManager.enrollmentDetails' | translate }}
-                </button>
-              </div>
-
-              <!-- If multiple enrollments, show list with individual actions -->
-              <div *ngIf="getEnrollmentsForCourse(course.id).length > 1" class="multiple-enrollments">
-                <h5>{{ 'servicesManager.multipleEnrollments' | translate }} ({{
-                  getEnrollmentsForCourse(course.id).length }})</h5>
-                <div *ngFor="let enrollment of getEnrollmentsForCourse(course.id); trackBy: trackByEnrollmentId"
-                  class="enrollment-item">
-                  <div class="enrollment-summary">
-                    <span class="status-badge" [ngClass]="getStatusClass(enrollment.status)">
-                      {{ getLocalizedStatus(enrollment.status) }}
-                    </span>
-                    <span class="enrollment-date">
-                      {{ enrollment.enrollmentDate | date:'mediumDate' }}
-                    </span>
-                    <span class="enrollment-price">€{{ enrollment.price }}</span>
-                  </div>
-                  <div class="enrollment-actions">
-                    <button class="btn btn-sm btn-info" (click)="showSpecificEnrollmentDetails(enrollment)"
-                      [disabled]="isLoading">
-                      <span class="btn-icon">👁️</span>
-                      {{ 'servicesManager.view' | translate }}
-                    </button>
-                    <button *ngIf="enrollment.status === 'pending'" class="btn btn-sm btn-danger"
-                      (click)="cancelEnrollmentById(enrollment.id)" [disabled]="isLoading">
-                      <span class="btn-icon">❌</span>
-                      {{ 'servicesManager.cancel' | translate }}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <br />
-            <button *ngIf="hasAvailableSpots(course)" class="btn btn-primary" (click)="selectCourse(course)"
-              [disabled]="isLoading">
+            <button *ngIf="hasAvailableSpots(course)" class="btn btn-primary" (click)="selectCourse(course)" [disabled]="isLoading">
               <span class="btn-icon">📝</span>
               {{ 'servicesManager.enroll' | translate }}
             </button>
@@ -193,10 +197,6 @@
             <div class="modal-detail">
               <strong>{{ 'servicesManager.professional' | translate }}:</strong> {{ selectedCourse.professionalName }}
             </div>
-            <div class="modal-detail">
-              <strong>{{ 'servicesManager.availability' | translate }}:</strong> {{ selectedCourse.availableSpots }} {{
-              'servicesManager.spotsLeft' | translate }}
-            </div>
           </div>
         </div>
 
@@ -214,6 +214,7 @@
                 <option *ngFor="let schedule of getAvailableSchedules(); trackBy: trackByScheduleId"
                   [ngValue]="schedule">
                   {{ formatTimeDisplay(schedule.startTime) }} - {{ formatTimeDisplay(schedule.endTime) }}
+                  ({{ getAvailableSpotsForSchedule(schedule) }} {{ 'servicesManager.spotsAvailable' | translate }})
                 </option>
               </select>
             </div>
@@ -256,7 +257,6 @@
                       ('servicesManager.lessons' | translate) }}
                     </span>
                   </div>
-
                 </label>
               </div>
             </div>
@@ -301,64 +301,6 @@
               </button>
             </div>
 
-            <style>
-              .add-child-btn {
-                border: 2px solid #007bff;
-                background-color: transparent;
-                color: #007bff;
-                font-weight: 500;
-                padding: 8px 16px;
-                border-radius: 6px;
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
-              }
-
-              .add-child-btn:hover {
-                background-color: #007bff;
-                color: white;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
-              }
-
-              .add-child-btn:active {
-                transform: translateY(0);
-                box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
-              }
-
-              .add-child-btn i {
-                font-size: 14px;
-              }
-
-              .child-name-input {
-                display: flex;
-                align-items: center;
-              }
-
-              .child-name-input .input-group {
-                flex: 1;
-              }
-
-              .child-name-input .btn-outline-secondary {
-                border-color: #dc3545;
-                width: 20px;
-                height: 20px;
-                margin: 10px;
-                color: #dc3545;
-                transition: all 0.2s ease;
-              }
-
-              .child-name-input .btn-outline-secondary:hover:not(:disabled) {
-                background-color: #dc3545;
-                border-color: #dc3545;
-                color: white;
-              }
-
-              .child-name-input .btn-outline-secondary:disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
-              }
-            </style>
-
             <!-- Mother contact (required for all courses) -->
             <div class="form-group">
               <label for="motherContact">{{ 'servicesManager.motherContact' | translate }} *</label>
@@ -398,7 +340,7 @@
       </div>
     </div>
   </div>
-  
+
   <!-- Enrollment Details Modal -->
   <div *ngIf="showEnrollmentDetailsModal" class="modal-overlay" (click)="closeEnrollmentDetails()">
     <div class="modal-content" (click)="$event.stopPropagation()">
@@ -413,16 +355,6 @@
           <div class="details-section">
             <h3>{{ 'servicesManager.courseInformation' | translate }}</h3>
             <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">{{ 'servicesManager.courseName' | translate }}:</span>
-                <span class="detail-value">{{ selectedEnrollment.courseName }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">{{ 'servicesManager.status' | translate }}:</span>
-                <span class="status-badge" [ngClass]="getStatusClass(selectedEnrollment.status)">
-                  {{ getLocalizedStatus(selectedEnrollment.status) }}
-                </span>
-              </div>
               <div class="detail-item" *ngIf="selectedEnrollment.professionalName">
                 <span class="detail-label">{{ 'servicesManager.professional' | translate }}:</span>
                 <span class="detail-value">{{ selectedEnrollment.professionalName }}</span>
@@ -431,6 +363,10 @@
                 <span class="detail-label">{{ 'servicesManager.enrollmentDate' | translate }}:</span>
                 <span class="detail-value">{{ selectedEnrollment.enrollmentDate | date:'mediumDate' }}</span>
               </div>
+              <div class="detail-item" *ngIf="selectedEnrollment.scheduleStartTime && selectedEnrollment.scheduleEndTime">
+                <span class="detail-label">{{ 'servicesManager.schedule' | translate }}:</span>
+                <span class="detail-value">{{ formatTimeDisplay(selectedEnrollment.scheduleStartTime) }} - {{ formatTimeDisplay(selectedEnrollment.scheduleEndTime) }}</span>
+              </div>
             </div>
           </div>
 
@@ -438,23 +374,17 @@
           <div class="details-section">
             <h3>{{ 'servicesManager.pricingDetails' | translate }}</h3>
             <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">{{ 'servicesManager.totalPrice' | translate }}:</span>
-                <span class="detail-value pricing-highlight">€{{ selectedEnrollment.price }}</span>
-              </div>
               <div class="detail-item" *ngIf="selectedEnrollment.studentCount">
-                <span class="detail-label">{{ 'servicesManager.studentCount' | translate }}:</span>
+                <span class="detail-label">{{ 'servicesManager.students' | translate }}:</span>
                 <span class="detail-value">{{ selectedEnrollment.studentCount }}</span>
               </div>
               <div class="detail-item" *ngIf="selectedEnrollment.selectedLessonCount">
                 <span class="detail-label">{{ 'servicesManager.lessonsSelected' | translate }}:</span>
                 <span class="detail-value">{{ selectedEnrollment.selectedLessonCount }}</span>
               </div>
-              <!-- Show pricing breakdown -->
-              <div class="detail-item pricing-breakdown"
-                *ngIf="selectedEnrollment.selectedLessonCount && selectedEnrollment.studentCount">
-                <span class="detail-label">{{ 'servicesManager.pricingBreakdown' | translate }}:</span>
-                <span class="detail-value">{{ getEnrollmentPricingDetails(selectedEnrollment) }}</span>
+              <div class="detail-item pricing-breakdown">
+                <span class="detail-label">{{ 'servicesManager.totalPrice' | translate }}:</span>
+                <span class="detail-value pricing-highlight">€{{ selectedEnrollment.price }}</span>
               </div>
             </div>
           </div>
@@ -467,13 +397,9 @@
                 <span class="detail-label">{{ 'servicesManager.childName' | translate }}:</span>
                 <div class="detail-value child-names">
                   <div *ngFor="let name of selectedEnrollment.kidName.split('\n')" class="child-name">
-                    {{ name.trim() }}
+                    {{ getInitials(name.trim()) }}
                   </div>
                 </div>
-              </div>
-              <div class="detail-item" *ngIf="selectedEnrollment.motherContact">
-                <span class="detail-label">{{ 'servicesManager.motherContact' | translate }}:</span>
-                <span class="detail-value">{{ selectedEnrollment.motherContact }}</span>
               </div>
               <div class="detail-item" *ngIf="selectedEnrollment.motherPhone">
                 <span class="detail-label">{{ 'servicesManager.motherPhone' | translate }}:</span>
@@ -491,29 +417,22 @@
             <h3>{{ 'servicesManager.notes' | translate }}</h3>
             <p class="notes-content">{{ selectedEnrollment.notes }}</p>
           </div>
+        </div>
 
-          <!-- Actions -->
-          <div class="enrollment-details-actions">
-            <!-- Payment button - only show if status is pending -->
-            <button *ngIf="selectedEnrollment.status === 'pending'" type="button" class="pay-now-button"
-              (click)="openPaymentLink()">
-              <span class="btn-icon">💳</span>
-              {{ 'servicesManager.payNow' | translate }} - €{{ selectedEnrollment.price }}
-            </button>
-
-            <!-- Cancel button - only show if status is pending -->
-            <button *ngIf="selectedEnrollment.status === 'pending'" class="btn btn-danger"
-              (click)="cancelEnrollmentFromDetails()" [disabled]="isLoading">
-              <span class="btn-icon">❌</span>
-              {{ 'servicesManager.cancel' | translate }}
-            </button>
-
-            <!-- Close button -->
-            <button class="btn btn-secondary" (click)="closeEnrollmentDetails()">
-              <span class="btn-icon">✖️</span>
-              {{ 'servicesManager.close' | translate }}
-            </button>
-          </div>
+        <!-- Enrollment Details Actions -->
+        <div class="enrollment-details-actions">
+          <button class="btn btn-secondary" (click)="closeEnrollmentDetails()">
+            <span class="btn-icon">✕</span>
+            {{ 'servicesManager.close' | translate }}
+          </button>
+          
+          <button *ngIf="selectedEnrollment?.status === 'pending'" 
+                  class="btn btn-danger" 
+                  (click)="cancelEnrollmentFromDetails()" 
+                  [disabled]="isLoading">
+            <span class="btn-icon">❌</span>
+            {{ 'servicesManager.cancelEnrollment' | translate }}
+          </button>
         </div>
       </div>
     </div>

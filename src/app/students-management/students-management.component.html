@@ -103,7 +103,7 @@
             <span class="client-name">{{ course.clientName }}</span>
           </div>
           <div class="course-info">
-            <span class="course-dates">{{ course.startDate | date:'short' }} - {{ course.endDate | date:'short' }}</span>
+            <span class="course-dates">{{ course.startDate | date:'short' }}</span>
             <span class="student-count">{{ course.currentStudents }}/{{ course.maxStudents }} {{ 'studentsManagement.students' | translate }}</span>
             <span class="expand-icon">{{ course.expanded ? '▼' : '▶' }}</span>
           </div>
@@ -116,7 +116,6 @@
               <tr>
                 <th>{{ 'studentsManagement.studentName' | translate }}</th>
                 <th>{{ 'studentsManagement.motherContact' | translate }}</th>
-                <th>{{ 'studentsManagement.status' | translate }}</th>
                 <th>{{ 'studentsManagement.startDate' | translate }}</th>
                 <th>{{ 'studentsManagement.calification' | translate }}</th>
                 <th>{{ 'studentsManagement.assistance' | translate }}</th>
@@ -127,11 +126,6 @@
               <tr *ngFor="let student of course.students; trackBy: trackByStudentId">
                 <td>{{ student.kidName }}</td>
                 <td>{{ student.motherContact }}</td>
-                <td>
-                  <span class="status-badge" [ngClass]="getStatusClass(student.status)">
-                    {{ getLocalizedStatus(student.status) }}
-                  </span>
-                </td>
                 <td>{{ student.startDate | date:'short' }}</td>
                 <td>
                   <span class="calification-badge" [ngClass]="student.calification !== undefined && student.calification !== null ? (student.calification >= 7 ? 'good' : student.calification >= 5 ? 'average' : 'needs-improvement') : 'needs-improvement'">
@@ -223,23 +217,6 @@
         </div>
 
         <form class="edit-form" (ngSubmit)="saveStudentChanges()">
-          <!-- Status -->
-          <div class="form-group">
-            <label for="status">{{ 'studentsManagement.status' | translate }} *</label>
-            <select 
-              id="status"
-              [(ngModel)]="editForm.status"
-              name="status"
-              required
-              class="form-control">
-              <option value="pending">{{ 'studentsManagement.pending' | translate }}</option>
-              <option value="approved">{{ 'studentsManagement.approved' | translate }}</option>
-              <option value="active">{{ 'studentsManagement.active' | translate }}</option>
-              <option value="completed">{{ 'studentsManagement.completed' | translate }}</option>
-              <option value="cancelled">{{ 'studentsManagement.cancelled' | translate }}</option>
-            </select>
-          </div>
-
           <!-- Calification -->
           <div class="form-group">
             <label for="calification">{{ 'studentsManagement.calification' | translate }} (0-10)</label>
