@@ -99,6 +99,18 @@
         "noTemplatesAvailable": "Nenhum curso existente disponível para usar como modelos. Crie seu primeiro curso manualmente."
     },
     "servicesManager": {
+        "dateRangeStart": "Data de Início",
+        "dateRangeEnd": "Data de Fim",
+        "scheduleStatus": "Status do Cronograma",
+        "courseStartDate": "Data de Início do Curso",
+        "availableSpots": "Vagas Disponíveis",
+        "owned": "Próprio",
+        "available": "Disponível",
+        "blocked": "Bloqueado",
+        "noAvailableSchedules": "Nenhum horário disponível",
+        "scheduleExclusivityNote": "Uma vez que um curso tem alunos em um horário, esse período se torna exclusivo para esse curso.",
+        "studentCountRules": "Máximo de 4 alunos por grupo (1-4), ou 6 alunos para grupos maiores (5-6). Os cursos ficam lotados exatamente com 4 ou 6 alunos.",
+        "lessonCountFixed": "O número de aulas está fixo",
         "filterCourses": "Filtrar Cursos",
         "filterByDate": "Filtrar por Data",
         "allSchedules": "Todos os Horários",

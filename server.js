@@ -111,6 +111,7 @@ app.post('/api/should-not-authenticate', (req, res) => {
 // Authentication middleware
 function authenticateToken(req, res, next) {
   if (global_should_not_authenticate) {
+    console.log('Skipping authentication for this request');
     return next();
   }
 
@@ -118,11 +119,13 @@ function authenticateToken(req, res, next) {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
+    console.log('No token provided');
     return res.status(401).json({ error: 'Authentication required' });
   }
 
   jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
     if (err) {
+      console.error('Token verification error:', err);
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
 
@@ -131,6 +134,7 @@ function authenticateToken(req, res, next) {
       const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [user.id]);
 
       if (rows.length === 0) {
+        console.log('User not found:', user.id);
         return res.status(403).json({ error: 'User not found' });
       }
 
@@ -142,6 +146,7 @@ function authenticateToken(req, res, next) {
       const isPublicRoute = req.path.includes('/login') || req.path.includes('/register');
 
       if (!userData.is_authorized && userData.email !== 'admin@gmail.com' && !isPublicRoute && !isAdminRoute) {
+        console.log('User is not authorized:', userData.email);
         return res.status(403).json({
           error: 'Your account is pending authorization',
           authorizationPending: true

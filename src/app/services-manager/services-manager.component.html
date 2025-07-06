@@ -1,4 +1,4 @@
-<!-- src/app/services-manager/services-manager.component.html (Updated with Filters and Schedule Table) -->
+<!-- src/app/services-manager/services-manager.component.html (Updated with Enhanced Business Rules) -->
 <app-header></app-header>
 
 <div class="services-manager-container">
@@ -15,16 +15,22 @@
     <button class="alert-close" (click)="clearMessages()">×</button>
   </div>
 
-  <!-- Filter Section -->
-  <!-- Updated Filter Section with Select Boxes -->
+  <!-- Enhanced Filter Section with Date Range -->
   <div class="filter-section">
     <div class="filter-header">
       <h3>{{ 'servicesManager.filterCourses' | translate }}</h3>
     </div>
     <div class="filter-controls">
+      <!-- NEW: Date Range Filter -->
       <div class="filter-group">
-        <label for="dateFilter">{{ 'servicesManager.filterByDate' | translate }}:</label>
-        <input type="date" id="dateFilter" [(ngModel)]="filters.date" (ngModelChange)="applyFiltersManually()"
+        <label for="dateRangeStart">{{ 'servicesManager.dateRangeStart' | translate }}:</label>
+        <input type="date" id="dateRangeStart" [(ngModel)]="filters.dateRangeStart"
+          (ngModelChange)="applyFiltersManually()" class="form-control">
+      </div>
+
+      <div class="filter-group">
+        <label for="dateRangeEnd">{{ 'servicesManager.dateRangeEnd' | translate }}:</label>
+        <input type="date" id="dateRangeEnd" [(ngModel)]="filters.dateRangeEnd" (ngModelChange)="applyFiltersManually()"
           class="form-control">
       </div>
 
@@ -113,22 +119,6 @@
               <span class="info-value">{{ course.professionalName || ('servicesManager.notAssigned' | translate)
                 }}</span>
             </div>
-
-            <!-- Schedules Info -->
-            <div class="info-row">
-              <span class="info-label">{{ 'servicesManager.schedules' | translate }}:</span>
-              <span class="info-value">{{ getSchedulesDisplay(course) + ' ' + (('servicesManager.schedules' |
-                translate)) }}</span>
-            </div>
-
-            <!-- Availability -->
-            <div class="info-row">
-              <span class="info-label">{{ 'servicesManager.availability' | translate }}:</span>
-              <span class="info-value" [ngClass]="hasAvailableSpots(course) ? 'text-success' : 'text-danger'">
-                {{ hasAvailableSpots(course) ? (getAvailableSpots(course) + ' ' + ('servicesManager.spotsAvailable' |
-                translate)) : ('servicesManager.courseFull' | translate) }}
-              </span>
-            </div>
           </div>
 
           <!-- Course Description -->
@@ -145,22 +135,37 @@
             </div>
           </div>
 
-          <!-- Schedule Enrollments Table (replaces multiple enrollments section) -->
+          <!-- ENHANCED Schedule Enrollments Table with Business Rules -->
           <div *ngIf="getScheduleEnrollments(course.id).length > 0" class="schedule-enrollments">
-            <h5>{{ 'servicesManager.currentEnrollments' | translate }}</h5>
+            <h5>{{ 'servicesManager.scheduleStatus' | translate }}</h5>
             <div class="schedule-table">
               <table class="enrollments-table">
                 <thead>
                   <tr>
                     <th>{{ 'servicesManager.schedule' | translate }}</th>
                     <th>{{ 'servicesManager.students' | translate }}</th>
+                    <th>{{ 'servicesManager.courseStartDate' | translate }}</th>
+                    <th>{{ 'servicesManager.availableSpots' | translate }}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let scheduleEnrollment of getScheduleEnrollments(course.id); trackBy: trackByIndex">
+                  <tr *ngFor="let scheduleEnrollment of getScheduleEnrollments(course.id); trackBy: trackByIndex"
+                    [ngClass]="{'schedule-winner': scheduleEnrollment.isWinner, 'schedule-unavailable': !scheduleEnrollment.isWinner && scheduleEnrollment.students === 0 && scheduleEnrollment.availableSpots === 0}">
                     <td class="schedule-time">{{ scheduleEnrollment.schedule }}</td>
                     <td class="student-count">
-                      <span class="count-badge">{{ scheduleEnrollment.students }}</span>
+                      <span class="count-badge"
+                        [ngClass]="{'badge-winner': scheduleEnrollment.isWinner, 'badge-unavailable': !scheduleEnrollment.isWinner && scheduleEnrollment.availableSpots === 0}">
+                        {{ scheduleEnrollment.students }}
+                      </span>
+                    </td>
+                    <td class="course-start-date">
+                      {{ scheduleEnrollment.courseStartDate | date:'shortDate' }}
+                    </td>
+                    <td class="available-spots">
+                      <span class="spots-badge"
+                        [ngClass]="{'spots-available': scheduleEnrollment.availableSpots > 0, 'spots-full': scheduleEnrollment.availableSpots === 0}">
+                        {{ scheduleEnrollment.availableSpots }}
+                      </span>
                     </td>
                   </tr>
                 </tbody>
@@ -175,13 +180,19 @@
               <span class="btn-icon">📝</span>
               {{ 'servicesManager.enroll' | translate }}
             </button>
+
+            <!-- Show message if course is full or no available schedules -->
+            <div *ngIf="!hasAvailableSpots(course)" class="course-unavailable-message">
+              <span class="unavailable-icon">🚫</span>
+              {{ 'servicesManager.noAvailableSchedules' | translate }}
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Enrollment Form Modal -->
+  <!-- Enhanced Enrollment Form Modal with Business Rules -->
   <div *ngIf="showEnrollmentForm" class="modal-overlay" (click)="cancelEnrollment()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
@@ -200,11 +211,15 @@
             <div class="modal-detail">
               <strong>{{ 'servicesManager.professional' | translate }}:</strong> {{ selectedCourse.professionalName }}
             </div>
+            <div class="modal-detail" *ngIf="selectedCourse.startDate">
+              <strong>{{ 'servicesManager.courseStartDate' | translate }}:</strong> {{ selectedCourse.startDate |
+              date:'mediumDate' }}
+            </div>
           </div>
         </div>
 
-        <form class="enrollment-form" (ngSubmit)="enrollInCourse()">
-          <!-- Schedule Selection -->
+        <form class="enrollment-form">
+          <!-- Enhanced Schedule Selection with Business Rules -->
           <div class="form-section">
             <h4>{{ 'servicesManager.selectSchedule' | translate }}</h4>
             <div class="form-group">
@@ -217,13 +232,14 @@
                 <option *ngFor="let schedule of getAvailableSchedules(); trackBy: trackByScheduleId"
                   [ngValue]="schedule">
                   {{ formatTimeDisplay(schedule.startTime) }} - {{ formatTimeDisplay(schedule.endTime) }}
-                  ({{ getAvailableSpotsForSchedule(schedule) }} {{ 'servicesManager.spotsAvailable' | translate }})
+                  ({{ getAvailableSpotsForSchedule(schedule, selectedCourse?.id?.toString()) }} {{
+                  'servicesManager.spotsAvailable' | translate }})
                 </option>
               </select>
             </div>
           </div>
 
-          <!-- Student Count Selection -->
+          <!-- Enhanced Student Count Selection -->
           <div *ngIf="selectedSchedule" class="form-section">
             <h4>{{ 'servicesManager.numberOfStudents' | translate }}</h4>
             <div class="form-group">
@@ -241,11 +257,22 @@
             </div>
           </div>
 
-          <!-- Lesson Options Selection -->
+          <!-- Enhanced Lesson Options Selection with Business Rule 5 -->
           <div *ngIf="selectedSchedule" class="form-section">
             <h4>{{ 'servicesManager.selectLessonPackage' | translate }}</h4>
+
+            <!-- Show constraint message if lesson count is fixed -->
+            <div
+              *ngIf="selectedCourse && getRequiredLessonCountForSchedule(selectedSchedule, selectedCourse.id.toString())"
+              class="lesson-constraint-message">
+              <span class="constraint-icon">🔒</span>
+              {{ 'servicesManager.lessonCountFixed' | translate }}:
+              {{ getRequiredLessonCountForSchedule(selectedSchedule, (selectedCourse.id.toString() || '')) }}
+              {{ 'servicesManager.lessons' | translate }}
+            </div>
+
             <div class="lesson-options-selection">
-              <div *ngFor="let option of getAvailableLessonOptions(selectedStudentCount); trackBy: trackByLessonOption"
+              <div *ngFor="let option of getAvailableLessonOptions(selectedCourse!); trackBy: trackByLessonOption"
                 class="lesson-option-card">
                 <input type="radio" [id]="'lesson-' + option.lessonCount" [name]="'lesson-selection'"
                   [ngModel]="selectedLessonOption" (ngModelChange)="onLessonOptionChange(option)" [value]="option">
@@ -329,16 +356,6 @@
             (click)="openPaymentLink()">
             {{ 'servicesManager.payNow' | translate }} - €{{ calculatedPrice }}
           </button>
-
-          <!-- Form Actions -->
-          <div class="form-actions">
-            <button type="button" class="btn btn-secondary" (click)="cancelEnrollment()" [disabled]="isLoading">
-              {{ 'servicesManager.cancel' | translate }}
-            </button>
-            <button type="submit" class="btn btn-primary">
-              {{ 'servicesManager.confirmEnrollment' | translate }}
-            </button>
-          </div>
         </form>
       </div>
     </div>

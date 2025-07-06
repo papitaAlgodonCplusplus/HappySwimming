@@ -110,12 +110,27 @@ interface CourseFilter {
   date?: string;
   time?: string;
   title?: string;
+  dateRangeStart?: string;
+  dateRangeEnd?: string;
 }
 
 interface ScheduleConflict {
   startTime: string;
   endTime: string;
   occupiedStudents: number;
+  courseId: string;
+  lessonCount?: number; // Track lesson count for each enrollment
+}
+
+// NEW: Enhanced interface for schedule enrollments with more details
+interface ScheduleEnrollmentDetails {
+  schedule: string;
+  students: number;
+  courseStartDate?: string;
+  availableSpots: number;
+  courseId: string;
+  isWinner: boolean;
+  lessonCount?: number;
 }
 
 @Component({
@@ -167,15 +182,18 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   selectedStudentCount: number = 1;
   calculatedPrice: number = 0;
 
-  // Filter state
+  // Filter state with new date range
   filters: CourseFilter = {
     date: '',
     time: '',
-    title: ''
+    title: '',
+    dateRangeStart: '',
+    dateRangeEnd: ''
   };
 
-  // Schedule conflict tracking
+  // Enhanced schedule conflict tracking with course ownership
   private scheduleConflicts: ScheduleConflict[] = [];
+  private scheduleOwnership: Map<string, string> = new Map(); // schedule key -> courseId
 
   // Enrollment form data
   enrollmentForm = {
@@ -351,69 +369,218 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
   }
-
-  // NEW: Calculate schedule conflicts based on enrollments
   private calculateScheduleConflicts(): void {
     this.scheduleConflicts = [];
+    this.scheduleOwnership.clear();
+
+    const scheduleData = new Map<string, {
+      students: number;
+      courseId: string;
+      lessonCount?: number;
+      firstEnrollmentDate: Date;
+    }>();
 
     this.enrollments.forEach(enrollment => {
       if (enrollment.scheduleStartTime && enrollment.scheduleEndTime &&
         enrollment.status !== 'cancelled' && enrollment.studentCount) {
 
-        const existingConflict = this.scheduleConflicts.find(conflict =>
-          conflict.startTime === enrollment.scheduleStartTime &&
-          conflict.endTime === enrollment.scheduleEndTime
-        );
+        const scheduleKey = `${enrollment.scheduleStartTime}-${enrollment.scheduleEndTime}`;
 
-        if (existingConflict) {
-          existingConflict.occupiedStudents += enrollment.studentCount;
+        // FIXED: Normalize course ID to handle both formats (admin_course_X and X)
+        let normalizedCourseId = enrollment.courseId;
+        if (enrollment.courseId.startsWith('admin_course_')) {
+          normalizedCourseId = enrollment.courseId; // Keep admin_course_X format
+        }
+
+        const enrollmentDate = new Date(enrollment.enrollmentDate || Date.now());
+
+        if (scheduleData.has(scheduleKey)) {
+          const existing = scheduleData.get(scheduleKey)!;
+
+          if (existing.courseId === normalizedCourseId) {
+            // Same course: add students
+            existing.students += enrollment.studentCount;
+            if (enrollmentDate < existing.firstEnrollmentDate) {
+              existing.firstEnrollmentDate = enrollmentDate;
+              existing.lessonCount = enrollment.selectedLessonCount;
+            }
+          } else {
+            // Different course: first enrollment wins
+            if (enrollmentDate < existing.firstEnrollmentDate) {
+              scheduleData.set(scheduleKey, {
+                students: enrollment.studentCount,
+                courseId: normalizedCourseId,
+                lessonCount: enrollment.selectedLessonCount,
+                firstEnrollmentDate: enrollmentDate
+              });
+            }
+          }
         } else {
-          this.scheduleConflicts.push({
-            startTime: enrollment.scheduleStartTime,
-            endTime: enrollment.scheduleEndTime,
-            occupiedStudents: enrollment.studentCount
+          // First enrollment in this time slot
+          scheduleData.set(scheduleKey, {
+            students: enrollment.studentCount,
+            courseId: normalizedCourseId,
+            lessonCount: enrollment.selectedLessonCount,
+            firstEnrollmentDate: enrollmentDate
           });
         }
       }
     });
 
+    // Convert to conflicts and set ownership
+    scheduleData.forEach((data, scheduleKey) => {
+      const [startTime, endTime] = scheduleKey.split('-');
+
+      this.scheduleConflicts.push({
+        startTime,
+        endTime,
+        occupiedStudents: data.students,
+        courseId: data.courseId,
+        lessonCount: data.lessonCount
+      });
+
+      this.scheduleOwnership.set(scheduleKey, data.courseId);
+    });
+
     console.log('Schedule conflicts calculated:', this.scheduleConflicts);
+    console.log('Schedule ownership:', this.scheduleOwnership);
   }
 
-  // NEW: Check if a schedule conflicts with existing enrollments
-  private hasScheduleConflict(schedule: Schedule): boolean {
-    return this.scheduleConflicts.some(conflict =>
-      this.timeRangesOverlap(schedule.startTime, schedule.endTime, conflict.startTime, conflict.endTime) &&
-      conflict.occupiedStudents >= 6
-    );
+  // FIXED: Normalize course ID for comparison
+  private normalizeCourseId(courseId: string | number): string {
+    const courseIdStr = courseId.toString();
+    // If it's just a number, convert to admin_course_X format for consistency
+    if (/^\d+$/.test(courseIdStr)) {
+      return `admin_course_${courseIdStr}`;
+    }
+    return courseIdStr;
   }
 
-  // NEW: Get available spots for a specific schedule
-  public getAvailableSpotsForSchedule(schedule: Schedule): number {
+
+  // NEW: Check if a schedule is owned by a specific course
+  private isScheduleOwnedBy(schedule: Schedule, courseId: string): boolean {
+    const scheduleKey = `${schedule.startTime}-${schedule.endTime}`;
+    const owner = this.scheduleOwnership.get(scheduleKey);
+    return owner === courseId;
+  }
+
+
+
+  // UPDATED: Enhanced schedule availability check that considers overlapping time slots
+  private isScheduleAvailableForCourse(schedule: Schedule, courseId: string): boolean {
+    const normalizedCourseId = this.normalizeCourseId(courseId);
+
+    // Check if this exact schedule is owned by this course
+    const exactScheduleKey = `${schedule.startTime}-${schedule.endTime}`;
+    const exactOwner = this.scheduleOwnership.get(exactScheduleKey);
+
+    if (exactOwner === normalizedCourseId) {
+      return true; // This course owns this exact schedule
+    }
+
+    if (exactOwner && exactOwner !== normalizedCourseId) {
+      return false; // Another course owns this exact schedule
+    }
+
+    // NEW: Check if this schedule overlaps with ANY reserved time slots
+    for (const [reservedScheduleKey, ownerCourseId] of this.scheduleOwnership.entries()) {
+      if (ownerCourseId !== normalizedCourseId) {
+        const [reservedStart, reservedEnd] = reservedScheduleKey.split('-');
+
+        // If the schedule we're checking overlaps with any reserved schedule, it's not available
+        if (this.timeRangesOverlap(schedule.startTime, schedule.endTime, reservedStart, reservedEnd)) {
+          console.log(`Schedule ${schedule.startTime}-${schedule.endTime} overlaps with reserved ${reservedStart}-${reservedEnd} owned by ${ownerCourseId}`);
+          return false;
+        }
+      }
+    }
+
+    return true; // No conflicts found
+  }
+
+  // UPDATED: Enhanced available spots calculation considering overlapping schedules
+  public getAvailableSpotsForSchedule(schedule: Schedule, courseId?: string): number {
+    const normalizedCourseId = courseId ? this.normalizeCourseId(courseId) : undefined;
+
+    // Check exact schedule ownership first
+    const exactScheduleKey = `${schedule.startTime}-${schedule.endTime}`;
+    const exactOwner = this.scheduleOwnership.get(exactScheduleKey);
+
+    if (exactOwner && normalizedCourseId && exactOwner !== normalizedCourseId) {
+      return 0; // Another course owns this exact schedule
+    }
+
+    // NEW: Check for overlapping reserved schedules
+    if (normalizedCourseId) {
+      for (const [reservedScheduleKey, ownerCourseId] of this.scheduleOwnership.entries()) {
+        if (ownerCourseId !== normalizedCourseId) {
+          const [reservedStart, reservedEnd] = reservedScheduleKey.split('-');
+
+          // If this schedule overlaps with a reserved schedule owned by another course
+          if (this.timeRangesOverlap(schedule.startTime, schedule.endTime, reservedStart, reservedEnd)) {
+            console.log(`Schedule ${schedule.startTime}-${schedule.endTime} blocked by overlapping reserved schedule ${reservedStart}-${reservedEnd}`);
+            return 0;
+          }
+        }
+      }
+    }
+
+    // Find conflict data for this exact schedule
     const conflict = this.scheduleConflicts.find(c =>
-      this.timeRangesOverlap(schedule.startTime, schedule.endTime, c.startTime, c.endTime)
+      c.startTime === schedule.startTime &&
+      c.endTime === schedule.endTime
     );
 
-    return conflict ? Math.max(0, 6 - conflict.occupiedStudents) : 6;
+    if (!conflict) {
+      return 6; // No conflict, full capacity available
+    }
+
+    // If this course doesn't own the schedule but there are enrollments, return 0
+    if (normalizedCourseId && conflict.courseId !== normalizedCourseId) {
+      return 0;
+    }
+
+    const currentStudents = conflict.occupiedStudents;
+
+    // Business rule: If exactly 4 or 6 students, no more spots
+    if (currentStudents === 4 || currentStudents === 6) {
+      return 0;
+    }
+
+    // Business rule: If less than 4, max is 4. If 5, max is 6
+    const maxStudents = currentStudents < 4 ? 4 : 6;
+    return Math.max(0, maxStudents - currentStudents);
   }
 
-  // NEW: Check if time ranges overlap
+
+  // NEW: Get the lesson count that must be used for a specific schedule-course combination
+  public getRequiredLessonCountForSchedule(schedule: Schedule, courseId: string): number | null {
+    const conflict = this.scheduleConflicts.find(c =>
+      this.timeRangesOverlap(schedule.startTime, schedule.endTime, c.startTime, c.endTime) &&
+      c.courseId === courseId
+    );
+
+    return conflict?.lessonCount || null;
+  }
+
+  // UPDATED: Enhanced time overlap detection that handles partial overlaps
   private timeRangesOverlap(start1: string, end1: string, start2: string, end2: string): boolean {
     const start1Time = this.timeToMinutes(start1);
     const end1Time = this.timeToMinutes(end1);
     const start2Time = this.timeToMinutes(start2);
     const end2Time = this.timeToMinutes(end2);
 
+    // Check if ranges overlap at all (including partial overlaps)
     return start1Time < end2Time && start2Time < end1Time;
   }
 
-  // NEW: Convert time string to minutes for comparison
+  // Convert time string to minutes for comparison
   private timeToMinutes(time: string): number {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
   }
 
-  // Get courses based on user role with filters applied
+
   get availableCourses(): Course[] {
     let courses: Course[] = [];
 
@@ -423,11 +590,48 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       courses = this.professionalCourses;
     }
 
-    // Apply filters
-    return this.applyFilters(courses);
+    console.log('Initial courses before filtering:', courses.length, courses.map(c => ({ id: c.id, name: c.name })));
+
+    // Apply filters first
+    const filteredCourses = this.applyFilters(courses);
+    console.log('After applying filters:', filteredCourses.length, filteredCourses.map(c => ({ id: c.id, name: c.name })));
+
+    // BUSINESS RULE: Only hide courses that have no available schedules
+    const availableCoursesAfterBusinessRules = filteredCourses.filter(course => {
+      const hasSpots = this.hasAvailableSpots(course);
+      console.log(`Course ${course.name} (${course.id}): hasAvailableSpots = ${hasSpots}`);
+
+      if (!hasSpots) {
+        console.log(`  -> Filtering out course ${course.name} because it has no available spots`);
+      }
+
+      return hasSpots;
+    });
+
+    console.log('Final available courses:', availableCoursesAfterBusinessRules.length, availableCoursesAfterBusinessRules.map(c => ({ id: c.id, name: c.name })));
+
+    return availableCoursesAfterBusinessRules;
   }
 
-  // Add these methods to your ServicesManagerComponent class
+  // NEW: Get total students across all schedules for a course
+  private getTotalStudentsInCourse(course: Course): number {
+    let totalStudents = 0;
+
+    if (course.schedules) {
+      course.schedules.forEach(schedule => {
+        const conflict = this.scheduleConflicts.find(c =>
+          c.startTime === schedule.startTime && c.endTime === schedule.endTime &&
+          c.courseId === course.id.toString()
+        );
+
+        if (conflict) {
+          totalStudents += conflict.occupiedStudents;
+        }
+      });
+    }
+
+    return totalStudents;
+  }
 
   // Get all unique course titles for the select dropdown
   getAvailableCoursesTitles(): string[] {
@@ -458,8 +662,12 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     courses.forEach(course => {
       if (course.schedules) {
         course.schedules.forEach(schedule => {
-          const scheduleTime = `${this.formatTimeDisplay(schedule.startTime)} - ${this.formatTimeDisplay(schedule.endTime)}`;
-          schedules.push(scheduleTime);
+          // Only include schedules that are available for this course
+          if (this.isScheduleAvailableForCourse(schedule, course.id.toString()) &&
+            this.getAvailableSpotsForSchedule(schedule, course.id.toString()) > 0) {
+            const scheduleTime = `${this.formatTimeDisplay(schedule.startTime)} - ${this.formatTimeDisplay(schedule.endTime)}`;
+            schedules.push(scheduleTime);
+          }
         });
       }
     });
@@ -467,13 +675,30 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return [...new Set(schedules)].sort(); // Remove duplicates and sort
   }
 
-  // Updated applyFilters method to handle the new filter logic
+  // UPDATED: Apply filters method to handle new date range filter
   private applyFilters(courses: Course[]): Course[] {
     return courses.filter(course => {
-      // Date filter
+      // Date filter (specific date)
       if (this.filters.date && course.startDate) {
         const courseDate = new Date(course.startDate).toISOString().split('T')[0];
         if (courseDate !== this.filters.date) {
+          return false;
+        }
+      }
+
+      // NEW: Date range filter
+      if (this.filters.dateRangeStart && course.startDate) {
+        const courseStartDate = new Date(course.startDate);
+        const filterStartDate = new Date(this.filters.dateRangeStart);
+        if (courseStartDate < filterStartDate) {
+          return false;
+        }
+      }
+
+      if (this.filters.dateRangeEnd && course.startDate) {
+        const courseStartDate = new Date(course.startDate);
+        const filterEndDate = new Date(this.filters.dateRangeEnd);
+        if (courseStartDate > filterEndDate) {
           return false;
         }
       }
@@ -483,11 +708,13 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         return false;
       }
 
-      // Time filter - check if course has the selected schedule
+      // Time filter - check if course has the selected schedule that's available
       if (this.filters.time && course.schedules) {
         const hasSelectedSchedule = course.schedules.some(schedule => {
           const scheduleTime = `${this.formatTimeDisplay(schedule.startTime)} - ${this.formatTimeDisplay(schedule.endTime)}`;
-          return scheduleTime === this.filters.time && !this.hasScheduleConflict(schedule);
+          return scheduleTime === this.filters.time &&
+            this.isScheduleAvailableForCourse(schedule, course.id.toString()) &&
+            this.getAvailableSpotsForSchedule(schedule, course.id.toString()) > 0;
         });
 
         if (!hasSelectedSchedule) {
@@ -499,17 +726,19 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     });
   }
 
-  // NEW: Clear all filters
+  // UPDATED: Clear all filters including new date range
   clearFilters(): void {
     this.filters = {
       date: '',
       time: '',
-      title: ''
+      title: '',
+      dateRangeStart: '',
+      dateRangeEnd: ''
     };
     this.cdr.detectChanges();
   }
 
-  // NEW: Apply filters (called from template)
+  // Apply filters (called from template)
   applyFiltersManually(): void {
     this.cdr.detectChanges();
   }
@@ -602,14 +831,33 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return null;
   }
 
-  // UPDATED: Get available student count options based on schedule conflicts
+  // UPDATED: Get available student count options based on schedule conflicts and business rules
   getStudentCountOptions(): number[] {
-    if (!this.selectedSchedule) {
+    if (!this.selectedSchedule || !this.selectedCourse) {
       return Array.from({ length: 6 }, (_, i) => i + 1);
     }
 
-    const availableSpots = this.getAvailableSpotsForSchedule(this.selectedSchedule);
+    const availableSpots = this.getAvailableSpotsForSchedule(this.selectedSchedule, this.selectedCourse.id.toString());
+    const currentStudents = this.getCurrentStudentsInSchedule(this.selectedSchedule, this.selectedCourse.id.toString());
+
+    // Business rule: If less than 4 students, max is 4. If 5 students, max is 6
+    const maxPossible = currentStudents < 4 ? 4 : 6;
+    const maxAvailable = Math.min(maxPossible, currentStudents + availableSpots);
+
     return Array.from({ length: Math.min(6, availableSpots) }, (_, i) => i + 1);
+  }
+
+  // NEW: Get current students in a specific schedule for a course
+  private getCurrentStudentsInSchedule(schedule: Schedule, courseId: string): number {
+    const scheduleKey = `${schedule.startTime}-${schedule.endTime}`;
+
+    // Find conflict for this exact time slot and course
+    const conflict = this.scheduleConflicts.find(c =>
+      c.startTime === schedule.startTime && c.endTime === schedule.endTime &&
+      c.courseId === courseId
+    );
+
+    return conflict?.occupiedStudents || 0;
   }
 
   // Show enrollment details modal
@@ -810,9 +1058,16 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       }
 
       // Check if selected schedule has available spots
-      const availableSpots = this.getAvailableSpotsForSchedule(this.selectedSchedule);
+      const availableSpots = this.getAvailableSpotsForSchedule(this.selectedSchedule, this.selectedCourse.id.toString());
       if (this.selectedStudentCount > availableSpots) {
         this.error = `Only ${availableSpots} spots available for this schedule.`;
+        return false;
+      }
+
+      // BUSINESS RULE 5: Check if there's already an enrollment and lesson count must match
+      const requiredLessonCount = this.getRequiredLessonCountForSchedule(this.selectedSchedule, this.selectedCourse.id.toString());
+      if (requiredLessonCount && this.selectedLessonOption.lessonCount !== requiredLessonCount) {
+        this.error = `This schedule requires ${requiredLessonCount} lessons to match existing enrollments.`;
         return false;
       }
     }
@@ -822,7 +1077,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   openPaymentLink(): void {
     const amount = this.calculatedPrice;
-    const description = `Course: ${this.selectedCourse?.courseCode}, course name: ${this.selectedCourse?.name}, contact: ${this.enrollmentForm.motherContact}`;
+    const description = `${this.selectedCourse?.courseCode}, ${this.selectedCourse?.name}, ${this.enrollmentForm.motherContact}`;
 
     this.http.post<{ url: string }>(`${this.apiUrl}/create-revolut-payment`, {
       amount,
@@ -842,6 +1097,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         this.error = 'Could not generate payment link. Please try again.';
       }
     });
+
+    this.enrollInCourse();
   }
 
   // Get status badge class
@@ -888,15 +1145,77 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return course.duration ? `${course.duration} hours` : '';
   }
 
-  // UPDATED: Check if course has available spots considering schedule conflicts
+
+  // UPDATED: Enhanced hasAvailableSpots method with overlap detection
   hasAvailableSpots(course: Course): boolean {
-    if (course.type === 'admin_course') {
-      // Check if any schedule in the course has available spots
-      return course.schedules?.some(schedule =>
-        this.getAvailableSpotsForSchedule(schedule) > 0
-      ) || false;
+    if (course.type === 'admin_course' && course.schedules) {
+      console.log(`Checking hasAvailableSpots for course ${course.name} (${course.id})`);
+      console.log(`  Course has ${course.schedules.length} schedules`);
+
+      const normalizedCourseId = this.normalizeCourseId(course.id);
+      console.log(`  Normalized course ID: ${normalizedCourseId}`);
+
+      // Remove duplicate schedules first
+      const uniqueSchedules = course.schedules.filter((schedule, index, self) =>
+        index === self.findIndex(s => s.startTime === schedule.startTime && s.endTime === schedule.endTime)
+      );
+
+      console.log(`  Unique schedules: ${uniqueSchedules.length}`);
+
+      const availableSchedules = uniqueSchedules.filter(schedule => {
+        const scheduleKey = `${schedule.startTime}-${schedule.endTime}`;
+        const owner = this.scheduleOwnership.get(scheduleKey);
+
+        console.log(`  Schedule ${schedule.startTime}-${schedule.endTime}:`);
+        console.log(`    Owner: ${owner || 'none'}`);
+        console.log(`    Normalized Course ID: ${normalizedCourseId}`);
+
+        // Check for exact ownership first
+        if (!owner) {
+          // No exact owner, but check for overlapping reserved schedules
+          for (const [reservedScheduleKey, ownerCourseId] of this.scheduleOwnership.entries()) {
+            if (ownerCourseId !== normalizedCourseId) {
+              const [reservedStart, reservedEnd] = reservedScheduleKey.split('-');
+
+              if (this.timeRangesOverlap(schedule.startTime, schedule.endTime, reservedStart, reservedEnd)) {
+                console.log(`    -> Blocked by overlapping reserved schedule ${reservedStart}-${reservedEnd}`);
+                return false;
+              }
+            }
+          }
+          console.log(`    -> Available (no owner, no overlapping conflicts)`);
+          return true;
+        }
+
+        if (owner === normalizedCourseId) {
+          const spots = this.getAvailableSpotsForSchedule(schedule, course.id.toString());
+          console.log(`    -> Owned by this course, spots available: ${spots}`);
+          return spots > 0;
+        }
+
+        console.log(`    -> Not available (owned by course ${owner})`);
+        return false;
+      });
+
+      const hasSpots = availableSchedules.length > 0;
+      console.log(`  Final result: hasAvailableSpots = ${hasSpots} (${availableSchedules.length} available schedules)`);
+      return hasSpots;
     }
     return true;
+  }
+
+  // Add a method to check current filter state
+  debugFilters(): void {
+    console.log('Current filters:', {
+      date: this.filters.date,
+      time: this.filters.time,
+      title: this.filters.title,
+      dateRangeStart: this.filters.dateRangeStart,
+      dateRangeEnd: this.filters.dateRangeEnd
+    });
+
+    console.log('Schedule ownership:', Array.from(this.scheduleOwnership.entries()));
+    console.log('Schedule conflicts:', this.scheduleConflicts);
   }
 
   // Check if already enrolled in course
@@ -964,31 +1283,106 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return 'A'
   }
 
-  // NEW: Get schedule enrollments for a course (replaces multiple enrollments section)
-  getScheduleEnrollments(courseId: string | number): Array<{ schedule: string, students: number }> {
-    console.log('Getting schedule enrollments for course:', courseId, this.enrollments);
-    console.log('courseID: admin_course_' + courseId.toString());
-    const enrollments = this.enrollments.filter(e =>
-      (e.courseId === 'admin_course_' + courseId.toString()) &&
-      e.status !== 'cancelled'
+  hasEnrollmentInThatSchedule(schedule: Schedule, courseId: string, startTime: string, endTime: string): boolean {
+    // Check if this schedule overlaps with any enrollment in the course
+    const currentEnrollments = this.enrollments.filter(e =>
+      (e.courseId === courseId || e.courseId === `admin_course_${courseId}`) &&
+      e.scheduleStartTime === startTime && e.scheduleEndTime === endTime
     );
 
-    console.log('Filtered enrollments:', enrollments);
+    return currentEnrollments.length > 0;
+  }
 
-    const scheduleMap = new Map<string, number>();
+  // UPDATED: Enhanced getScheduleEnrollments with overlap detection for table display
+  getScheduleEnrollments(courseId: string | number): ScheduleEnrollmentDetails[] {
+    console.log('Getting schedule enrollments for course:', courseId, this.enrollments);
 
-    enrollments.forEach(enrollment => {
-      const scheduleKey = `${enrollment.scheduleStartTime} - ${enrollment.scheduleEndTime}`;
-      const currentStudents = scheduleMap.get(scheduleKey) || 0;
-      scheduleMap.set(scheduleKey, currentStudents + (enrollment.studentCount || 1));
+    const course = this.clientCourses.find(c => c.id.toString() === courseId.toString());
+    if (!course || !course.schedules) {
+      return [];
+    }
+
+    const normalizedCourseId = this.normalizeCourseId(courseId);
+    const scheduleDetails: ScheduleEnrollmentDetails[] = [];
+    const processedSchedules = new Set<string>();
+
+    // Remove duplicate schedules and process each unique one
+    const uniqueSchedules = course.schedules.filter((schedule, index, self) =>
+      index === self.findIndex(s => s.startTime === schedule.startTime && s.endTime === schedule.endTime)
+    );
+
+    uniqueSchedules.forEach(schedule => {
+      const scheduleKey = `${schedule.startTime}-${schedule.endTime}`;
+      const scheduleDisplay = `${this.formatTimeDisplay(schedule.startTime)} - ${this.formatTimeDisplay(schedule.endTime)}`;
+
+      // Avoid duplicate schedule displays
+      if (processedSchedules.has(scheduleDisplay)) {
+        return;
+      }
+      processedSchedules.add(scheduleDisplay);
+
+      const exactOwner = this.scheduleOwnership.get(scheduleKey);
+      let isWinner = exactOwner === normalizedCourseId;
+      let students = 0;
+      let availableSpots = 0;
+      let lessonCount: number | undefined;
+      let isBlockedByOverlap = false;
+
+      // Check if this schedule is blocked by overlapping reserved schedules
+      if (!exactOwner) {
+        for (const [reservedScheduleKey, ownerCourseId] of this.scheduleOwnership.entries()) {
+          if (ownerCourseId !== normalizedCourseId) {
+            const [reservedStart, reservedEnd] = reservedScheduleKey.split('-');
+
+            if (this.timeRangesOverlap(schedule.startTime, schedule.endTime, reservedStart, reservedEnd)) {
+              console.log(`Schedule ${schedule.startTime}-${schedule.endTime} blocked by overlapping ${reservedStart}-${reservedEnd} owned by ${ownerCourseId}`);
+              isBlockedByOverlap = true;
+              availableSpots = 0;
+              students = 0;
+              isWinner = false;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!isBlockedByOverlap) {
+        // Find conflict data for this exact schedule
+        const conflict = this.scheduleConflicts.find(c =>
+          c.startTime === schedule.startTime &&
+          c.endTime === schedule.endTime
+        );
+
+        if (conflict) {
+          if (isWinner) {
+            // This course owns the schedule
+            students = conflict.occupiedStudents;
+            availableSpots = this.getAvailableSpotsForSchedule(schedule, courseId.toString());
+            lessonCount = conflict.lessonCount;
+          } else {
+            // Another course owns the schedule
+            students = 0;
+            availableSpots = 0;
+          }
+        } else {
+          // No enrollments yet - schedule is available if not blocked by overlaps
+          students = 0;
+          availableSpots = 6;
+        }
+      }
+
+      scheduleDetails.push({
+        schedule: scheduleDisplay,
+        students: students,
+        courseStartDate: course.startDate,
+        availableSpots: availableSpots,
+        courseId: courseId.toString(),
+        isWinner: isWinner,
+        lessonCount: lessonCount
+      });
     });
 
-    console.log('Schedule map:', scheduleMap);
-
-    return Array.from(scheduleMap.entries()).map(([schedule, students]) => ({
-      schedule,
-      students
-    }));
+    return scheduleDetails;
   }
 
   // Clear messages
@@ -1017,27 +1411,12 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   // Get schedules display for course card
   getSchedulesDisplay(course: Course): string {
     const schedules = course.schedules || [];
-    const uniqueSchedules: Record<string, Schedule> = {};
+    const availableSchedules = schedules.filter(schedule =>
+      this.isScheduleAvailableForCourse(schedule, course.id.toString()) &&
+      this.getAvailableSpotsForSchedule(schedule, course.id.toString()) > 0
+    );
 
-    schedules.forEach(schedule => {
-      const key = `${schedule.startTime}-${schedule.endTime}`;
-      if (!uniqueSchedules[key]) {
-        uniqueSchedules[key] = schedule;
-      }
-      // Ensure lesson options are unique within the schedule
-      const uniqueOptions: Record<string, LessonOption> = {};
-      schedule.lessonOptions.forEach(option => {
-        const optionKey = `${option.lessonCount}-${option.price}`;
-        if (!uniqueOptions[optionKey]) {
-          uniqueOptions[optionKey] = option;
-        }
-      });
-      schedule.lessonOptions = Object.values(uniqueOptions);
-      uniqueSchedules[key] = schedule;
-    });
-
-    console.log('Unique schedules:', uniqueSchedules);
-    return Object.values(uniqueSchedules).length.toString();
+    return availableSchedules.length.toString();
   }
 
   /**
@@ -1058,21 +1437,26 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       .join('. ') + '.';
   }
 
-  // UPDATED: Get available spots considering schedule conflicts
+  // UPDATED: Get available spots considering schedule conflicts and business rules
   getAvailableSpots(course: Course): number {
     if (!course.schedules || course.schedules.length === 0) {
       return 0;
     }
 
-    // Calculate total available spots across all schedules
+    // Calculate total available spots across available schedules for this course
     let totalAvailableSpots = 0;
-    const uniqueSchedules: Record<string, Schedule> = {};
+    const processedSchedules = new Set<string>();
 
     course.schedules.forEach(schedule => {
-      const key = `${schedule.startTime}-${schedule.endTime}`;
-      if (!uniqueSchedules[key]) {
-        uniqueSchedules[key] = schedule;
-        totalAvailableSpots += this.getAvailableSpotsForSchedule(schedule);
+      const scheduleKey = `${schedule.startTime}-${schedule.endTime}`;
+
+      // Avoid counting the same schedule time multiple times
+      if (!processedSchedules.has(scheduleKey)) {
+        processedSchedules.add(scheduleKey);
+
+        if (this.isScheduleAvailableForCourse(schedule, course.id.toString())) {
+          totalAvailableSpots += this.getAvailableSpotsForSchedule(schedule, course.id.toString());
+        }
       }
     });
 
@@ -1083,19 +1467,16 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   getLessonOptionsDisplay(course: Course): string {
     if (!course.schedules) return 'No lesson options';
 
-    const totalOptions = course.schedules.reduce((total, schedule) =>
-      total + (schedule.lessonOptions?.length || 0), 0
-    );
-
     const uniqueOptions = new Set();
     course.schedules.forEach(schedule => {
-      schedule.lessonOptions?.forEach(option => {
-        uniqueOptions.add(`${option.lessonCount}-${option.price}`);
-      });
+      if (this.isScheduleAvailableForCourse(schedule, course.id.toString())) {
+        schedule.lessonOptions?.forEach(option => {
+          uniqueOptions.add(`${option.lessonCount}-${option.price}`);
+        });
+      }
     });
 
-    const uniqueOptionsCount = uniqueOptions.size;
-    return `${uniqueOptionsCount}`;
+    return uniqueOptions.size.toString();
   }
 
   // Get group pricing display
@@ -1118,15 +1499,26 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       .join('<br>');
   }
 
-  // UPDATED: Helper methods for enrollment form - only show available schedules
-  getAvailableSchedules(): Schedule[] {
-    const schedules = this.selectedCourse?.schedules || [];
-    const uniqueSchedules: Record<string, Schedule> = {};
 
-    schedules.forEach(schedule => {
-      const key = `${schedule.startTime}-${schedule.endTime}`;
-      if (!uniqueSchedules[key] && this.getAvailableSpotsForSchedule(schedule) > 0) {
-        uniqueSchedules[key] = schedule;
+
+  // FIXED: Get available schedules with proper deduplication
+  getAvailableSchedules(): Schedule[] {
+    if (!this.selectedCourse?.schedules) return [];
+
+    const schedules = this.selectedCourse.schedules || [];
+    const normalizedCourseId = this.normalizeCourseId(this.selectedCourse.id);
+
+    // Remove duplicates first
+    const uniqueSchedules = schedules.filter((schedule, index, self) =>
+      index === self.findIndex(s => s.startTime === schedule.startTime && s.endTime === schedule.endTime)
+    );
+
+    const availableSchedules: Schedule[] = [];
+
+    uniqueSchedules.forEach(schedule => {
+      if (this.isScheduleAvailableForCourse(schedule, this.selectedCourse!.id.toString()) &&
+        this.getAvailableSpotsForSchedule(schedule, this.selectedCourse!.id.toString()) > 0) {
+
         // Ensure lesson options are unique within the schedule
         const uniqueOptions: Record<string, LessonOption> = {};
         schedule.lessonOptions.forEach(option => {
@@ -1136,53 +1528,50 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           }
         });
         schedule.lessonOptions = Object.values(uniqueOptions);
-        uniqueSchedules[key] = schedule;
+        availableSchedules.push(schedule);
       }
     });
 
-    return Object.values(uniqueSchedules);
+    return availableSchedules;
   }
 
-  getAvailableLessonOptions(selectedStudentCount: number): LessonOption[] {
-    const lessonOptions = this.selectedSchedule?.lessonOptions || [];
+  // UPDATED: Get available lesson options considering business rule 5 and deduplicate options
+  getAvailableLessonOptions(selectedCourse: Course): LessonOption[] {
+    const currentEnrollments = this.enrollments.filter(e =>
+      e.courseId === selectedCourse.id.toString() ||
+      e.courseId === `admin_course_${selectedCourse.id}`
+    );
 
-    // Group options by lessonCount
-    const groupedByLessonCount = lessonOptions.reduce((acc, option) => {
-      if (!acc[option.lessonCount]) {
-        acc[option.lessonCount] = [];
-      }
-      acc[option.lessonCount].push(option);
-      return acc;
-    }, {} as Record<number, LessonOption[]>);
-
-    // For each lessonCount, select the option with highest or lowest price based on selectedStudentCount
-    const result: LessonOption[] = [];
-
-    for (const lessonCount in groupedByLessonCount) {
-      const optionsForLessonCount = groupedByLessonCount[lessonCount];
-
-      let selectedOption: LessonOption;
-
-      if (selectedStudentCount >= 1 && selectedStudentCount <= 4) {
-        // Select option with highest price
-        selectedOption = optionsForLessonCount.reduce((max, current) =>
-          current.price > max.price ? current : max
-        );
-      } else if (selectedStudentCount === 5 || selectedStudentCount === 6) {
-        // Select option with lowest price
-        selectedOption = optionsForLessonCount.reduce((min, current) =>
-          current.price < min.price ? current : min
-        );
-      } else {
-        // Default behavior for other student counts (you can modify this as needed)
-        selectedOption = optionsForLessonCount[0];
-      }
-
-      result.push(selectedOption);
+    // Helper to deduplicate lesson options by lessonCount and price
+    function dedupeLessonOptions(options: LessonOption[]): LessonOption[] {
+      const seen = new Set<string>();
+      return options.filter(option => {
+        const key = `${option.lessonCount}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     }
 
-    console.log('LessonOptions:', result);
-    return result;
+    if (currentEnrollments.length === 0) {
+      // No enrollments yet, return all unique options
+      const allOptions = selectedCourse.schedules?.flatMap(schedule => schedule.lessonOptions) || [];
+      return dedupeLessonOptions(allOptions);
+    }
+
+    const lessonQuantitySelectedInTheEnrollments = currentEnrollments.reduce((acc, e) => {
+      return acc + (e.selectedLessonCount || 0);
+    }, 0);
+
+    if (lessonQuantitySelectedInTheEnrollments) {
+      const filteredOptions = selectedCourse.schedules?.flatMap(schedule => schedule.lessonOptions)
+        .filter(option => option.lessonCount === lessonQuantitySelectedInTheEnrollments) || [];
+      return dedupeLessonOptions(filteredOptions);
+    }
+
+    // If no specific lesson count is required, return all unique options
+    const allOptions = selectedCourse.schedules?.flatMap(schedule => schedule.lessonOptions) || [];
+    return dedupeLessonOptions(allOptions);
   }
 
   getSelectedLessonOptionDisplay(): string {

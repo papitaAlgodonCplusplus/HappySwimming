@@ -787,8 +787,8 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       this.courseForm.endDate = this.courseForm.startDate; // Default to start date if not provided
     }
     if (new Date(this.courseForm.startDate) >= new Date(this.courseForm.endDate)) {
-      this.error = 'End date must be after start date.';
-      return false;
+      // startDate + 3 days by default
+      this.courseForm.endDate = new Date(new Date(this.courseForm.startDate).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     }
     if (!this.courseForm.professionalId) {
       this.error = 'Please assign a professional to this course.';
