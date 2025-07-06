@@ -131,7 +131,7 @@
 
           <!-- Course Description -->
           <div class="course-description">
-            <p>{{ getCourseDescription(course) }}</p>
+            <p>{{ course.description.trim() | translate }}</p>
           </div>
 
           <!-- Group Pricing Information -->

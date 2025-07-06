@@ -674,6 +674,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       return;
     }
 
+    console.log('Enrolling in course:', this.selectedCourse, 'with form data:', this.enrollmentForm);
+
     // Update kidName with all child names before submitting
     this.updateKidNameForEnrollment();
 
@@ -783,7 +785,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   openPaymentLink(): void {
     const amount = this.calculatedPrice;
-    const description = `Course: ${this.selectedCourse?.name} for ${this.selectedStudentCount} student(s)`;
+    const description = `Course: ${this.selectedCourse?.courseCode}, contact: ${this.enrollmentForm.motherContact}, responsable email: ${this.enrollmentForm.motherEmail}, phone: ${this.enrollmentForm.motherPhone}`;
 
     this.http.post<{ url: string }>(`${this.apiUrl}/create-revolut-payment`, {
       amount,
@@ -847,17 +849,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       }
     }
     return course.duration ? `${course.duration} hours` : '';
-  }
-
-  // Get course description
-  getCourseDescription(course: Course): string {
-    if (course.description) {
-      return course.description;
-    }
-    if (course.descriptionKey) {
-      return course.descriptionKey;
-    }
-    return '';
   }
 
   // UPDATED: Check if course has available spots considering schedule conflicts
@@ -931,13 +922,21 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     )[0].status;
   }
 
+  translateWithGoogle(text: string): string {
+    // Simulate translation using Google Translate API
+    return 'A'
+  }
+
   // NEW: Get schedule enrollments for a course (replaces multiple enrollments section)
   getScheduleEnrollments(courseId: string | number): Array<{schedule: string, students: number}> {
+    console.log('Getting schedule enrollments for course:', courseId, this.enrollments);
+    console.log('courseID: admin_course_' + courseId.toString());
     const enrollments = this.enrollments.filter(e =>
-      (e.courseId === courseId.toString() || e.courseId === `admin_course_${courseId}`) &&
-      e.status !== 'cancelled' &&
-      e.scheduleStartTime && e.scheduleEndTime
+      (e.courseId === 'admin_course_' + courseId.toString()) &&
+      e.status !== 'cancelled'
     );
+
+    console.log('Filtered enrollments:', enrollments);
 
     const scheduleMap = new Map<string, number>();
     
@@ -946,6 +945,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       const currentStudents = scheduleMap.get(scheduleKey) || 0;
       scheduleMap.set(scheduleKey, currentStudents + (enrollment.studentCount || 1));
     });
+
+    console.log('Schedule map:', scheduleMap);
 
     return Array.from(scheduleMap.entries()).map(([schedule, students]) => ({
       schedule,

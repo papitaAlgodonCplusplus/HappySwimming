@@ -31,12 +31,12 @@ app.use(express.json());
 
 // Database connection DEV
 // const pool = new Pool({
-//   user: process.env.DB_USER || 'postgres',
-//   host: process.env.DB_HOST || 'localhost',
-//   database: process.env.DB_NAME || 'happyswimming',
-//   password: process.env.DB_PASSWORD || 'postgres',
-//   port: process.env.DB_PORT || 5432,
-//   schema: 'happyswimming'
+// user: process.env.DB_USER || 'postgres',
+// host: process.env.DB_HOST || 'localhost',
+// database: process.env.DB_NAME || 'happyswimming',
+// password: process.env.DB_PASSWORD || 'postgres',
+// port: process.env.DB_PORT || 5432,
+// schema: 'happyswimming'
 // });
 
 // Database connection PROD
@@ -3356,6 +3356,7 @@ app.get('/api/client/available-courses', authenticateToken, async (req, res) => 
 
 app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) => {
   const client = await pool.connect();
+  console.log('Admin course enrollment request:', req.body);
 
   try {
     await client.query('BEGIN');
@@ -3374,6 +3375,7 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
     } = req.body;
     const userId = req.user.id;
     const userRole = req.user.role;
+    console.log('User ID:', userId, 'User Role:', userRole);
 
     console.log('Enrollment request:', {
       adminCourseId,
@@ -3389,6 +3391,7 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
       startTime,
       endTime
     });
+    console.log('Selected schedule ID:', selectedScheduleId);
 
     // Only clients can enroll in admin courses
     if (userRole !== 'client') {
@@ -3426,6 +3429,7 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
 
     // Check if course is full
     if (course.current_students >= course.max_students) {
+      console.log('Course is full:', course.current_students, '/', course.max_students);
       return res.status(400).json({ error: 'Course is full' });
     }
 
@@ -3438,6 +3442,7 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
     `;
 
     const lessonPriceResult = await client.query(lessonPriceQuery, [selectedScheduleId, selectedLessonCount]);
+    console.log('Lesson price result:', lessonPriceResult.rows);
 
     if (lessonPriceResult.rows.length === 0) {
       return res.status(400).json({ error: 'Invalid lesson option selected' });
@@ -3454,6 +3459,7 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
     `;
 
     const groupPricingResult = await client.query(groupPricingQuery, [adminCourseId, studentRange]);
+    console.log('Group pricing result:', groupPricingResult.rows);
 
     if (groupPricingResult.rows.length === 0) {
       return res.status(400).json({ error: 'Group pricing not found' });
@@ -3469,6 +3475,7 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
     const adminServiceCheck = await client.query(
       "SELECT id FROM happyswimming.services WHERE name = 'Admin Course Service'"
     );
+    console.log('Admin service check result:', adminServiceCheck.rows);
 
     if (adminServiceCheck.rows.length === 0) {
       const createServiceResult = await client.query(
