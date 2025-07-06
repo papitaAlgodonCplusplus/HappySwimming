@@ -181,7 +181,7 @@
             <span *ngIf="isAdmin" class="professional-name">{{ course.professionalName }}</span>
           </div>
           <div class="course-info">
-            <span class="course-dates">{{ course.startDate | date:'short' }}</span>
+            <span class="course-dates">{{ course.startDate | date:'mediumDate' }}</span>
             <span class="student-count">{{ course.currentStudents }}/{{ course.maxStudents }} {{ 'studentsManagement.students' | translate }}</span>
             <span class="expand-icon">{{ course.expanded ? '▼' : '▶' }}</span>
           </div>
@@ -218,7 +218,7 @@
                 </td>
                 <td>{{ student.motherContact }}</td>
                 <td *ngIf="isAdmin">{{ student.professionalName || ('studentsManagement.unknown' | translate) }}</td>
-                <td>{{ student.startDate | date:'short' }}</td>
+                <td>{{ student.startDate | date:'mediumDate' }}</td>
                 <td>
                   <span class="status-badge" [ngClass]="getStatusClass(student.status)">
                     {{ 'studentsManagement.' + student.status | translate }}
