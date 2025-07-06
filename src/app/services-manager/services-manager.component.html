@@ -309,13 +309,18 @@
 
             <!-- Child names (required for all courses) -->
             <div class="form-group">
-              <label for="kidName">{{ 'servicesManager.childName' | translate }} *</label>
+              <label for="kidName" style="display: block;">
+                {{ 'servicesManager.childName' | translate }} *
+              </label>
               <div *ngFor="let childName of childNames; let i = index; trackBy: trackByIndex"
                 class="child-name-input mb-2">
                 <div class="input-group">
                   <input type="text" [id]="'kidName_' + i" [(ngModel)]="childNames[i]" [name]="'kidName_' + i"
                     (ngModelChange)="onChildNameChange(i, $event)" required class="form-control"
                     [placeholder]="'servicesManager.enterChildName' | translate" />
+                  <input type="number" min="0" [id]="'kidAge_' + i" [(ngModel)]="childAges[i]" [name]="'kidAge_' + i"
+                    required class="form-control ms-2" style="max-width: 100px;"
+                    [placeholder]="'servicesManager.childAge' | translate" />
                   <div class="input-group-append">
                     <button type="button" class="btn btn-outline-secondary" (click)="removeChildName(i)"
                       [disabled]="childNames.length <= 1" title="Remove child name">
@@ -326,9 +331,15 @@
               </div>
 
               <button type="button" class="btn btn-outline-primary btn-sm mt-2 add-child-btn" (click)="addChildName()"
-                title="Add another child name">
+                [disabled]="childNames.length >= selectedStudentCount" title="Add another child name">
                 <i class="fas fa-plus me-1"></i> {{ 'servicesManager.addChildName' | translate }}
               </button>
+
+              <!-- Show helper text when limit is reached -->
+              <div *ngIf="childNames.length >= selectedStudentCount" class="text-muted mt-1 small">
+                Maximum {{ selectedStudentCount }} child name{{ selectedStudentCount > 1 ? 's' : '' }} allowed based on
+                selected student count.
+              </div>
             </div>
 
             <!-- Mother contact (required for all courses) -->

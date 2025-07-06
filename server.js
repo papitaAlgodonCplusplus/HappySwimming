@@ -31,12 +31,12 @@ app.use(express.json());
 
 // Database connection DEV
 // const pool = new Pool({
-// user: process.env.DB_USER || 'postgres',
-// host: process.env.DB_HOST || 'localhost',
-// database: process.env.DB_NAME || 'happyswimming',
-// password: process.env.DB_PASSWORD || 'postgres',
-// port: process.env.DB_PORT || 5432,
-// schema: 'happyswimming'
+//   user: process.env.DB_USER || 'postgres',
+//   host: process.env.DB_HOST || 'localhost',
+//   database: process.env.DB_NAME || 'happyswimming',
+//   password: process.env.DB_PASSWORD || 'postgres',
+//   port: process.env.DB_PORT || 5432,
+//   schema: 'happyswimming'
 // });
 
 // Database connection PROD
@@ -107,6 +107,22 @@ app.post('/api/should-not-authenticate', (req, res) => {
   res.json({ message: 'This route does not require authentication' });
 });
 
+
+// Middleware to check if user is admin
+const isAdmin = (req, res, next) => {
+  // Check if user exists and is authenticated
+  // if (!req.user) {
+  //   return res.status(401).json({ error: 'Authentication required' });
+  // }
+
+  // // Check if user is admin (assuming admins have email admin@gmail.com)
+  // if (req.user.email !== 'admin@gmail.com') {
+  //   return res.status(403).json({ error: 'Admin privileges required' });
+  // }
+
+  // User is admin, proceed
+  next();
+};
 
 // Authentication middleware
 function authenticateToken(req, res, next) {
@@ -1323,81 +1339,107 @@ app.get('/api/professional/students', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT: Update student information by professional
+
+// Add a new endpoint to get all professionals for admin filtering
+app.get('/api/admin/professionals-list', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        p.id,
+        CONCAT(u.first_name, ' ', u.last_name1) as name,
+        u.email,
+        p.identification_number,
+        p.city,
+        p.country
+      FROM happyswimming.professionals p
+      JOIN happyswimming.users u ON p.user_id = u.id
+      WHERE u.is_authorized = true AND u.is_active = true
+      ORDER BY u.first_name, u.last_name1
+    `;
+
+    const result = await pool.query(query);
+
+    const professionals = result.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      identificationNumber: row.identification_number,
+      city: row.city,
+      country: row.country
+    }));
+
+    res.json(professionals);
+  } catch (error) {
+    console.error('Error fetching professionals list:', error);
+    res.status(500).json({ error: 'Failed to fetch professionals list' });
+  }
+});
+
+// Add endpoint to get admin statistics for the dashboard
+app.get('/api/admin/students-statistics', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const statsQuery = `
+      SELECT 
+        COUNT(*) as total_students,
+        COUNT(DISTINCT cs.professional_id) as total_professionals_with_students,
+        COUNT(DISTINCT ac.id) as total_active_courses,
+        AVG(cs.calification) FILTER (WHERE cs.calification IS NOT NULL) as average_calification,
+        AVG(cs.assistance) FILTER (WHERE cs.assistance IS NOT NULL) as average_assistance,
+        COUNT(*) FILTER (WHERE cs.status = 'pending') as pending_enrollments,
+        COUNT(*) FILTER (WHERE cs.status = 'approved') as approved_enrollments,
+        COUNT(*) FILTER (WHERE cs.status = 'active') as active_enrollments,
+        COUNT(*) FILTER (WHERE cs.status = 'completed') as completed_enrollments,
+        COUNT(*) FILTER (WHERE cs.status = 'cancelled') as cancelled_enrollments
+      FROM happyswimming.client_services cs
+      JOIN happyswimming.admin_courses ac ON cs.admin_course_id = ac.id
+      WHERE ac.is_historical = FALSE
+        AND cs.admin_course_id IS NOT NULL
+    `;
+
+    const result = await pool.query(statsQuery);
+    const stats = result.rows[0];
+
+    res.json({
+      totalStudents: parseInt(stats.total_students || 0),
+      totalProfessionalsWithStudents: parseInt(stats.total_professionals_with_students || 0),
+      totalActiveCourses: parseInt(stats.total_active_courses || 0),
+      averageCalification: stats.average_calification ? parseFloat(stats.average_calification).toFixed(2) : 0,
+      averageAssistance: stats.average_assistance ? parseFloat(stats.average_assistance).toFixed(2) : 0,
+      enrollmentsByStatus: {
+        pending: parseInt(stats.pending_enrollments || 0),
+        approved: parseInt(stats.approved_enrollments || 0),
+        active: parseInt(stats.active_enrollments || 0),
+        completed: parseInt(stats.completed_enrollments || 0),
+        cancelled: parseInt(stats.cancelled_enrollments || 0)
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching admin statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch admin statistics' });
+  }
+});
+
+// Update the student update endpoint to allow admin access
 app.put('/api/professional/students/:enrollmentId', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
+    const userEmail = req.user.email;
     const enrollmentId = req.params.enrollmentId;
     const { calification, assistance, status, notes } = req.body;
 
-    if (userRole !== 'professional') {
-      return res.status(403).json({ error: 'Professional access required' });
+    // Check if user is admin
+    const isAdmin = userEmail === 'admin@gmail.com' || userRole === 'admin';
+
+    if (userRole !== 'professional' && !isAdmin) {
+      return res.status(403).json({ error: 'Professional or admin access required' });
     }
 
-    // Get professional ID
-    const professionalQuery = 'SELECT id FROM happyswimming.professionals WHERE user_id = $1';
-    const professionalResult = await pool.query(professionalQuery, [userId]);
+    let professionalId = null;
 
-    if (professionalResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Professional profile not found' });
-    }
-
-    const professionalId = professionalResult.rows[0].id;
-
-    // Verify the professional owns this enrollment
-    const verifyQuery = `
-      SELECT id FROM happyswimming.client_services 
-      WHERE id = $1 AND professional_id = $2
-    `;
-
-    const verifyResult = await pool.query(verifyQuery, [enrollmentId, professionalId]);
-
-    if (verifyResult.rows.length === 0) {
-      return res.status(403).json({ error: 'Access denied. Enrollment not found or not assigned to you.' });
-    }
-
-    // Update the enrollment
-    const updateQuery = `
-      UPDATE happyswimming.client_services 
-      SET calification = $1, assistance = $2, status = $3, notes = $4, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $5 AND professional_id = $6
-      RETURNING id, calification, assistance, status, notes
-    `;
-
-    const updateResult = await pool.query(updateQuery, [
-      calification,
-      assistance,
-      status,
-      notes,
-      enrollmentId,
-      professionalId
-    ]);
-
-    if (updateResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Failed to update student information' });
-    }
-
-    res.json({
-      success: true,
-      message: 'Student information updated successfully',
-      data: updateResult.rows[0]
-    });
-
-  } catch (error) {
-    console.error('Error updating student information:', error);
-    res.status(500).json({ error: 'Failed to update student information' });
-  }
-});
-
-app.get('/api/professional/admin-courses', authenticateToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    console.log('Fetching professional admin courses for user:', userId, 'Role:', userRole);
-
-    if (userRole === 'professional') {
-      // Get professional ID
+    if (userRole === 'professional' && !isAdmin) {
+      // Get professional ID for regular professionals
       const professionalQuery = 'SELECT id FROM happyswimming.professionals WHERE user_id = $1';
       const professionalResult = await pool.query(professionalQuery, [userId]);
 
@@ -1405,81 +1447,127 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
         return res.status(404).json({ error: 'Professional profile not found' });
       }
 
-      const professionalId = professionalResult.rows[0].id;
+      professionalId = professionalResult.rows[0].id;
 
-      // Get all admin courses assigned to this professional with enrolled students
-      const query = `
-      SELECT 
-        cs.id as enrollment_id,
-        cs.client_id,
-        cs.admin_course_id,
-        cs.start_date,
-        cs.end_date,
-        cs.status,
-        cs.price,
-        cs.notes,
-        cs.calification,
-        cs.assistance,
-        cs.kid_name,
-        cs.mother_contact,
-        cs.created_at as enrollment_date,
-        
-        -- Admin course details
-        ac.id as course_id,
-        ac.course_code,
-        ac.name as course_name,
-        ac.description as course_description,
-        ac.client_name,
-        ac.start_date as course_start_date,
-        ac.end_date as course_end_date,
-        ac.status as course_status,
-        ac.max_students,
-        
-        -- Client details
-        CONCAT(cu.first_name, ' ', cu.last_name1) as client_name_full
-        
+      // Verify the professional owns this enrollment
+      const verifyQuery = `
+        SELECT id, admin_course_id, student_count FROM happyswimming.client_services 
+        WHERE id = $1 AND professional_id = $2
+      `;
+
+      const verifyResult = await client.query(verifyQuery, [enrollmentId, professionalId]);
+
+      if (verifyResult.rows.length === 0) {
+        return res.status(403).json({ error: 'Access denied. Enrollment not found or not assigned to you.' });
+      }
+    } else if (isAdmin) {
+      // Admin can cancel any enrollment, just verify it exists
+      const verifyQuery = `
+        SELECT id, professional_id, admin_course_id, student_count FROM happyswimming.client_services 
+        WHERE id = $1
+      `;
+
+      const verifyResult = await client.query(verifyQuery, [enrollmentId]);
+
+      if (verifyResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Enrollment not found.' });
+      }
+
+      professionalId = verifyResult.rows[0].professional_id;
+    }
+
+    // Get enrollment details before deletion
+    const enrollmentQuery = `
+      SELECT cs.admin_course_id, cs.student_count, cs.kid_name
       FROM happyswimming.client_services cs
-      JOIN happyswimming.admin_courses ac ON cs.admin_course_id = ac.id
-      JOIN happyswimming.clients c ON cs.client_id = c.id
-      JOIN happyswimming.users cu ON c.user_id = cu.id
-      WHERE cs.professional_id = $1
-        AND ac.is_historical = FALSE
-      ORDER BY ac.start_date DESC, cs.created_at DESC
+      WHERE cs.id = $1
     `;
 
-      const result = await pool.query(query, [professionalId]);
+    const enrollmentResult = await client.query(enrollmentQuery, [enrollmentId]);
 
-      const enrollments = result.rows.map(row => ({
-        id: row.enrollment_id,
-        admin_course_id: row.admin_course_id,
-        courseId: row.course_id,
-        courseName: row.course_name,
-        courseCode: row.course_code,
-        courseDescription: row.course_description,
-        clientName: row.client_name,
-        courseStartDate: row.course_start_date,
-        courseEndDate: row.course_end_date,
-        courseStatus: row.course_status,
-        maxStudents: row.max_students,
-        kid_name: row.kid_name,
-        mother_contact: row.mother_contact,
-        status: row.status,
-        startDate: row.start_date,
-        endDate: row.end_date,
-        price: parseFloat(row.price),
-        calification: row.calification,
-        assistance: row.assistance,
-        notes: row.notes,
-        enrollmentDate: row.enrollment_date,
-        professionalId: professionalId
-      }));
+    if (enrollmentResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Enrollment not found' });
+    }
 
-      console.log('Professional admin courses result:', enrollments);
-      res.json(enrollments);
+    const enrollment = enrollmentResult.rows[0];
+    const adminCourseId = enrollment.admin_course_id;
+    const studentCount = enrollment.student_count || 1;
 
-    } else if (userRole === 'admin') {
-      // Admin can see all courses and students
-      const query = `
+    // Delete the enrollment from client_services
+    const deleteQuery = `
+      DELETE FROM happyswimming.client_services 
+      WHERE id = $1
+      RETURNING id, kid_name
+    `;
+
+    const deleteResult = await client.query(deleteQuery, [enrollmentId]);
+
+    if (deleteResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Failed to cancel enrollment' });
+    }
+
+    // Update admin_courses.current_students (decrease by student_count)
+    if (adminCourseId) {
+      const updateCourseQuery = `
+        UPDATE happyswimming.admin_courses 
+        SET current_students = GREATEST(0, current_students - $1)
+        WHERE id = $2
+        RETURNING current_students
+      `;
+
+      const updateCourseResult = await client.query(updateCourseQuery, [studentCount, adminCourseId]);
+
+      console.log('Updated course current_students:', updateCourseResult.rows[0]?.current_students);
+    }
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      message: 'Enrollment cancelled successfully',
+      enrollmentId: enrollmentId,
+      kidName: deleteResult.rows[0].kid_name
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error cancelling enrollment:', error);
+    res.status(500).json({ error: 'Failed to cancel enrollment' });
+  } finally {
+    client.release();
+  }
+});
+
+
+// Update the existing GET route for admin courses to include admin access
+app.get('/api/professional/admin-courses', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const userEmail = req.user.email;
+    console.log('Fetching professional admin courses for user:', userId, 'Role:', userRole, 'Email:', userEmail);
+
+    // Check if user is admin
+    const isAdmin = userEmail === 'admin@gmail.com' || userRole === 'admin';
+
+    if (userRole === 'professional' || isAdmin) {
+      let professionalId = null;
+      let query = '';
+      let queryParams = [];
+
+      if (userRole === 'professional' && !isAdmin) {
+        // Get professional ID for regular professionals
+        const professionalQuery = 'SELECT id FROM happyswimming.professionals WHERE user_id = $1';
+        const professionalResult = await pool.query(professionalQuery, [userId]);
+
+        if (professionalResult.rows.length === 0) {
+          return res.status(404).json({ error: 'Professional profile not found' });
+        }
+
+        professionalId = professionalResult.rows[0].id;
+
+        // Query for specific professional
+        query = `
         SELECT 
           cs.id as enrollment_id,
           cs.client_id,
@@ -1494,7 +1582,7 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
           cs.kid_name,
           cs.mother_contact,
           cs.created_at as enrollment_date,
-
+          
           -- Admin course details
           ac.id as course_id,
           ac.course_code,
@@ -1505,19 +1593,74 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
           ac.end_date as course_end_date,
           ac.status as course_status,
           ac.max_students,
-
+          
           -- Client details
-          CONCAT(cu.first_name, ' ', cu.last_name1) as client_name_full
-
+          CONCAT(cu.first_name, ' ', cu.last_name1) as client_name_full,
+          
+          -- Professional details for admin view
+          cs.professional_id,
+          CONCAT(pu.first_name, ' ', pu.last_name1) as professional_name
+          
         FROM happyswimming.client_services cs
         JOIN happyswimming.admin_courses ac ON cs.admin_course_id = ac.id
         JOIN happyswimming.clients c ON cs.client_id = c.id
         JOIN happyswimming.users cu ON c.user_id = cu.id
-        WHERE ac.is_historical = FALSE
+        LEFT JOIN happyswimming.professionals p ON cs.professional_id = p.id
+        LEFT JOIN happyswimming.users pu ON p.user_id = pu.id
+        WHERE cs.professional_id = $1
+          AND ac.is_historical = FALSE
         ORDER BY ac.start_date DESC, cs.created_at DESC
       `;
+        queryParams = [professionalId];
+      } else if (isAdmin) {
+        // Admin can see all courses and students
+        query = `
+          SELECT 
+            cs.id as enrollment_id,
+            cs.client_id,
+            cs.admin_course_id,
+            cs.start_date,
+            cs.end_date,
+            cs.status,
+            cs.price,
+            cs.notes,
+            cs.calification,
+            cs.assistance,
+            cs.kid_name,
+            cs.mother_contact,
+            cs.created_at as enrollment_date,
 
-      const result = await pool.query(query);
+            -- Admin course details
+            ac.id as course_id,
+            ac.course_code,
+            ac.name as course_name,
+            ac.description as course_description,
+            ac.client_name,
+            ac.start_date as course_start_date,
+            ac.end_date as course_end_date,
+            ac.status as course_status,
+            ac.max_students,
+
+            -- Client details
+            CONCAT(cu.first_name, ' ', cu.last_name1) as client_name_full,
+            
+            -- Professional details for admin view
+            cs.professional_id,
+            CONCAT(pu.first_name, ' ', pu.last_name1) as professional_name
+
+          FROM happyswimming.client_services cs
+          JOIN happyswimming.admin_courses ac ON cs.admin_course_id = ac.id
+          JOIN happyswimming.clients c ON cs.client_id = c.id
+          JOIN happyswimming.users cu ON c.user_id = cu.id
+          LEFT JOIN happyswimming.professionals p ON cs.professional_id = p.id
+          LEFT JOIN happyswimming.users pu ON p.user_id = pu.id
+          WHERE ac.is_historical = FALSE
+          ORDER BY ac.start_date DESC, cs.created_at DESC
+        `;
+        queryParams = [];
+      }
+
+      const result = await pool.query(query, queryParams);
 
       const enrollments = result.rows.map(row => ({
         id: row.enrollment_id,
@@ -1540,11 +1683,15 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
         calification: row.calification !== null ? parseFloat(row.calification) : undefined,
         assistance: row.assistance !== null ? parseFloat(row.assistance) : undefined,
         notes: row.notes || '',
-        enrollmentDate: row.enrollment_date
+        enrollmentDate: row.enrollment_date,
+        professionalId: row.professional_id,
+        professionalName: row.professional_name // Include professional name for admin view
       }));
 
-      console.log('Admin courses result:', enrollments);
+      console.log('Admin/Professional courses result:', enrollments.length, 'enrollments found');
       res.json(enrollments);
+    } else {
+      return res.status(403).json({ error: 'Access denied. Professional or admin privileges required.' });
     }
   } catch (error) {
     console.error('Error fetching professional admin courses:', error);
@@ -1552,51 +1699,178 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
   }
 });
 
-// Delete student enrollment
+// DELETE: Cancel/Delete enrollment endpoint
+// Add this to your server.js file
+
 app.delete('/api/professional/students/:enrollmentId', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
+
   try {
-    // Get the enrollment ID from the route parameter
+    await client.query('BEGIN');
+
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const userEmail = req.user.email;
     const enrollmentId = req.params.enrollmentId;
 
-    // Get the professional ID from the authenticated user
-    const userId = req.user.id;
+    console.log('Cancelling enrollment:', enrollmentId, 'for user:', userId, 'role:', userRole);
 
-    // First, check if the professional is authorized to delete this enrollment
-    const checkAuthQuery = `
-      SELECT cs.id 
-      FROM happyswimming.client_services cs
-      JOIN happyswimming.professionals p ON cs.professional_id = p.id
-      WHERE cs.id = $1 
-      AND p.user_id = $2
-    `;
+    // Check if user is admin
+    const isAdmin = userEmail === 'admin@gmail.com' || userRole === 'admin';
 
-    const authResult = await pool.query(checkAuthQuery, [enrollmentId, userId]);
-
-    if (authResult.rows.length === 0) {
-      return res.status(403).json({ error: 'You are not authorized to delete this enrollment' });
+    if (userRole !== 'professional' && !isAdmin) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Professional or admin access required' });
     }
 
-    // Delete the enrollment record from the database
-    const deleteQuery = `
-      DELETE FROM happyswimming.client_services 
-      WHERE id = $1
-      RETURNING id
+    let professionalId = null;
+
+    if (userRole === 'professional' && !isAdmin) {
+      // Get professional ID for regular professionals
+      const professionalQuery = 'SELECT id FROM happyswimming.professionals WHERE user_id = $1';
+      const professionalResult = await client.query(professionalQuery, [userId]);
+
+      if (professionalResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Professional profile not found' });
+      }
+
+      professionalId = professionalResult.rows[0].id;
+
+      // Verify the professional owns this enrollment
+      const verifyQuery = `
+        SELECT id, admin_course_id, student_count FROM happyswimming.client_services 
+        WHERE id = $1 AND professional_id = $2
+      `;
+
+      const verifyResult = await client.query(verifyQuery, [enrollmentId, professionalId]);
+
+      if (verifyResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(403).json({ error: 'Access denied. Enrollment not found or not assigned to you.' });
+      }
+
+      console.log('Professional verification passed for enrollment:', enrollmentId);
+    } else if (isAdmin) {
+      // Admin can cancel any enrollment, just verify it exists
+      const verifyQuery = `
+        SELECT id, professional_id, admin_course_id, student_count FROM happyswimming.client_services 
+        WHERE id = $1
+      `;
+
+      const verifyResult = await client.query(verifyQuery, [enrollmentId]);
+
+      if (verifyResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Enrollment not found.' });
+      }
+
+      professionalId = verifyResult.rows[0].professional_id;
+      console.log('Admin verification passed for enrollment:', enrollmentId);
+    }
+
+    // Get enrollment details before deletion
+    const enrollmentQuery = `
+      SELECT cs.admin_course_id, cs.student_count, cs.kid_name, cs.price
+      FROM happyswimming.client_services cs
+      WHERE cs.id = $1
     `;
 
-    const deleteResult = await pool.query(deleteQuery, [enrollmentId]);
+    const enrollmentResult = await client.query(enrollmentQuery, [enrollmentId]);
 
-    if (deleteResult.rows.length === 0) {
+    if (enrollmentResult.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Enrollment not found' });
     }
 
+    const enrollment = enrollmentResult.rows[0];
+    const adminCourseId = enrollment.admin_course_id;
+    const studentCount = enrollment.student_count || 1;
+    const kidName = enrollment.kid_name;
+    const price = enrollment.price;
+
+    console.log('Enrollment details:', {
+      adminCourseId,
+      studentCount,
+      kidName,
+      price
+    });
+
+    // Delete the enrollment from client_services
+    const deleteQuery = `
+      DELETE FROM happyswimming.client_services 
+      WHERE id = $1
+      RETURNING id, kid_name, admin_course_id
+    `;
+
+    const deleteResult = await client.query(deleteQuery, [enrollmentId]);
+
+    if (deleteResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Failed to cancel enrollment' });
+    }
+
+    console.log('Enrollment deleted successfully:', deleteResult.rows[0]);
+
+    // Update admin_courses.current_students (decrease by student_count)
+    if (adminCourseId) {
+      const updateCourseQuery = `
+        UPDATE happyswimming.admin_courses 
+        SET current_students = GREATEST(0, current_students - $1), updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+        RETURNING id, current_students, max_students
+      `;
+
+      const updateCourseResult = await client.query(updateCourseQuery, [studentCount, adminCourseId]);
+
+      if (updateCourseResult.rows.length > 0) {
+        const courseInfo = updateCourseResult.rows[0];
+        console.log('Updated course current_students:', {
+          courseId: courseInfo.id,
+          currentStudents: courseInfo.current_students,
+          maxStudents: courseInfo.max_students,
+          decreasedBy: studentCount
+        });
+      } else {
+        console.warn('Warning: Could not update course current_students for course ID:', adminCourseId);
+      }
+    } else {
+      console.log('No admin course ID found, skipping course capacity update');
+    }
+
+    await client.query('COMMIT');
+    console.log('Transaction committed successfully');
+
     res.json({
-      message: 'Enrollment deleted successfully',
-      enrollmentId: deleteResult.rows[0].id
+      success: true,
+      message: 'Enrollment cancelled successfully',
+      data: {
+        enrollmentId: enrollmentId,
+        kidName: kidName,
+        adminCourseId: adminCourseId,
+        studentCount: studentCount,
+        refundAmount: price || 0
+      }
     });
 
   } catch (error) {
-    console.error('Error deleting student enrollment:', error);
-    res.status(500).json({ error: 'Failed to delete enrollment' });
+    await client.query('ROLLBACK');
+    console.error('Error cancelling enrollment:', error);
+    console.error('Error stack:', error.stack);
+
+    // Provide more specific error messages
+    if (error.code === '23503') {
+      return res.status(400).json({
+        error: 'Cannot cancel enrollment due to database constraints. Please contact support.'
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to cancel enrollment',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  } finally {
+    client.release();
   }
 });
 
@@ -1713,21 +1987,6 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
  * These routes require admin privileges
  */
 
-// Middleware to check if user is admin
-const isAdmin = (req, res, next) => {
-  // Check if user exists and is authenticated
-  // if (!req.user) {
-  //   return res.status(401).json({ error: 'Authentication required' });
-  // }
-
-  // // Check if user is admin (assuming admins have email admin@gmail.com)
-  // if (req.user.email !== 'admin@gmail.com') {
-  //   return res.status(403).json({ error: 'Admin privileges required' });
-  // }
-
-  // User is admin, proceed
-  next();
-};
 
 // Get all users (admin only)
 app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {

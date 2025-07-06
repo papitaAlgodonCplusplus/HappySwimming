@@ -144,6 +144,7 @@ interface ScheduleEnrollmentDetails {
 })
 export class ServicesManagerComponent implements OnInit, OnDestroy {
   childNames: string[] = [''];
+  childAges: number[] = [0];
   private destroy$ = new Subject<void>();
   private updateTimeout: any;
   private isDevelopment = window.location.hostname === 'localhost';
@@ -214,7 +215,10 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   // Fix 4: Child names handling
   addChildName(): void {
-    this.childNames.push('');
+    if (this.childNames.length < this.selectedStudentCount) {
+      this.childAges.push(0);
+      this.childNames.push('');
+    }
   }
 
   // New method to handle individual child name changes
@@ -223,16 +227,31 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     // Don't auto-update enrollmentForm.kidName here
   }
 
+  onChildAgeChange(index: number, value: number): void {
+    this.childAges[index] = value;
+  }
+
   // Method to concatenate all child names before enrollment
   private updateKidNameForEnrollment(): void {
     this.enrollmentForm.kidName = this.childNames
       .filter(name => name.trim() !== '') // Remove empty names
       .join('\n'); // Use line breaks to separate names
+    // Also update the childAges array to match the number of names
+    this.childAges = this.childAges.slice(0, this.childNames.length);
   }
 
+  // Modified removeChildName method to ensure minimum of 1 name and respect limits
   removeChildName(index: number): void {
     if (this.childNames.length > 1) {
       this.childNames.splice(index, 1);
+      this.childAges.splice(index, 1);
+
+      // If we removed a name and now have fewer than selected students, 
+      // we might want to add an empty slot back (optional)
+      if (this.childNames.length < this.selectedStudentCount) {
+        this.childNames.push('');
+        this.childAges.push(0);
+      }
     }
   }
 
@@ -269,6 +288,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       if (this.childNames.length === 0) {
         this.childNames = [''];
       }
+      this.childAges = this.childAges.slice(0, this.childNames.length);
     }
   }
 
@@ -751,6 +771,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.successMessage = '';
     this.resetEnrollmentForm();
     this.childNames = [''];
+    this.childAges = [0]; // Reset ages array
     this.resetSelections();
   }
 
@@ -779,10 +800,25 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // Handle student count change
+
+  // Modified onStudentCountChange method to adjust child names array
   onStudentCountChange(count: number): void {
     this.selectedStudentCount = count;
     this.enrollmentForm.studentCount = count;
+
+    // Adjust childNames and childAges arrays based on new student count
+    if (count < this.childNames.length) {
+      // Remove excess names and ages
+      this.childNames = this.childNames.slice(0, count);
+      this.childAges = this.childAges.slice(0, count);
+    } else if (count > this.childNames.length) {
+      // Add empty slots for additional names
+      while (this.childNames.length < count) {
+        this.childNames.push('');
+        this.childAges.push(0);
+      }
+    }
+
     this.calculatePrice();
     this.cdr.detectChanges();
   }
@@ -919,7 +955,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.cancelEnrollmentById(this.selectedEnrollment.id);
   }
 
-  // Reset enrollment form
+
+  // Modified resetEnrollmentForm method to initialize properly
   resetEnrollmentForm(): void {
     this.enrollmentForm = {
       kidName: '',
@@ -930,7 +967,11 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       motherContact: '',
       studentCount: 1
     };
+
+    // Reset to match the default student count
     this.childNames = [''];
+    this.childAges = [0];
+    this.selectedStudentCount = 1;
     this.resetSelections();
   }
 
@@ -1035,6 +1076,9 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     if (this.selectedCourse?.type === 'admin_course' && this.userRole === 'client') {
       if (!this.enrollmentForm.kidName.trim()) {
         this.enrollmentForm.kidName = this.childNames.join(', ').trim();
+      }
+      for (let i = 0; i < this.childNames.length; i++) {
+        this.childNames[i] = this.childNames[i] + ' (' + (this.childAges[i] || 0) + ')';
       }
       if (!this.enrollmentForm.motherContact.trim()) {
         this.error = 'Mother contact is required.';

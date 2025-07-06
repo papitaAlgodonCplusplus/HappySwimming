@@ -1,4 +1,4 @@
-// src/app/students-management/students-management.component.ts (Updated for Admin Courses)
+// src/app/students-management/students-management.component.ts (Final Updated)
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -18,6 +18,7 @@ interface Student {
   id: number | string;
   enrollmentId: number;
   kidName: string;
+  kidNames: string[]; // Multiple children names
   motherContact: string;
   status: 'pending' | 'approved' | 'completed' | 'cancelled' | 'active';
   enrollmentDate?: Date;
@@ -30,6 +31,8 @@ interface Student {
   courseName: string;
   courseCode: string;
   clientName: string;
+  professionalId?: number;
+  professionalName?: string; // For admin view
   price: number;
 }
 
@@ -42,6 +45,7 @@ interface AdminCourse {
   startDate: string;
   endDate: string;
   professionalId: number;
+  professionalName?: string; // For admin view
   status: 'active' | 'completed' | 'cancelled';
   maxStudents: number;
   currentStudents: number;
@@ -56,6 +60,30 @@ interface CalendarDay {
   isToday: boolean;
   courses: AdminCourse[];
   hasEvents: boolean;
+}
+
+interface Professional {
+  id: number;
+  name: string;
+  email: string;
+  identificationNumber: string;
+  city: string;
+  country: string;
+}
+
+interface AdminStatistics {
+  totalStudents: number;
+  totalProfessionalsWithStudents: number;
+  totalActiveCourses: number;
+  averageCalification: string;
+  averageAssistance: string;
+  enrollmentsByStatus: {
+    pending: number;
+    approved: number;
+    active: number;
+    completed: number;
+    cancelled: number;
+  };
 }
 
 @Component({
@@ -86,6 +114,10 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   // Course and student data
   adminCourses: AdminCourse[] = [];
   allStudents: Student[] = [];
+  professionals: Professional[] = []; // For admin filtering
+
+  // Admin statistics
+  adminStatistics: AdminStatistics | null = null;
 
   // Calendar data
   currentDate: Date = new Date();
@@ -99,6 +131,10 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   error: string = '';
   successMessage: string = '';
 
+  // Cancellation state
+  showCancelModal: boolean = false;
+  studentToCancel: Student | null = null;
+
   // Edit form data
   editForm = {
     calification: 0,
@@ -110,6 +146,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   // Filter options
   selectedCourse: string = 'all';
   selectedStatus: string = 'all';
+  selectedProfessional: string = 'all'; // New filter for admin
   selectedMonth: number = new Date().getMonth();
   selectedYear: number = new Date().getFullYear();
 
@@ -122,6 +159,12 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     this.getUserInfo();
     this.loadProfessionalCourses();
     this.generateCalendar();
+    
+    // Load additional data for admin
+    if (this.isAdmin) {
+      this.loadProfessionalsList();
+      this.loadAdminStatistics();
+    }
   }
 
   ngOnDestroy(): void {
@@ -133,6 +176,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     this.authService.getCurrentUser().subscribe(user => {
       this.isAdmin = user.email === 'admin@gmail.com';
       this.isProfessional = !this.isAdmin;
+      this.cdr.detectChanges();
     })
   }
 
@@ -141,7 +185,43 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     return new HttpHeaders().set('Authorization', `Bearer ${token}`);
   }
 
-  // Load courses assigned to the professional
+  // Load professionals list for admin filtering
+  loadProfessionalsList(): void {
+    if (!this.isAdmin) return;
+
+    this.http.get<Professional[]>(`${this.apiUrl}/admin/professionals-list`, {
+      headers: this.getAuthHeaders()
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Error loading professionals list:', error);
+        return of([]);
+      })
+    ).subscribe(professionals => {
+      this.professionals = professionals;
+      this.cdr.detectChanges();
+    });
+  }
+
+  // Load admin statistics
+  loadAdminStatistics(): void {
+    if (!this.isAdmin) return;
+
+    this.http.get<AdminStatistics>(`${this.apiUrl}/admin/students-statistics`, {
+      headers: this.getAuthHeaders()
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Error loading admin statistics:', error);
+        return of(null);
+      })
+    ).subscribe(statistics => {
+      this.adminStatistics = statistics;
+      this.cdr.detectChanges();
+    });
+  }
+
+  // Load courses assigned to the professional or all courses for admin
   loadProfessionalCourses(): void {
     this.isLoading = true;
     this.error = '';
@@ -164,7 +244,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Process course data and organize students
+  // Process course data and organize students - UPDATED for multiple kid names
   private processCourseData(data: any[]): void {
     this.adminCourses = [];
     this.allStudents = [];
@@ -189,6 +269,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
           startDate: enrollment.courseStartDate || enrollment.startDate,
           endDate: enrollment.courseEndDate || enrollment.endDate,
           professionalId: enrollment.professionalId || 0,
+          professionalName: enrollment.professionalName || 'Unknown Professional',
           status: enrollment.courseStatus || 'active',
           maxStudents: enrollment.maxStudents || 6,
           currentStudents: 0,
@@ -199,28 +280,69 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
 
       const course = courseMap.get(courseId)!;
 
-      const student: Student = {
-        id: enrollment.id,
-        enrollmentId: enrollment.id,
-        kidName: enrollment.kid_name || enrollment.kidName || 'Unknown Student',
-        motherContact: enrollment.mother_contact || enrollment.motherContact || '',
-        status: enrollment.status || 'pending',
-        enrollmentDate: enrollment.enrollmentDate ? new Date(enrollment.enrollmentDate) : undefined,
-        startDate: enrollment.startDate ? new Date(enrollment.startDate) : undefined,
-        endDate: enrollment.endDate ? new Date(enrollment.endDate) : undefined,
-        calification: enrollment.calification || 0,
-        assistance: enrollment.assistance || 0,
-        notes: enrollment.notes || '',
-        courseId: courseId,
-        courseName: course.name,
-        courseCode: course.courseCode,
-        clientName: course.clientName,
-        price: parseFloat(enrollment.price || 0)
-      };
+      // Handle multiple kid names separated by newlines
+      const kidNameRaw = enrollment.kid_name || enrollment.kidName || 'Unknown Student';
+      const kidNames = kidNameRaw.split('\n').map((name: string) => name.trim()).filter((name: string) => name.length > 0);
+      
+      // Create a student entry for each kid name or single entry if no newlines
+      if (kidNames.length > 1) {
+        // Multiple children - create separate visual entries but same enrollment ID
+        kidNames.forEach((kidName: string, index: number) => {
+          const student: Student = {
+            id: `${enrollment.id}_${index}`, // Unique display ID
+            enrollmentId: enrollment.id, // Same enrollment ID for all
+            kidName: kidName,
+            kidNames: kidNames, // Store all names
+            motherContact: enrollment.mother_contact || enrollment.motherContact || '',
+            status: enrollment.status || 'pending',
+            enrollmentDate: enrollment.enrollmentDate ? new Date(enrollment.enrollmentDate) : undefined,
+            startDate: enrollment.startDate ? new Date(enrollment.startDate) : undefined,
+            endDate: enrollment.endDate ? new Date(enrollment.endDate) : undefined,
+            calification: enrollment.calification || 0,
+            assistance: enrollment.assistance || 0,
+            notes: enrollment.notes || '',
+            courseId: courseId,
+            courseName: course.name,
+            courseCode: course.courseCode,
+            clientName: course.clientName,
+            professionalId: enrollment.professionalId,
+            professionalName: enrollment.professionalName,
+            price: parseFloat(enrollment.price || 0)
+          };
 
-      course.students.push(student);
-      course.currentStudents++;
-      this.allStudents.push(student);
+          course.students.push(student);
+          this.allStudents.push(student);
+        });
+        // Only count as one enrollment for current students
+        course.currentStudents++;
+      } else {
+        // Single child
+        const student: Student = {
+          id: enrollment.id,
+          enrollmentId: enrollment.id,
+          kidName: kidNames[0] || 'Unknown Student',
+          kidNames: kidNames,
+          motherContact: enrollment.mother_contact || enrollment.motherContact || '',
+          status: enrollment.status || 'pending',
+          enrollmentDate: enrollment.enrollmentDate ? new Date(enrollment.enrollmentDate) : undefined,
+          startDate: enrollment.startDate ? new Date(enrollment.startDate) : undefined,
+          endDate: enrollment.endDate ? new Date(enrollment.endDate) : undefined,
+          calification: enrollment.calification || 0,
+          assistance: enrollment.assistance || 0,
+          notes: enrollment.notes || '',
+          courseId: courseId,
+          courseName: course.name,
+          courseCode: course.courseCode,
+          clientName: course.clientName,
+          professionalId: enrollment.professionalId,
+          professionalName: enrollment.professionalName,
+          price: parseFloat(enrollment.price || 0)
+        };
+
+        course.students.push(student);
+        course.currentStudents++;
+        this.allStudents.push(student);
+      }
     });
 
     this.adminCourses = Array.from(courseMap.values());
@@ -262,7 +384,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
 
   // Get courses that are active on a specific date
   private getCoursesForDate(date: Date): AdminCourse[] {
-    return this.adminCourses.filter(course => {
+    return this.filteredCourses.filter(course => {
       const startDate = new Date(course.startDate);
       const endDate = new Date(course.endDate);
       return date >= startDate && date <= endDate;
@@ -316,13 +438,15 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       })
     ).subscribe(response => {
       if (response !== null) {
-        // Update local data
-        if (this.editingStudent) {
-          this.editingStudent.calification = this.editForm.calification;
-          this.editingStudent.assistance = this.editForm.assistance;
-          this.editingStudent.status = this.editForm.status;
-          this.editingStudent.notes = this.editForm.notes;
-        }
+        // Update local data for all students with same enrollment ID
+        this.allStudents.forEach(student => {
+          if (student.enrollmentId === this.editingStudent!.enrollmentId) {
+            student.calification = this.editForm.calification;
+            student.assistance = this.editForm.assistance;
+            student.status = this.editForm.status;
+            student.notes = this.editForm.notes;
+          }
+        });
 
         this.successMessage = 'Student information updated successfully.';
         this.cancelEdit();
@@ -330,6 +454,61 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       this.isLoading = false;
       this.cdr.detectChanges();
     });
+  }
+
+  // Cancel enrollment - NEW FUNCTIONALITY
+  showCancelConfirmation(student: Student): void {
+    this.studentToCancel = student;
+    this.showCancelModal = true;
+  }
+
+  confirmCancelEnrollment(): void {
+    if (!this.studentToCancel) return;
+
+    this.isLoading = true;
+    this.error = '';
+
+    this.http.delete(`${this.apiUrl}/professional/students/${this.studentToCancel.enrollmentId}`, {
+      headers: this.getAuthHeaders()
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Error cancelling enrollment:', error);
+        this.error = 'Failed to cancel enrollment. Please try again.';
+        this.isLoading = false;
+        this.cdr.detectChanges();
+        return of(null);
+      })
+    ).subscribe(response => {
+      if (response !== null) {
+        // Remove all students with the same enrollment ID from local data
+        const enrollmentId = this.studentToCancel!.enrollmentId;
+        
+        // Remove from all students
+        this.allStudents = this.allStudents.filter(s => s.enrollmentId !== enrollmentId);
+        
+        // Remove from courses and update current students count
+        this.adminCourses.forEach(course => {
+          const removedStudents = course.students.filter(s => s.enrollmentId === enrollmentId);
+          course.students = course.students.filter(s => s.enrollmentId !== enrollmentId);
+          
+          // Decrease current students count (only once per enrollment, not per kid)
+          if (removedStudents.length > 0) {
+            course.currentStudents = Math.max(0, course.currentStudents - 1);
+          }
+        });
+
+        this.successMessage = 'Enrollment cancelled successfully.';
+        this.closeCancelModal();
+      }
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    });
+  }
+
+  closeCancelModal(): void {
+    this.showCancelModal = false;
+    this.studentToCancel = null;
   }
 
   // Cancel editing
@@ -392,14 +571,16 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     this.viewMode = mode;
   }
 
-  // Get filtered courses
+  // Get filtered courses with admin professional filter
   get filteredCourses(): AdminCourse[] {
     return this.adminCourses.filter(course => {
       const matchesCourse = this.selectedCourse === 'all' || course.id.toString() === this.selectedCourse;
       const matchesStatus = this.selectedStatus === 'all' ||
         course.students.some(student => student.status === this.selectedStatus);
+      const matchesProfessional = this.selectedProfessional === 'all' || 
+        course.professionalId?.toString() === this.selectedProfessional;
 
-      return matchesCourse && matchesStatus;
+      return matchesCourse && matchesStatus && matchesProfessional;
     });
   }
 
@@ -421,6 +602,10 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   // Refresh data
   refreshData(): void {
     this.loadProfessionalCourses();
+    if (this.isAdmin) {
+      this.loadProfessionalsList();
+      this.loadAdminStatistics();
+    }
   }
 
   // Track functions for ngFor
@@ -434,5 +619,120 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
 
   trackByDayDate(index: number, day: CalendarDay): string {
     return day.date.toDateString();
+  }
+
+  // Admin-specific methods
+  getTotalStudentsCount(): number {
+    return this.allStudents.length;
+  }
+
+  getActiveCourses(): AdminCourse[] {
+    return this.adminCourses.filter(course => course.status === 'active');
+  }
+
+  getPendingStudents(): Student[] {
+    return this.allStudents.filter(student => student.status === 'pending');
+  }
+
+  getAverageCalification(): number {
+    const studentsWithGrades = this.allStudents.filter(s => s.calification && s.calification > 0);
+    if (studentsWithGrades.length === 0) return 0;
+    
+    const sum = studentsWithGrades.reduce((acc, student) => acc + (student.calification || 0), 0);
+    return parseFloat((sum / studentsWithGrades.length).toFixed(2));
+  }
+
+  getAverageAssistance(): number {
+    const studentsWithAssistance = this.allStudents.filter(s => s.assistance && s.assistance > 0);
+    if (studentsWithAssistance.length === 0) return 0;
+    
+    const sum = studentsWithAssistance.reduce((acc, student) => acc + (student.assistance || 0), 0);
+    return parseFloat((sum / studentsWithAssistance.length).toFixed(2));
+  }
+
+  // Get professional name by ID (for admin view)
+  getProfessionalName(professionalId: number): string {
+    const professional = this.professionals.find(p => p.id === professionalId);
+    return professional?.name || 'Unknown Professional';
+  }
+
+  // Export data functionality (for admin)
+  exportStudentData(): void {
+    if (!this.isAdmin) return;
+    
+    const csvData = this.generateCSVData();
+    this.downloadCSV(csvData, 'students-data.csv');
+  }
+
+  private generateCSVData(): string {
+    const headers = [
+      'Student Name',
+      'Course Name',
+      'Course Code',
+      'Client Name',
+      'Professional Name',
+      'Mother Contact',
+      'Status',
+      'Calification',
+      'Assistance',
+      'Start Date',
+      'End Date',
+      'Price',
+      'Notes'
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      ...this.allStudents.map(student => [
+        `"${student.kidName}"`,
+        `"${student.courseName}"`,
+        `"${student.courseCode}"`,
+        `"${student.clientName}"`,
+        `"${student.professionalName || this.getProfessionalName(student.professionalId || 0)}"`,
+        `"${student.motherContact}"`,
+        `"${student.status}"`,
+        student.calification || 0,
+        student.assistance || 0,
+        student.startDate ? student.startDate.toLocaleDateString() : '',
+        student.endDate ? student.endDate.toLocaleDateString() : '',
+        student.price,
+        `"${(student.notes || '').replace(/"/g, '""')}"`
+      ].join(','))
+    ].join('\n');
+
+    return csvContent;
+  }
+
+  private downloadCSV(csvContent: string, filename: string): void {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
+
+  // Check if user can cancel enrollments
+  canCancelEnrollment(): boolean {
+    return this.isAdmin || this.isProfessional;
+  }
+
+  // Get display name for multiple children
+  getChildrenDisplayNames(student: Student): string {
+    if (student.kidNames && student.kidNames.length > 1) {
+      return student.kidNames.join(', ');
+    }
+    return student.kidName;
+  }
+
+  // Check if enrollment has multiple children
+  hasMultipleChildren(student: Student): boolean {
+    return student.kidNames && student.kidNames.length > 1;
   }
 }

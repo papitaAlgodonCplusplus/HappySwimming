@@ -1,10 +1,79 @@
-<!-- src/app/students-management/students-management.component.html (Updated for Admin Courses) -->
+<!-- src/app/students-management/students-management.component.html (Final Updated) -->
 <app-header></app-header>
 
 <div class="students-management-container">
   <div class="page-header">
     <h1 class="page-title">{{ 'studentsManagement.title' | translate }}</h1>
-    <p class="page-subtitle">{{ 'studentsManagement.professionalSubtitle' | translate }}</p>
+    <p class="page-subtitle" *ngIf="!isAdmin">{{ 'studentsManagement.professionalSubtitle' | translate }}</p>
+    <p class="page-subtitle" *ngIf="isAdmin">{{ 'studentsManagement.adminSubtitle' | translate }}</p>
+  </div>
+
+  <!-- Admin Statistics Dashboard -->
+  <div *ngIf="isAdmin && adminStatistics" class="admin-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-content">
+          <h3>{{ adminStatistics.totalStudents }}</h3>
+          <p>{{ 'studentsManagement.totalStudents' | translate }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🎓</div>
+        <div class="stat-content">
+          <h3>{{ adminStatistics.totalActiveCourses }}</h3>
+          <p>{{ 'studentsManagement.activeCourses' | translate }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">👨‍🏫</div>
+        <div class="stat-content">
+          <h3>{{ adminStatistics.totalProfessionalsWithStudents }}</h3>
+          <p>{{ 'studentsManagement.activeProfessionals' | translate }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-content">
+          <h3>{{ adminStatistics.averageCalification }}</h3>
+          <p>{{ 'studentsManagement.avgCalification' | translate }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📈</div>
+        <div class="stat-content">
+          <h3>{{ adminStatistics.averageAssistance }}%</h3>
+          <p>{{ 'studentsManagement.avgAssistance' | translate }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enrollment Status Overview -->
+    <div class="status-overview">
+      <h3>{{ 'studentsManagement.enrollmentStatusOverview' | translate }}</h3>
+      <div class="status-stats">
+        <div class="status-stat pending">
+          <span class="count">{{ adminStatistics.enrollmentsByStatus.pending }}</span>
+          <span class="label">{{ 'studentsManagement.pending' | translate }}</span>
+        </div>
+        <div class="status-stat approved">
+          <span class="count">{{ adminStatistics.enrollmentsByStatus.approved }}</span>
+          <span class="label">{{ 'studentsManagement.approved' | translate }}</span>
+        </div>
+        <div class="status-stat active">
+          <span class="count">{{ adminStatistics.enrollmentsByStatus.active }}</span>
+          <span class="label">{{ 'studentsManagement.active' | translate }}</span>
+        </div>
+        <div class="status-stat completed">
+          <span class="count">{{ adminStatistics.enrollmentsByStatus.completed }}</span>
+          <span class="label">{{ 'studentsManagement.completed' | translate }}</span>
+        </div>
+        <div class="status-stat cancelled">
+          <span class="count">{{ adminStatistics.enrollmentsByStatus.cancelled }}</span>
+          <span class="label">{{ 'studentsManagement.cancelled' | translate }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Error and Success Messages -->
@@ -40,21 +109,28 @@
           {{ 'studentsManagement.calendarView' | translate }}
         </button>
       </div>
-      
-      <button class="btn btn-primary" (click)="refreshData()" [disabled]="isLoading">
-        <span class="btn-icon">🔄</span>
-        {{ 'studentsManagement.refresh' | translate }}
-      </button>
     </div>
 
     <!-- Filters -->
     <div class="filters-container">
+      <!-- Professional Filter (Admin Only) -->
+      <div *ngIf="isAdmin" class="filter-group">
+        <label for="professionalFilter">{{ 'studentsManagement.filterByProfessional' | translate }}</label>
+        <select id="professionalFilter" [(ngModel)]="selectedProfessional" class="form-control">
+          <option value="all">{{ 'studentsManagement.allProfessionals' | translate }}</option>
+          <option *ngFor="let professional of professionals" [value]="professional.id">
+            {{ professional.name }} ({{ professional.city }})
+          </option>
+        </select>
+      </div>
+
       <div class="filter-group">
         <label for="courseFilter">{{ 'studentsManagement.filterByCourse' | translate }}</label>
         <select id="courseFilter" [(ngModel)]="selectedCourse" class="form-control">
           <option value="all">{{ 'studentsManagement.allCourses' | translate }}</option>
           <option *ngFor="let course of adminCourses" [value]="course.id">
             {{ course.name }} - {{ course.clientName }}
+            <span *ngIf="isAdmin"> ({{ course.professionalName }})</span>
           </option>
         </select>
       </div>
@@ -101,6 +177,8 @@
             <h3 class="course-title">{{ course.name }}</h3>
             <span class="course-code">{{ course.courseCode }}</span>
             <span class="client-name">{{ course.clientName }}</span>
+            <!-- Professional Name for Admin -->
+            <span *ngIf="isAdmin" class="professional-name">{{ course.professionalName }}</span>
           </div>
           <div class="course-info">
             <span class="course-dates">{{ course.startDate | date:'short' }}</span>
@@ -116,7 +194,9 @@
               <tr>
                 <th>{{ 'studentsManagement.studentName' | translate }}</th>
                 <th>{{ 'studentsManagement.motherContact' | translate }}</th>
+                <th *ngIf="isAdmin">{{ 'studentsManagement.professional' | translate }}</th>
                 <th>{{ 'studentsManagement.startDate' | translate }}</th>
+                <th>{{ 'studentsManagement.status' | translate }}</th>
                 <th>{{ 'studentsManagement.calification' | translate }}</th>
                 <th>{{ 'studentsManagement.assistance' | translate }}</th>
                 <th>{{ 'studentsManagement.actions' | translate }}</th>
@@ -124,12 +204,29 @@
             </thead>
             <tbody>
               <tr *ngFor="let student of course.students; trackBy: trackByStudentId">
-                <td>{{ student.kidName }}</td>
+                <td>
+                  <div class="student-name-container">
+                    <span class="student-name">{{ student.kidName }}</span>
+                    <span *ngIf="hasMultipleChildren(student)" class="multiple-children-indicator" 
+                          [title]="'studentsManagement.multipleChildren' | translate">
+                      👨‍👩‍👧‍👦
+                    </span>
+                    <small *ngIf="hasMultipleChildren(student)" class="children-names">
+                      {{ 'studentsManagement.allChildren' | translate }}: {{ getChildrenDisplayNames(student) }}
+                    </small>
+                  </div>
+                </td>
                 <td>{{ student.motherContact }}</td>
+                <td *ngIf="isAdmin">{{ student.professionalName || ('studentsManagement.unknown' | translate) }}</td>
                 <td>{{ student.startDate | date:'short' }}</td>
                 <td>
+                  <span class="status-badge" [ngClass]="getStatusClass(student.status)">
+                    {{ 'studentsManagement.' + student.status | translate }}
+                  </span>
+                </td>
+                <td>
                   <span class="calification-badge" [ngClass]="student.calification !== undefined && student.calification !== null ? (student.calification >= 7 ? 'good' : student.calification >= 5 ? 'average' : 'needs-improvement') : 'needs-improvement'">
-                    {{ student.calification != null ? student.calification : 'N/A' }}
+                    {{ student.calification != null ? student.calification : ('studentsManagement.notAvailable' | translate) }}
                   </span>
                 </td>
                 <td>
@@ -138,10 +235,19 @@
                   </span>
                 </td>
                 <td>
-                  <button class="btn btn-primary btn-sm" (click)="editStudent(student)">
-                    <span class="btn-icon">✏️</span>
-                    {{ 'studentsManagement.edit' | translate }}
-                  </button>
+                  <div class="action-buttons-cell">
+                    <button class="btn btn-primary btn-sm" (click)="editStudent(student)">
+                      <span class="btn-icon">✏️</span>
+                      {{ 'studentsManagement.edit' | translate }}
+                    </button>
+                    <button *ngIf="canCancelEnrollment()" 
+                            class="btn btn-danger btn-sm" 
+                            (click)="showCancelConfirmation(student)"
+                            [disabled]="student.status === 'cancelled'">
+                      <span class="btn-icon">❌</span>
+                      {{ 'studentsManagement.cancel' | translate }}
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -179,7 +285,7 @@
               <div 
                 *ngFor="let course of day.courses" 
                 class="event-dot"
-                [title]="course.name + ' - ' + course.clientName">
+                [title]="course.name + ' - ' + course.clientName + (isAdmin ? ' (' + course.professionalName + ')' : '')">
                 {{ course.name.substring(0, 1) }}
               </div>
             </div>
@@ -193,7 +299,9 @@
         <div class="legend-items">
           <div *ngFor="let course of adminCourses" class="legend-item">
             <div class="legend-color" [style.background-color]="'hsl(' + (course.id * 60) + ', 70%, 60%)'"></div>
-            <span>{{ course.name }} - {{ course.clientName }}</span>
+            <span>{{ course.name }} - {{ course.clientName }}
+              <span *ngIf="isAdmin" class="legend-professional">({{ course.professionalName }})</span>
+            </span>
           </div>
         </div>
       </div>
@@ -211,12 +319,32 @@
       <div class="modal-body">
         <div *ngIf="editingStudent" class="student-info">
           <h3>{{ editingStudent.kidName }}</h3>
+          <div *ngIf="hasMultipleChildren(editingStudent)" class="multiple-children-info">
+            <p><strong>{{ 'studentsManagement.allChildren' | translate }}:</strong> {{ getChildrenDisplayNames(editingStudent) }}</p>
+          </div>
           <p><strong>{{ 'studentsManagement.course' | translate }}:</strong> {{ editingStudent.courseName }}</p>
           <p><strong>{{ 'studentsManagement.client' | translate }}:</strong> {{ editingStudent.clientName }}</p>
+          <p *ngIf="isAdmin"><strong>{{ 'studentsManagement.professional' | translate }}:</strong> {{ editingStudent.professionalName || ('studentsManagement.unknown' | translate) }}</p>
           <p><strong>{{ 'studentsManagement.motherContact' | translate }}:</strong> {{ editingStudent.motherContact }}</p>
         </div>
 
         <form class="edit-form" (ngSubmit)="saveStudentChanges()">
+          <!-- Status -->
+          <div class="form-group">
+            <label for="status">{{ 'studentsManagement.status' | translate }}</label>
+            <select 
+              id="status"
+              [(ngModel)]="editForm.status"
+              name="status"
+              class="form-control">
+              <option value="pending">{{ 'studentsManagement.pending' | translate }}</option>
+              <option value="approved">{{ 'studentsManagement.approved' | translate }}</option>
+              <option value="active">{{ 'studentsManagement.active' | translate }}</option>
+              <option value="completed">{{ 'studentsManagement.completed' | translate }}</option>
+              <option value="cancelled">{{ 'studentsManagement.cancelled' | translate }}</option>
+            </select>
+          </div>
+
           <!-- Calification -->
           <div class="form-group">
             <label for="calification">{{ 'studentsManagement.calification' | translate }} (0-10)</label>
@@ -267,6 +395,52 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cancel Enrollment Confirmation Modal -->
+  <div *ngIf="showCancelModal" class="modal-overlay" (click)="closeCancelModal()">
+    <div class="modal-content cancel-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ 'studentsManagement.confirmCancellation' | translate }}</h2>
+        <button class="modal-close" (click)="closeCancelModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="studentToCancel" class="cancellation-info">
+          <div class="warning-icon">⚠️</div>
+          <h3>{{ 'studentsManagement.cancellationWarning' | translate }}</h3>
+          
+          <div class="student-details">
+            <p><strong>{{ 'studentsManagement.studentName' | translate }}:</strong> {{ studentToCancel.kidName }}</p>
+            <div *ngIf="hasMultipleChildren(studentToCancel)">
+              <p><strong>{{ 'studentsManagement.allChildren' | translate }}:</strong> {{ getChildrenDisplayNames(studentToCancel) }}</p>
+            </div>
+            <p><strong>{{ 'studentsManagement.course' | translate }}:</strong> {{ studentToCancel.courseName }}</p>
+            <p><strong>{{ 'studentsManagement.motherContact' | translate }}:</strong> {{ studentToCancel.motherContact }}</p>
+          </div>
+
+          <div class="cancellation-consequences">
+            <h4>{{ 'studentsManagement.consequences' | translate }}:</h4>
+            <ul>
+              <li>{{ 'studentsManagement.enrollmentWillBeDeleted' | translate }}</li>
+              <li>{{ 'studentsManagement.courseCapacityWillIncrease' | translate }}</li>
+              <li *ngIf="hasMultipleChildren(studentToCancel)">{{ 'studentsManagement.allChildrenWillBeRemoved' | translate }}</li>
+              <li>{{ 'studentsManagement.actionCannotBeUndone' | translate }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeCancelModal()" [disabled]="isLoading">
+            {{ 'studentsManagement.keepEnrollment' | translate }}
+          </button>
+          <button type="button" class="btn btn-danger" (click)="confirmCancelEnrollment()" [disabled]="isLoading">
+            <span *ngIf="isLoading" class="loading-spinner"></span>
+            {{ 'studentsManagement.confirmCancel' | translate }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
