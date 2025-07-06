@@ -129,7 +129,7 @@
         <select id="courseFilter" [(ngModel)]="selectedCourse" class="form-control">
           <option value="all">{{ 'studentsManagement.allCourses' | translate }}</option>
           <option *ngFor="let course of adminCourses" [value]="course.id">
-            {{ course.name }} - {{ course.clientName }}
+            {{ course.name | translate }} - {{ course.clientName }}
             <span *ngIf="isAdmin"> ({{ course.professionalName }})</span>
           </option>
         </select>
@@ -174,7 +174,7 @@
         <!-- Course Header -->
         <div class="course-header" (click)="toggleCourse(course)">
           <div class="course-title-section">
-            <h3 class="course-title">{{ course.name }}</h3>
+            <h3 class="course-title">{{ course.name | translate }}</h3>
             <span class="course-code">{{ course.courseCode }}</span>
             <span class="client-name">{{ course.clientName }}</span>
             <!-- Professional Name for Admin -->
@@ -182,7 +182,6 @@
           </div>
           <div class="course-info">
             <span class="course-dates">{{ course.startDate | date:'mediumDate' }}</span>
-            <span class="student-count">{{ course.currentStudents }}/{{ course.maxStudents }} {{ 'studentsManagement.students' | translate }}</span>
             <span class="expand-icon">{{ course.expanded ? '▼' : '▶' }}</span>
           </div>
         </div>
@@ -299,7 +298,7 @@
         <div class="legend-items">
           <div *ngFor="let course of adminCourses" class="legend-item">
             <div class="legend-color" [style.background-color]="'hsl(' + (course.id * 60) + ', 70%, 60%)'"></div>
-            <span>{{ course.name }} - {{ course.clientName }}
+            <span>{{ course.name | translate }} - {{ course.clientName }}
               <span *ngIf="isAdmin" class="legend-professional">({{ course.professionalName }})</span>
             </span>
           </div>
