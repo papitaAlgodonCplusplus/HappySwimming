@@ -278,6 +278,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.http.post(`${this.apiUrl}/should-authenticate`, {}).subscribe();
     this.getUserInfo();
     this.loadAvailableCourses();
     this.loadEnrollments();

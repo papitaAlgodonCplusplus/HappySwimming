@@ -107,6 +107,10 @@ app.post('/api/should-not-authenticate', (req, res) => {
   res.json({ message: 'This route does not require authentication' });
 });
 
+app.post('/api/should-authenticate', (req, res) => {
+  global_should_not_authenticate = false;
+  res.json({ message: 'This route requires authentication' });
+});
 
 // Middleware to check if user is admin
 const isAdmin = (req, res, next) => {

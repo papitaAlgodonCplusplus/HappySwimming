@@ -104,7 +104,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   private apiUrl = this.isDevelopment
     ? 'http://localhost:10000/api'     // Development URL
     : 'https://happyswimming.onrender.com/api';   // Production URL
-    
+
   // User information
   userRole: string | null = null;
   userId: number | null = null;
@@ -156,10 +156,11 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    this.http.post(`${this.apiUrl}/should-authenticate`, {}).subscribe();
     this.getUserInfo();
     this.loadProfessionalCourses();
     this.generateCalendar();
-    
+
     // Load additional data for admin
     if (this.isAdmin) {
       this.loadProfessionalsList();
@@ -283,7 +284,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       // Handle multiple kid names separated by newlines
       const kidNameRaw = enrollment.kid_name || enrollment.kidName || 'Unknown Student';
       const kidNames = kidNameRaw.split('\n').map((name: string) => name.trim()).filter((name: string) => name.length > 0);
-      
+
       // Create a student entry for each kid name or single entry if no newlines
       if (kidNames.length > 1) {
         // Multiple children - create separate visual entries but same enrollment ID
@@ -483,15 +484,15 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       if (response !== null) {
         // Remove all students with the same enrollment ID from local data
         const enrollmentId = this.studentToCancel!.enrollmentId;
-        
+
         // Remove from all students
         this.allStudents = this.allStudents.filter(s => s.enrollmentId !== enrollmentId);
-        
+
         // Remove from courses and update current students count
         this.adminCourses.forEach(course => {
           const removedStudents = course.students.filter(s => s.enrollmentId === enrollmentId);
           course.students = course.students.filter(s => s.enrollmentId !== enrollmentId);
-          
+
           // Decrease current students count (only once per enrollment, not per kid)
           if (removedStudents.length > 0) {
             course.currentStudents = Math.max(0, course.currentStudents - 1);
@@ -577,7 +578,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       const matchesCourse = this.selectedCourse === 'all' || course.id.toString() === this.selectedCourse;
       const matchesStatus = this.selectedStatus === 'all' ||
         course.students.some(student => student.status === this.selectedStatus);
-      const matchesProfessional = this.selectedProfessional === 'all' || 
+      const matchesProfessional = this.selectedProfessional === 'all' ||
         course.professionalId?.toString() === this.selectedProfessional;
 
       return matchesCourse && matchesStatus && matchesProfessional;
@@ -637,7 +638,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   getAverageCalification(): number {
     const studentsWithGrades = this.allStudents.filter(s => s.calification && s.calification > 0);
     if (studentsWithGrades.length === 0) return 0;
-    
+
     const sum = studentsWithGrades.reduce((acc, student) => acc + (student.calification || 0), 0);
     return parseFloat((sum / studentsWithGrades.length).toFixed(2));
   }
@@ -645,7 +646,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   getAverageAssistance(): number {
     const studentsWithAssistance = this.allStudents.filter(s => s.assistance && s.assistance > 0);
     if (studentsWithAssistance.length === 0) return 0;
-    
+
     const sum = studentsWithAssistance.reduce((acc, student) => acc + (student.assistance || 0), 0);
     return parseFloat((sum / studentsWithAssistance.length).toFixed(2));
   }
@@ -659,7 +660,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   // Export data functionality (for admin)
   exportStudentData(): void {
     if (!this.isAdmin) return;
-    
+
     const csvData = this.generateCSVData();
     this.downloadCSV(csvData, 'students-data.csv');
   }
@@ -706,7 +707,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   private downloadCSV(csvContent: string, filename: string): void {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    
+
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);

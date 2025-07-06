@@ -223,6 +223,11 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    const isDevelopment = window.location.hostname === 'localhost';
+    const apiUrl = isDevelopment
+      ? 'http://localhost:10000/api'     // Development URL
+      : 'https://happyswimming.onrender.com/api';   // Production URL
+    this.http.post(`${apiUrl}/should-authenticate`, {}).subscribe();
     // Subscribe to language changes
     this.langSubscription = this.translationService.getCurrentLang().subscribe(lang => {
       this.currentLanguage = lang;

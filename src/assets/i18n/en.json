@@ -279,6 +279,7 @@
     "welcome": "Welcome, User!",
     "studentsManagement": {
         "title": "Student Management",
+        "description": "Manage your students and track their progress",
         "professionalSubtitle": "Manage your assigned students and track their progress",
         "adminSubtitle": "Comprehensive overview of all students across all professionals",
         "totalStudents": "Total Students",

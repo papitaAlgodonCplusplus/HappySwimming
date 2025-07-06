@@ -208,6 +208,7 @@
     "adminCourseManagement_title": "Gestión de Cursos",
     "adminCourseManagement_desc": "Crea, gestiona y haz seguimiento de los cursos de natación para clientes",
     "studentsManagement": {
+        "description": "Gestiona tus estudiantes y sigue su progreso",
         "title": "Gestión de Estudiantes",
         "professionalSubtitle": "Gestiona tus estudiantes asignados y sigue su progreso",
         "adminSubtitle": "Vista integral de todos los estudiantes de todos los profesionales",
