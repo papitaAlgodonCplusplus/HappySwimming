@@ -355,11 +355,11 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   // NEW: Calculate schedule conflicts based on enrollments
   private calculateScheduleConflicts(): void {
     this.scheduleConflicts = [];
-    
+
     this.enrollments.forEach(enrollment => {
-      if (enrollment.scheduleStartTime && enrollment.scheduleEndTime && 
-          enrollment.status !== 'cancelled' && enrollment.studentCount) {
-        
+      if (enrollment.scheduleStartTime && enrollment.scheduleEndTime &&
+        enrollment.status !== 'cancelled' && enrollment.studentCount) {
+
         const existingConflict = this.scheduleConflicts.find(conflict =>
           conflict.startTime === enrollment.scheduleStartTime &&
           conflict.endTime === enrollment.scheduleEndTime
@@ -393,7 +393,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     const conflict = this.scheduleConflicts.find(c =>
       this.timeRangesOverlap(schedule.startTime, schedule.endTime, c.startTime, c.endTime)
     );
-    
+
     return conflict ? Math.max(0, 6 - conflict.occupiedStudents) : 6;
   }
 
@@ -416,7 +416,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   // Get courses based on user role with filters applied
   get availableCourses(): Course[] {
     let courses: Course[] = [];
-    
+
     if (this.userRole === 'client') {
       courses = this.clientCourses;
     } else if (this.userRole === 'professional') {
@@ -427,7 +427,47 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return this.applyFilters(courses);
   }
 
-  // NEW: Apply filters to courses
+  // Add these methods to your ServicesManagerComponent class
+
+  // Get all unique course titles for the select dropdown
+  getAvailableCoursesTitles(): string[] {
+    let courses: Course[] = [];
+
+    if (this.userRole === 'client') {
+      courses = this.clientCourses;
+    } else if (this.userRole === 'professional') {
+      courses = this.professionalCourses;
+    }
+
+    const titles = courses.map(course => course.name.trim());
+    return [...new Set(titles)].sort(); // Remove duplicates and sort alphabetically
+  }
+
+  // Get all unique schedules for the select dropdown
+  getAvailableScheduleTimes(): string[] {
+    let courses: Course[] = [];
+
+    if (this.userRole === 'client') {
+      courses = this.clientCourses;
+    } else if (this.userRole === 'professional') {
+      courses = this.professionalCourses;
+    }
+
+    const schedules: string[] = [];
+
+    courses.forEach(course => {
+      if (course.schedules) {
+        course.schedules.forEach(schedule => {
+          const scheduleTime = `${this.formatTimeDisplay(schedule.startTime)} - ${this.formatTimeDisplay(schedule.endTime)}`;
+          schedules.push(scheduleTime);
+        });
+      }
+    });
+
+    return [...new Set(schedules)].sort(); // Remove duplicates and sort
+  }
+
+  // Updated applyFilters method to handle the new filter logic
   private applyFilters(courses: Course[]): Course[] {
     return courses.filter(course => {
       // Date filter
@@ -438,23 +478,19 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         }
       }
 
-      // Title filter
-      if (this.filters.title && !course.name.toLowerCase().includes(this.filters.title.toLowerCase())) {
+      // Title filter - exact match now since it's a select
+      if (this.filters.title && course.name.trim() !== this.filters.title) {
         return false;
       }
 
-      // Time filter - check if course has schedules available at specified time
+      // Time filter - check if course has the selected schedule
       if (this.filters.time && course.schedules) {
-        const hasAvailableScheduleAtTime = course.schedules.some(schedule => {
-          const scheduleStart = this.timeToMinutes(schedule.startTime);
-          const scheduleEnd = this.timeToMinutes(schedule.endTime);
-          const filterTime = this.timeToMinutes(this.filters.time!);
-          
-          return filterTime >= scheduleStart && filterTime < scheduleEnd && 
-                 !this.hasScheduleConflict(schedule);
+        const hasSelectedSchedule = course.schedules.some(schedule => {
+          const scheduleTime = `${this.formatTimeDisplay(schedule.startTime)} - ${this.formatTimeDisplay(schedule.endTime)}`;
+          return scheduleTime === this.filters.time && !this.hasScheduleConflict(schedule);
         });
 
-        if (!hasAvailableScheduleAtTime) {
+        if (!hasSelectedSchedule) {
           return false;
         }
       }
@@ -786,7 +822,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   openPaymentLink(): void {
     const amount = this.calculatedPrice;
-    const description = `Course: ${this.selectedCourse?.courseCode}, contact: ${this.enrollmentForm.motherContact}, responsable email: ${this.enrollmentForm.motherEmail}, phone: ${this.enrollmentForm.motherPhone}`;
+    const description = `Course: ${this.selectedCourse?.courseCode}, course name: ${this.selectedCourse?.name}, contact: ${this.enrollmentForm.motherContact}`;
 
     this.http.post<{ url: string }>(`${this.apiUrl}/create-revolut-payment`, {
       amount,
@@ -856,7 +892,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   hasAvailableSpots(course: Course): boolean {
     if (course.type === 'admin_course') {
       // Check if any schedule in the course has available spots
-      return course.schedules?.some(schedule => 
+      return course.schedules?.some(schedule =>
         this.getAvailableSpotsForSchedule(schedule) > 0
       ) || false;
     }
@@ -929,7 +965,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   }
 
   // NEW: Get schedule enrollments for a course (replaces multiple enrollments section)
-  getScheduleEnrollments(courseId: string | number): Array<{schedule: string, students: number}> {
+  getScheduleEnrollments(courseId: string | number): Array<{ schedule: string, students: number }> {
     console.log('Getting schedule enrollments for course:', courseId, this.enrollments);
     console.log('courseID: admin_course_' + courseId.toString());
     const enrollments = this.enrollments.filter(e =>
@@ -940,7 +976,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     console.log('Filtered enrollments:', enrollments);
 
     const scheduleMap = new Map<string, number>();
-    
+
     enrollments.forEach(enrollment => {
       const scheduleKey = `${enrollment.scheduleStartTime} - ${enrollment.scheduleEndTime}`;
       const currentStudents = scheduleMap.get(scheduleKey) || 0;

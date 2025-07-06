@@ -16,6 +16,7 @@
   </div>
 
   <!-- Filter Section -->
+  <!-- Updated Filter Section with Select Boxes -->
   <div class="filter-section">
     <div class="filter-header">
       <h3>{{ 'servicesManager.filterCourses' | translate }}</h3>
@@ -23,35 +24,32 @@
     <div class="filter-controls">
       <div class="filter-group">
         <label for="dateFilter">{{ 'servicesManager.filterByDate' | translate }}:</label>
-        <input 
-          type="date" 
-          id="dateFilter"
-          [(ngModel)]="filters.date"
-          (ngModelChange)="applyFiltersManually()"
+        <input type="date" id="dateFilter" [(ngModel)]="filters.date" (ngModelChange)="applyFiltersManually()"
           class="form-control">
       </div>
-      
+
       <div class="filter-group">
         <label for="timeFilter">{{ 'servicesManager.filterByTime' | translate }}:</label>
-        <input 
-          type="time" 
-          id="timeFilter"
-          [(ngModel)]="filters.time"
-          (ngModelChange)="applyFiltersManually()"
+        <select id="timeFilter" [(ngModel)]="filters.time" (ngModelChange)="applyFiltersManually()"
           class="form-control">
+          <option value="">{{ 'servicesManager.allSchedules' | translate }}</option>
+          <option *ngFor="let scheduleTime of getAvailableScheduleTimes()" [value]="scheduleTime">
+            {{ scheduleTime }}
+          </option>
+        </select>
       </div>
-      
+
       <div class="filter-group">
         <label for="titleFilter">{{ 'servicesManager.filterByTitle' | translate }}:</label>
-        <input 
-          type="text" 
-          id="titleFilter"
-          [(ngModel)]="filters.title"
-          (ngModelChange)="applyFiltersManually()"
-          [placeholder]="'servicesManager.searchCourses' | translate"
+        <select id="titleFilter" [(ngModel)]="filters.title" (ngModelChange)="applyFiltersManually()"
           class="form-control">
+          <option value="">{{ 'servicesManager.allCourses' | translate }}</option>
+          <option *ngFor="let courseTitle of getAvailableCoursesTitles()" [value]="courseTitle">
+            {{ courseTitle | translate }}
+          </option>
+        </select>
       </div>
-      
+
       <div class="filter-actions">
         <button class="btn btn-secondary" (click)="clearFilters()">
           <span class="btn-icon">🗑️</span>
@@ -77,7 +75,8 @@
     <div class="section">
       <div class="section-header">
         <h2 class="section-title">{{ 'servicesManager.availableCourses' | translate }}</h2>
-        <span class="course-count">{{ availableCourses.length }} {{ 'servicesManager.coursesAvailable' | translate }}</span>
+        <span class="course-count">{{ availableCourses.length }} {{ 'servicesManager.coursesAvailable' | translate
+          }}</span>
       </div>
 
       <!-- No courses available -->
@@ -111,20 +110,23 @@
             <!-- Professional assignment -->
             <div class="info-row">
               <span class="info-label">{{ 'servicesManager.professional' | translate }}:</span>
-              <span class="info-value">{{ course.professionalName || ('servicesManager.notAssigned' | translate) }}</span>
+              <span class="info-value">{{ course.professionalName || ('servicesManager.notAssigned' | translate)
+                }}</span>
             </div>
 
             <!-- Schedules Info -->
             <div class="info-row">
               <span class="info-label">{{ 'servicesManager.schedules' | translate }}:</span>
-              <span class="info-value">{{ getSchedulesDisplay(course) + ' ' + (('servicesManager.schedules' | translate)) }}</span>
+              <span class="info-value">{{ getSchedulesDisplay(course) + ' ' + (('servicesManager.schedules' |
+                translate)) }}</span>
             </div>
 
             <!-- Availability -->
             <div class="info-row">
               <span class="info-label">{{ 'servicesManager.availability' | translate }}:</span>
               <span class="info-value" [ngClass]="hasAvailableSpots(course) ? 'text-success' : 'text-danger'">
-                {{ hasAvailableSpots(course) ? (getAvailableSpots(course) + ' ' + ('servicesManager.spotsAvailable' | translate)) : ('servicesManager.courseFull' | translate) }}
+                {{ hasAvailableSpots(course) ? (getAvailableSpots(course) + ' ' + ('servicesManager.spotsAvailable' |
+                translate)) : ('servicesManager.courseFull' | translate) }}
               </span>
             </div>
           </div>
@@ -168,7 +170,8 @@
 
           <!-- Course Actions -->
           <div class="course-actions">
-            <button *ngIf="hasAvailableSpots(course)" class="btn btn-primary" (click)="selectCourse(course)" [disabled]="isLoading">
+            <button *ngIf="hasAvailableSpots(course)" class="btn btn-primary" (click)="selectCourse(course)"
+              [disabled]="isLoading">
               <span class="btn-icon">📝</span>
               {{ 'servicesManager.enroll' | translate }}
             </button>
@@ -363,9 +366,11 @@
                 <span class="detail-label">{{ 'servicesManager.enrollmentDate' | translate }}:</span>
                 <span class="detail-value">{{ selectedEnrollment.enrollmentDate | date:'mediumDate' }}</span>
               </div>
-              <div class="detail-item" *ngIf="selectedEnrollment.scheduleStartTime && selectedEnrollment.scheduleEndTime">
+              <div class="detail-item"
+                *ngIf="selectedEnrollment.scheduleStartTime && selectedEnrollment.scheduleEndTime">
                 <span class="detail-label">{{ 'servicesManager.schedule' | translate }}:</span>
-                <span class="detail-value">{{ formatTimeDisplay(selectedEnrollment.scheduleStartTime) }} - {{ formatTimeDisplay(selectedEnrollment.scheduleEndTime) }}</span>
+                <span class="detail-value">{{ formatTimeDisplay(selectedEnrollment.scheduleStartTime) }} - {{
+                  formatTimeDisplay(selectedEnrollment.scheduleEndTime) }}</span>
               </div>
             </div>
           </div>
@@ -425,11 +430,9 @@
             <span class="btn-icon">✕</span>
             {{ 'servicesManager.close' | translate }}
           </button>
-          
-          <button *ngIf="selectedEnrollment?.status === 'pending'" 
-                  class="btn btn-danger" 
-                  (click)="cancelEnrollmentFromDetails()" 
-                  [disabled]="isLoading">
+
+          <button *ngIf="selectedEnrollment?.status === 'pending'" class="btn btn-danger"
+            (click)="cancelEnrollmentFromDetails()" [disabled]="isLoading">
             <span class="btn-icon">❌</span>
             {{ 'servicesManager.cancelEnrollment' | translate }}
           </button>

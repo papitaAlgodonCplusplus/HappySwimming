@@ -101,6 +101,8 @@
     "servicesManager": {
         "filterCourses": "Filtrar Cursos",
         "filterByDate": "Filtrar por Data",
+        "allSchedules": "Todos os Horários",
+        "allCourses": "Todos os Cursos",
         "filterByTime": "Filtrar por Hora",
         "filterByTitle": "Filtrar por Título",
         "searchCourses": "Pesquisar cursos...",

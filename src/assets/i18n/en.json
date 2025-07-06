@@ -417,6 +417,8 @@
         "filterByDate": "Filter by Date",
         "filterByTime": "Filter by Time",
         "filterByTitle": "Filter by Title",
+        "allCourses":"All Courses",
+        "allSchedules": "All Schedules",
         "searchCourses": "Search courses...",
         "clearFilters": "Clear Filters",
         "currentEnrollments": "Current Enrollments",
