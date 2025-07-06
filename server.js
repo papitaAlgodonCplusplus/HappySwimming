@@ -3371,10 +3371,10 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
       selectedLessonCount,
       studentCount,
       startTime,
-      endTime
+      endTime,
+      userId
     } = req.body;
-    const userId = req.user.id;
-    const userRole = req.user.role;
+    const userRole = 'client';
     console.log('User ID:', userId, 'User Role:', userRole);
 
     console.log('Enrollment request:', {

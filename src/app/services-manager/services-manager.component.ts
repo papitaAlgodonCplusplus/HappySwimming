@@ -689,7 +689,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       `${this.apiUrl}/enrollments`;
 
     const enrollmentData: EnrollmentRequest = {
-      userId: this.userId,
+      userId: this.userId || this.authService.getUserId(),
       professionalId: this.selectedCourse.professionalId || null,
     };
 
@@ -704,6 +704,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       enrollmentData.studentCount = this.selectedStudentCount;
       enrollmentData.startTime = this.selectedSchedule?.startTime;
       enrollmentData.endTime = this.selectedSchedule?.endTime;
+      enrollmentData.userId = this.userId;
     } else {
       enrollmentData.courseId = this.selectedCourse.id as string;
     }
