@@ -95,28 +95,88 @@
       </div>
     </div>
 
+    <!-- NEW: Enhanced Revenue Summary Section -->
+    <div *ngIf="!isLoading" class="revenue-summary-section">
+      <h2 class="section-title">{{ 'economicManager.revenueSummary' | translate }}</h2>
+      
+      <div class="revenue-overview-grid">
+        <div class="revenue-overview-card">
+          <h3>{{ 'economicManager.totalRevenue' | translate }}</h3>
+          <div class="revenue-amount">€{{ getRevenueBreakdown().combined.totalRevenue.toFixed(2) }}</div>
+          <div class="revenue-details">
+            <div class="detail-item">
+              <span class="detail-label">{{ 'economicManager.totalStudents' | translate }}:</span>
+              <span class="detail-value">{{ getRevenueBreakdown().combined.totalStudents }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">{{ 'economicManager.totalLessons' | translate }}:</span>
+              <span class="detail-value">{{ getRevenueBreakdown().combined.totalLessons }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">{{ 'economicManager.avgPricePerStudent' | translate }}:</span>
+              <span class="detail-value">€{{ getRevenueBreakdown().combined.averagePricePerStudent.toFixed(2) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">{{ 'economicManager.avgPricePerLesson' | translate }}:</span>
+              <span class="detail-value">€{{ getRevenueBreakdown().combined.averagePricePerLesson.toFixed(2) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="revenue-breakdown-cards">
+          <div class="revenue-breakdown-card insourcing">
+            <h4>{{ 'economicManager.insourcingRevenue' | translate }}</h4>
+            <div class="breakdown-amount">€{{ getRevenueBreakdown().insourcing.totalRevenue.toFixed(2) }}</div>
+            <div class="breakdown-details">
+              <div class="breakdown-item">
+                <span>{{ getRevenueBreakdown().insourcing.totalStudents }} {{ 'economicManager.students' | translate }}</span>
+              </div>
+              <div class="breakdown-item">
+                <span>{{ getRevenueBreakdown().insourcing.totalLessons }} {{ 'economicManager.lessons' | translate }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="revenue-breakdown-card outsourcing">
+            <h4>{{ 'economicManager.outsourcingRevenue' | translate }}</h4>
+            <div class="breakdown-amount">€{{ getRevenueBreakdown().outsourcing.totalRevenue.toFixed(2) }}</div>
+            <div class="breakdown-details">
+              <div class="breakdown-item">
+                <span>{{ getRevenueBreakdown().outsourcing.totalStudents }} {{ 'economicManager.students' | translate }}</span>
+              </div>
+              <div class="breakdown-item">
+                <span>{{ getRevenueBreakdown().outsourcing.totalLessons }} {{ 'economicManager.lessons' | translate }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Admin Summary Section -->
     <div *ngIf="!isLoading && isAdmin" class="expenses-section">
       <h2 class="section-title">{{ 'economicManager.adminSummary' | translate }}</h2>
 
-      <div class="total-amount">
-        <span class="label">{{ 'economicManager.totalInsourcingClients' | translate }}:</span>
-        <span class="value">{{ adminReport.totalInsourcingClients }}</span>
-      </div>
+      <div class="admin-summary-grid">
+        <div class="admin-summary-item">
+          <span class="label">{{ 'economicManager.totalInsourcingClients' | translate }}:</span>
+          <span class="value">{{ adminReport.totalInsourcingClients }}</span>
+        </div>
 
-      <div class="total-amount">
-        <span class="label">{{ 'economicManager.totalOutsourcingClients' | translate }}:</span>
-        <span class="value">{{ adminReport.totalOutsourcingClients }}</span>
-      </div>
+        <div class="admin-summary-item">
+          <span class="label">{{ 'economicManager.totalOutsourcingClients' | translate }}:</span>
+          <span class="value">{{ adminReport.totalOutsourcingClients }}</span>
+        </div>
 
-      <div class="total-amount">
-        <span class="label">{{ 'economicManager.totalProfessionalEnrollments' | translate }}:</span>
-        <span class="value">{{ adminReport.totalProfessionalEnrollments }}</span>
-      </div>
+        <div class="admin-summary-item">
+          <span class="label">{{ 'economicManager.totalProfessionalEnrollments' | translate }}:</span>
+          <span class="value">{{ adminReport.totalProfessionalEnrollments }}</span>
+        </div>
 
-      <div class="total-amount">
-        <span class="label">{{ 'economicManager.totalCombinedRevenue' | translate }}:</span>
-        <span class="value">€{{ (insourcingExpenses.total + outsourcingExpenses.total).toFixed(2) }}</span>
+        <div class="admin-summary-item total-revenue">
+          <span class="label">{{ 'economicManager.totalCombinedRevenue' | translate }}:</span>
+          <span class="value">€{{ (insourcingExpenses.total + outsourcingExpenses.total).toFixed(2) }}</span>
+        </div>
       </div>
     </div>
 
@@ -124,6 +184,26 @@
       <!-- Insourcing Section -->
       <div class="expenses-section">
         <h2 class="section-title">{{ 'economicManager.insourcingService' | translate }}</h2>
+
+        <!-- NEW: Enhanced revenue display -->
+        <div class="revenue-details-section">
+          <div class="revenue-detail-row">
+            <span class="revenue-label">{{ 'economicManager.studentsEnrolled' | translate }}:</span>
+            <span class="revenue-value">{{ getInsourcingRevenueSummary().totalStudents }}</span>
+          </div>
+          <div class="revenue-detail-row">
+            <span class="revenue-label">{{ 'economicManager.totalLessonsBooked' | translate }}:</span>
+            <span class="revenue-value">{{ getInsourcingRevenueSummary().totalLessons }}</span>
+          </div>
+          <div class="revenue-detail-row">
+            <span class="revenue-label">{{ 'economicManager.avgRevenuePerStudent' | translate }}:</span>
+            <span class="revenue-value">€{{ getInsourcingRevenueSummary().averagePricePerStudent.toFixed(2) }}</span>
+          </div>
+          <div class="revenue-detail-row">
+            <span class="revenue-label">{{ 'economicManager.avgRevenuePerLesson' | translate }}:</span>
+            <span class="revenue-value">€{{ getInsourcingRevenueSummary().averagePricePerLesson.toFixed(2) }}</span>
+          </div>
+        </div>
 
         <div class="total-amount">
           <span class="label">{{ 'economicManager.totalAmount' | translate }}:</span>
@@ -161,6 +241,26 @@
       <div class="expenses-section">
         <h2 class="section-title">{{ 'economicManager.outsourcingService' | translate }}</h2>
 
+        <!-- NEW: Enhanced revenue display -->
+        <div class="revenue-details-section">
+          <div class="revenue-detail-row">
+            <span class="revenue-label">{{ 'economicManager.studentsEnrolled' | translate }}:</span>
+            <span class="revenue-value">{{ getOutsourcingRevenueSummary().totalStudents }}</span>
+          </div>
+          <div class="revenue-detail-row">
+            <span class="revenue-label">{{ 'economicManager.totalLessonsBooked' | translate }}:</span>
+            <span class="revenue-value">{{ getOutsourcingRevenueSummary().totalLessons }}</span>
+          </div>
+          <div class="revenue-detail-row">
+            <span class="revenue-label">{{ 'economicManager.avgRevenuePerStudent' | translate }}:</span>
+            <span class="revenue-value">€{{ getOutsourcingRevenueSummary().averagePricePerStudent.toFixed(2) }}</span>
+          </div>
+          <div class="revenue-detail-row">
+            <span class="revenue-label">{{ 'economicManager.avgRevenuePerLesson' | translate }}:</span>
+            <span class="revenue-value">€{{ getOutsourcingRevenueSummary().averagePricePerLesson.toFixed(2) }}</span>
+          </div>
+        </div>
+
         <div class="total-amount">
           <span class="label">{{ 'economicManager.totalAmount' | translate }}:</span>
           <span class="value">€{{ outsourcingExpenses.total.toFixed(2) }}</span>
@@ -194,36 +294,6 @@
       </div>
     </div>
 
-    <!-- Professional Enrollments table for Admin -->
-    <div *ngIf="!isLoading && isAdmin" class="enrollments-section">
-      <h2 class="section-title">{{ 'economicManager.professionalEnrollments' | translate }}</h2>
-
-      <div class="enrollments-table-container">
-        <table class="enrollments-table" *ngIf="adminReport.professionalEnrollments.length > 0">
-          <thead>
-            <tr>
-              <th>{{ 'servicesManager.course' | translate }}</th>
-              <th>{{ 'servicesManager.professional' | translate }}</th>
-              <th>{{ 'servicesManager.pricePerHour' | translate }}</th>
-              <th>{{ 'servicesManager.notes' | translate }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let enrollment of adminReport.professionalEnrollments">
-              <td>{{ getTranslatedCourseName(enrollment.courseId, enrollment.courseName) }}</td>
-              <td>{{ enrollment.professionalName }}</td>
-              <td>€{{ enrollment.price.toFixed(2) }}</td>
-              <td>{{ translateTimePreference(enrollment.notes) || ('economicManager.noNotes' | translate) }}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div *ngIf="adminReport.professionalEnrollments.length === 0" class="no-data-message">
-          {{ 'economicManager.noProfessionalEnrollmentsAdmin' | translate }}
-        </div>
-      </div>
-    </div>
-
     <!-- Client Enrollments table for Admin -->
     <div *ngIf="!isLoading && isAdmin" class="enrollments-section">
       <h2 class="section-title">{{ 'economicManager.clientEnrollments' | translate }}</h2>
@@ -236,6 +306,8 @@
               <th>{{ 'economicManager.client' | translate }}</th>
               <th>{{ 'servicesManager.professional' | translate }}</th>
               <th>{{ 'servicesManager.status' | translate }}</th>
+              <th>{{ 'economicManager.students' | translate }}</th>
+              <th>{{ 'economicManager.lessons' | translate }}</th>
               <th>{{ 'servicesManager.price' | translate }}</th>
               <th>{{ 'economicManager.serviceType' | translate }}</th>
             </tr>
@@ -246,6 +318,8 @@
               <td>{{ enrollment.clientName || 'User ' + enrollment.userId }}</td>
               <td>{{ enrollment.professionalName || ('economicManager.notAssigned' | translate) }}</td>
               <td>{{ getLocalizedStatus(enrollment.status) }}</td>
+              <td>{{ getStudentCountFromEnrollment(enrollment) }}</td>
+              <td>{{ getLessonCountFromEnrollment(enrollment) }}</td>
               <td>€{{ enrollment.price.toFixed(2) }}</td>
               <td>{{ isInsourcingEnrollment(enrollment) ? ('insourcing' | translate) : ('outsourcing' | translate) }}</td>
             </tr>
@@ -269,6 +343,8 @@
             <tr>
               <th>{{ 'servicesManager.course' | translate }}</th>
               <th>{{ 'servicesManager.status' | translate }}</th>
+              <th>{{ 'economicManager.students' | translate }}</th>
+              <th>{{ 'economicManager.lessons' | translate }}</th>
               <th>{{ 'servicesManager.price' | translate }}</th>
               <th>{{ 'economicManager.serviceType' | translate }}</th>
             </tr>
@@ -277,6 +353,8 @@
             <tr *ngFor="let enrollment of filteredClientEnrollments">
               <td>{{ getTranslatedCourseName(enrollment.courseId, enrollment.courseName) }}</td>
               <td>{{ getLocalizedStatus(enrollment.status) }}</td>
+              <td>{{ getStudentCountFromEnrollment(enrollment) }}</td>
+              <td>{{ getLessonCountFromEnrollment(enrollment) }}</td>
               <td>€{{ enrollment.price.toFixed(2) }}</td>
               <td>{{ isInsourcingEnrollment(enrollment) ? ('escuelaCliente' | translate) : ('externalization' | translate) }}</td>
             </tr>
@@ -296,6 +374,8 @@
               <th>{{ 'servicesManager.course' | translate }}</th>
               <th>{{ 'economicManager.client' | translate }}</th>
               <th>{{ 'servicesManager.status' | translate }}</th>
+              <th>{{ 'economicManager.students' | translate }}</th>
+              <th>{{ 'economicManager.lessons' | translate }}</th>
               <th>{{ 'servicesManager.price' | translate }}</th>
               <th>{{ 'economicManager.serviceType' | translate }}</th>
             </tr>
@@ -305,6 +385,8 @@
               <td>{{ getTranslatedCourseName(enrollment.courseId, enrollment.courseName) }}</td>
               <td>{{ enrollment.clientName || 'User ' + enrollment.userId }}</td>
               <td>{{ getLocalizedStatus(enrollment.status) }}</td>
+              <td>{{ getStudentCountFromEnrollment(enrollment) }}</td>
+              <td>{{ getLessonCountFromEnrollment(enrollment) }}</td>
               <td>€{{ enrollment.price.toFixed(2) }}</td>
               <td>{{ isInsourcingEnrollment(enrollment) ? ('escuelaCliente' | translate) : ('externalization' | translate) }}</td>
             </tr>

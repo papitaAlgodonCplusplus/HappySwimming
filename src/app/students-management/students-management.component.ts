@@ -1,4 +1,4 @@
-// src/app/students-management/students-management.component.ts (Final Updated)
+// src/app/students-management/students-management.component.ts (Updated with Attendance System)
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,7 +13,16 @@ import { AuthService } from '../services/auth.service';
 import { HeaderComponent } from '../header/header.component';
 import { TranslatePipe } from '../pipes/translate.pipe';
 
-// Updated interfaces for admin courses
+// Updated interfaces for attendance system
+interface AttendanceRecord {
+  attendanceId: number;
+  kidName: string;
+  status: 'pending' | 'approved' | 'completed' | 'cancelled' | 'active';
+  calification?: number;
+  assistance?: number;
+  notes?: string;
+}
+
 interface Student {
   id: number | string;
   enrollmentId: number;
@@ -34,6 +43,8 @@ interface Student {
   professionalId?: number;
   professionalName?: string; // For admin view
   price: number;
+  attendanceRecords?: AttendanceRecord[]; // Individual attendance records per kid
+  attendanceId?: number; // Current attendance record ID being edited
 }
 
 interface AdminCourse {
@@ -135,12 +146,14 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
   showCancelModal: boolean = false;
   studentToCancel: Student | null = null;
 
-  // Edit form data
+  // Edit form data - updated for attendance
   editForm = {
     calification: 0,
     assistance: 0,
     status: 'pending' as 'pending' | 'approved' | 'completed' | 'cancelled' | 'active',
-    notes: ''
+    notes: '',
+    kidName: '', // Add kidName to form
+    attendanceId: null as number | null
   };
 
   // Filter options
@@ -245,7 +258,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Process course data and organize students - UPDATED for multiple kid names
+  // Process course data and organize students with attendance - UPDATED for attendance
   private processCourseData(data: any[]): void {
     this.adminCourses = [];
     this.allStudents = [];
@@ -256,6 +269,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
 
     // Group students by course
     const courseMap = new Map<number, AdminCourse>();
+    const pendingAttendanceInitialization: { enrollmentId: number, kidNames: string[] }[] = [];
 
     data.forEach(enrollment => {
       const courseId = enrollment.admin_course_id || enrollment.courseId;
@@ -285,30 +299,43 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       const kidNameRaw = enrollment.kid_name || enrollment.kidName || 'Unknown Student';
       const kidNames = kidNameRaw.split('\n').map((name: string) => name.trim()).filter((name: string) => name.length > 0);
 
-      // Create a student entry for each kid name or single entry if no newlines
-      if (kidNames.length > 1) {
-        // Multiple children - create separate visual entries but same enrollment ID
-        kidNames.forEach((kidName: string, index: number) => {
+      // Get attendance records for this enrollment
+      const attendanceRecords: AttendanceRecord[] = enrollment.attendanceRecords || [];
+
+      // Check if we need to initialize attendance records
+      if (attendanceRecords.length === 0 && kidNames.length > 0) {
+        pendingAttendanceInitialization.push({
+          enrollmentId: enrollment.id,
+          kidNames: kidNames
+        });
+      }
+
+      // Create student entries based on attendance records or kid names
+      if (attendanceRecords.length > 0) {
+        // Use attendance records to create individual student entries
+        attendanceRecords.forEach((attendance, index) => {
           const student: Student = {
-            id: `${enrollment.id}_${index}`, // Unique display ID
-            enrollmentId: enrollment.id, // Same enrollment ID for all
-            kidName: kidName,
-            kidNames: kidNames, // Store all names
+            id: `${enrollment.id}_${attendance.kidName}_${index}`,
+            enrollmentId: enrollment.id,
+            kidName: attendance.kidName,
+            kidNames: kidNames,
             motherContact: enrollment.mother_contact || enrollment.motherContact || '',
-            status: enrollment.status || 'pending',
+            status: attendance.status || 'pending',
             enrollmentDate: enrollment.enrollmentDate ? new Date(enrollment.enrollmentDate) : undefined,
             startDate: enrollment.startDate ? new Date(enrollment.startDate) : undefined,
             endDate: enrollment.endDate ? new Date(enrollment.endDate) : undefined,
-            calification: enrollment.calification || 0,
-            assistance: enrollment.assistance || 0,
-            notes: enrollment.notes || '',
+            calification: attendance.calification || 0,
+            assistance: attendance.assistance || 0,
+            notes: attendance.notes || '',
             courseId: courseId,
             courseName: course.name,
             courseCode: course.courseCode,
             clientName: course.clientName,
             professionalId: enrollment.professionalId,
             professionalName: enrollment.professionalName,
-            price: parseFloat(enrollment.price || 0)
+            price: parseFloat(enrollment.price || 0),
+            attendanceRecords: [attendance],
+            attendanceId: attendance.attendanceId
           };
 
           course.students.push(student);
@@ -316,8 +343,38 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
         });
         // Only count as one enrollment for current students
         course.currentStudents++;
+      } else if (kidNames.length > 1) {
+        // Multiple children without attendance records - create placeholder entries
+        kidNames.forEach((kidName: string, index: number) => {
+          const student: Student = {
+            id: `${enrollment.id}_${index}`,
+            enrollmentId: enrollment.id,
+            kidName: kidName,
+            kidNames: kidNames,
+            motherContact: enrollment.mother_contact || enrollment.motherContact || '',
+            status: enrollment.status || 'pending',
+            enrollmentDate: enrollment.enrollmentDate ? new Date(enrollment.enrollmentDate) : undefined,
+            startDate: enrollment.startDate ? new Date(enrollment.startDate) : undefined,
+            endDate: enrollment.endDate ? new Date(enrollment.endDate) : undefined,
+            calification: 0,
+            assistance: 0,
+            notes: '',
+            courseId: courseId,
+            courseName: course.name,
+            courseCode: course.courseCode,
+            clientName: course.clientName,
+            professionalId: enrollment.professionalId,
+            professionalName: enrollment.professionalName,
+            price: parseFloat(enrollment.price || 0),
+            attendanceRecords: []
+          };
+
+          course.students.push(student);
+          this.allStudents.push(student);
+        });
+        course.currentStudents++;
       } else {
-        // Single child
+        // Single child without attendance record
         const student: Student = {
           id: enrollment.id,
           enrollmentId: enrollment.id,
@@ -328,16 +385,17 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
           enrollmentDate: enrollment.enrollmentDate ? new Date(enrollment.enrollmentDate) : undefined,
           startDate: enrollment.startDate ? new Date(enrollment.startDate) : undefined,
           endDate: enrollment.endDate ? new Date(enrollment.endDate) : undefined,
-          calification: enrollment.calification || 0,
-          assistance: enrollment.assistance || 0,
-          notes: enrollment.notes || '',
+          calification: 0,
+          assistance: 0,
+          notes: '',
           courseId: courseId,
           courseName: course.name,
           courseCode: course.courseCode,
           clientName: course.clientName,
           professionalId: enrollment.professionalId,
           professionalName: enrollment.professionalName,
-          price: parseFloat(enrollment.price || 0)
+          price: parseFloat(enrollment.price || 0),
+          attendanceRecords: []
         };
 
         course.students.push(student);
@@ -347,7 +405,37 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     });
 
     this.adminCourses = Array.from(courseMap.values());
+
+    // Initialize attendance records for enrollments that don't have them
+    if (pendingAttendanceInitialization.length > 0) {
+      this.initializeAttendanceRecords(pendingAttendanceInitialization);
+    }
+
     this.generateCalendar();
+  }
+
+  // NEW: Initialize attendance records for enrollments
+  private initializeAttendanceRecords(pendingInitializations: { enrollmentId: number, kidNames: string[] }[]): void {
+    pendingInitializations.forEach(({ enrollmentId, kidNames }) => {
+      this.http.post(`${this.apiUrl}/attendance/initialize`, {
+        enrollmentId: enrollmentId,
+        kidNames: kidNames
+      }, {
+        headers: this.getAuthHeaders()
+      }).pipe(
+        takeUntil(this.destroy$),
+        catchError(error => {
+          console.error('Error initializing attendance for enrollment:', enrollmentId, error);
+          return of(null);
+        })
+      ).subscribe(response => {
+        if (response) {
+          console.log('Attendance records initialized for enrollment:', enrollmentId);
+          // Reload the data to get the updated attendance records
+          this.loadProfessionalCourses();
+        }
+      });
+    });
   }
 
   // Generate calendar view
@@ -398,21 +486,23 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       date1.getFullYear() === date2.getFullYear();
   }
 
-  // Edit student information
+  // Edit student information - UPDATED for attendance
   editStudent(student: Student): void {
     this.editingStudent = student;
     this.editForm = {
       calification: student.calification || 0,
       assistance: student.assistance || 0,
       status: student.status,
-      notes: student.notes || ''
+      notes: student.notes || '',
+      kidName: student.kidName,
+      attendanceId: student.attendanceId || null
     };
     this.showEditForm = true;
     this.error = '';
     this.successMessage = '';
   }
 
-  // Save student changes
+  // Save student changes - UPDATED for attendance
   saveStudentChanges(): void {
     if (!this.editingStudent) return;
 
@@ -420,18 +510,20 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     this.error = '';
 
     const updateData = {
+      kidName: this.editForm.kidName,
       calification: this.editForm.calification,
       assistance: this.editForm.assistance,
       status: this.editForm.status,
       notes: this.editForm.notes
     };
 
+    // Use the new endpoint that updates attendance by kidName
     this.http.put(`${this.apiUrl}/professional/students/${this.editingStudent.enrollmentId}`, updateData, {
       headers: this.getAuthHeaders()
     }).pipe(
       takeUntil(this.destroy$),
       catchError(error => {
-        console.error('Error updating student:', error);
+        console.error('Error updating student attendance:', error);
         this.error = 'Failed to update student information. Please try again.';
         this.isLoading = false;
         this.cdr.detectChanges();
@@ -439,15 +531,18 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       })
     ).subscribe(response => {
       if (response !== null) {
-        // Update local data for all students with same enrollment ID
-        this.allStudents.forEach(student => {
-          if (student.enrollmentId === this.editingStudent!.enrollmentId) {
-            student.calification = this.editForm.calification;
-            student.assistance = this.editForm.assistance;
-            student.status = this.editForm.status;
-            student.notes = this.editForm.notes;
-          }
-        });
+        // Update local data for the specific student
+        const studentToUpdate = this.allStudents.find(s => 
+          s.enrollmentId === this.editingStudent!.enrollmentId && 
+          s.kidName === this.editForm.kidName
+        );
+        
+        if (studentToUpdate) {
+          studentToUpdate.calification = this.editForm.calification;
+          studentToUpdate.assistance = this.editForm.assistance;
+          studentToUpdate.status = this.editForm.status;
+          studentToUpdate.notes = this.editForm.notes;
+        }
 
         this.successMessage = 'Student information updated successfully.';
         this.cancelEdit();
@@ -457,7 +552,7 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Cancel enrollment - NEW FUNCTIONALITY
+  // Cancel enrollment - UPDATED for attendance
   showCancelConfirmation(student: Student): void {
     this.studentToCancel = student;
     this.showCancelModal = true;
@@ -520,7 +615,9 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
       calification: 0,
       assistance: 0,
       status: 'pending',
-      notes: ''
+      notes: '',
+      kidName: '',
+      attendanceId: null
     };
   }
 

@@ -11,7 +11,7 @@ import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError, map, finalize } from 'rxjs/operators';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
-// Updated Enrollment interface
+// Updated Enrollment interface to match the admin course system
 interface Enrollment {
   id: number | string;
   courseId: string;
@@ -29,7 +29,22 @@ interface Enrollment {
   clientName?: string;
   isOutsourcing?: boolean;
   notes?: string;
-  country?: string; // Added for country filtering
+  country?: string;
+  
+  // NEW: Admin course specific fields for accurate pricing
+  admin_course_id?: number;
+  selectedLessonCount?: number;
+  studentCount?: number;
+  selectedScheduleId?: string;
+  scheduleStartTime?: string;
+  scheduleEndTime?: string;
+  kidName?: string;
+  motherContact?: string;
+  
+  // Pricing calculation fields
+  groupPricingRange?: string; // '1-4' or '5-6'
+  pricePerStudent?: number;
+  totalCalculatedRevenue?: number;
 }
 
 interface ServiceExpense {
@@ -48,7 +63,15 @@ interface AdminReport {
   allEnrollments: Enrollment[];
 }
 
-// New interfaces for filters
+// New interfaces for pricing calculations
+interface RevenueSummary {
+  totalStudents: number;
+  totalLessons: number;
+  totalRevenue: number;
+  averagePricePerStudent: number;
+  averagePricePerLesson: number;
+}
+
 interface CourseOption {
   id: string;
   name: string;
@@ -110,6 +133,23 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     allEnrollments: []
   };
 
+  // NEW: Revenue summaries for accurate calculations
+  insourcingRevenueSummary: RevenueSummary = {
+    totalStudents: 0,
+    totalLessons: 0,
+    totalRevenue: 0,
+    averagePricePerStudent: 0,
+    averagePricePerLesson: 0
+  };
+
+  outsourcingRevenueSummary: RevenueSummary = {
+    totalStudents: 0,
+    totalLessons: 0,
+    totalRevenue: 0,
+    averagePricePerStudent: 0,
+    averagePricePerLesson: 0
+  };
+
   // Calculated values
   insourcingExpenses: ServiceExpense = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
   outsourcingExpenses: ServiceExpense = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
@@ -117,14 +157,13 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   // Map to store professional countries
   professionalCountries: Map<number, string> = new Map();
 
-  // Admin-specific properties
-  // User filter properties
+  // Filter properties
   nameFilter: string = '';
   selectedCourse: string = '';
-  selectedMonth: number = 0; // 0 means all months
-  selectedYear: number = 0; // 0 means all years
-  selectedCountry: string = 'all'; // For admin view only
-  selectedClientName: string = 'all'; // For admin view only
+  selectedMonth: number = 0;
+  selectedYear: number = 0;
+  selectedCountry: string = 'all';
+  selectedClientName: string = 'all';
 
   // Filter options
   courseOptions: CourseOption[] = [];
@@ -145,7 +184,6 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
   ];
   yearOptions: YearOption[] = [];
 
-  // Common countries for filter
   countryOptions: string[] = [
     'Spain', 'Portugal', 'UK', 'Ireland', 'France', 'Germany', 'Italy', 'USA', 'Canada',
     'Brazil', 'Mexico', 'Australia', 'Argentina', 'Chile', 'Colombia', 'Peru', 'Ecuador',
@@ -157,14 +195,13 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     'New Zealand', 'Malaysia', 'Singapore', 'Egypt', 'Saudi Arabia', 'United Arab Emirates'
   ];
 
-  // Client names for filter (will be populated from data)
   clientNameOptions: string[] = [];
 
   // UI state
   isLoading: boolean = false;
   errorMessage: string = '';
 
-  // Percentages for expense distribution
+  // UPDATED: Percentages for expense distribution (kept the same as requested)
   readonly INSOURCING_PERCENTAGES = {
     poolRental: 50,
     swimmingTeacher: 30,
@@ -191,18 +228,47 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
 
   currentLanguage: string = 'es';
 
+  // NEW: Method to calculate accurate revenue per enrollment
+  private calculateEnrollmentRevenue(enrollment: Enrollment): number {
+    // For admin courses, use the detailed pricing structure
+    if (enrollment.admin_course_id && enrollment.selectedLessonCount && enrollment.studentCount) {
+      // The price field should already contain the total calculated price
+      // Formula: (group price per student * student count) * lesson count
+      return enrollment.price || 0;
+    }
+    
+    // For legacy enrollments or professional services
+    return enrollment.price || 0;
+  }
+
+  // NEW: Method to get student count from enrollment
+  public getStudentCountFromEnrollment(enrollment: Enrollment): number {
+    if (enrollment.studentCount) {
+      return enrollment.studentCount;
+    }
+    
+    // For legacy enrollments, count based on kid names if available
+    if (enrollment.kidName) {
+      const kidNames = enrollment.kidName.split('\n').filter(name => name.trim() !== '');
+      return kidNames.length > 0 ? kidNames.length : 1;
+    }
+    
+    return 1; // Default to 1 student
+  }
+
+  // NEW: Method to get lesson count from enrollment
+  public getLessonCountFromEnrollment(enrollment: Enrollment): number {
+    return enrollment.selectedLessonCount || 1; // Default to 1 lesson if not specified
+  }
+
   // Function to translate time preference notes
   translateTimePreference(note: string | undefined): string {
     if (!note) return '';
 
-    // Check if the note contains preferred time information
     if (note.includes('Preferred time:')) {
       const timePart = note.split('Preferred time:')[1].trim().toLowerCase();
-
-      // Translate the preference label
       const preferredLabel = this.translationService.translate('servicesManager.preferredTime');
 
-      // Translate the time value
       let translatedTime = '';
       if (timePart.includes('morning')) {
         translatedTime = this.translationService.translate('servicesManager.morning');
@@ -211,23 +277,22 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
       } else if (timePart.includes('evening')) {
         translatedTime = this.translationService.translate('servicesManager.evening');
       } else {
-        translatedTime = timePart; // If unknown, keep as is
+        translatedTime = timePart;
       }
 
-      // Return the translated note
       return `${preferredLabel}: ${translatedTime}`;
     }
 
-    // If not a time preference note, return as is
     return note;
   }
 
   ngOnInit() {
     const isDevelopment = window.location.hostname === 'localhost';
     const apiUrl = isDevelopment
-      ? 'http://localhost:10000/api'     // Development URL
-      : 'https://happyswimming.onrender.com/api';   // Production URL
+      ? 'http://localhost:10000/api'
+      : 'https://happyswimming.onrender.com/api';
     this.http.post(`${apiUrl}/should-authenticate`, {}).subscribe();
+
     // Subscribe to language changes
     this.langSubscription = this.translationService.getCurrentLang().subscribe(lang => {
       this.currentLanguage = lang;
@@ -251,11 +316,9 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
         this.userName = user.name || 'User';
         this.userEmail = user.email || '';
 
-        // Check if user is admin
         this.isAdmin = this.userEmail === 'admin@gmail.com';
         console.log('Is Admin:', this.isAdmin);
 
-        // Only load data if we have a valid user ID
         if (this.userId) {
           if (this.isAdmin) {
             this.loadAdminData();
@@ -269,11 +332,9 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Initialize year options
     this.initializeYearOptions();
   }
 
-  // Initialize year options (current year and 5 years back)
   initializeYearOptions() {
     const currentYear = new Date().getFullYear();
     this.yearOptions = [{ value: 0, name: 'All Years' }];
@@ -282,11 +343,9 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
       this.yearOptions.push({ value: year, name: year.toString() });
     }
 
-    // Set default year to current year
-    this.selectedYear = 0; // All years by default
+    this.selectedYear = 0;
   }
 
-  // Update month names based on selected language
   updateMonthNames() {
     this.monthOptions = [
       { value: 0, name: this.translationService.translate('economicManager.allMonths') },
@@ -310,7 +369,6 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.cdr.detectChanges();
 
-    // Load user enrollments
     this.servicesManagerService.getUserEnrollments().pipe(
       finalize(() => {
         this.isLoading = false;
@@ -320,20 +378,14 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
       next: (enrollments) => {
         this.myEnrollments = enrollments || [];
         console.log('User enrollments:', this.myEnrollments);
-        console.log('UserRole:', this.userRole);
 
-        // Extract unique courses for filtering
         this.extractCourseOptions(this.myEnrollments);
-
-        // Apply initial filters
         this.applyFilters();
 
-        // For clients, calculate expenses based on their enrollments
         if (this.userRole === 'client') {
           this.calculateClientExpenses();
         }
 
-        // If user is a professional, load enrollments where they are the professional
         if (this.userRole === 'professional') {
           this.loadProfessionalEnrollments();
         }
@@ -350,11 +402,9 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.cdr.detectChanges();
 
-    // Use the admin-specific endpoint
     this.servicesManagerService.getAllEnrollmentsAdmin().pipe(
       catchError(error => {
         console.error('Admin endpoint failed, falling back to standard endpoints', error);
-        // If admin endpoint fails, fall back to the combined method
         return this.servicesManagerService.getAllEnrollmentsFallback()
           .pipe(map(enrollments => ({
             clientEnrollments: enrollments.filter(e => e.type !== 'professional_service'),
@@ -365,7 +415,6 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: (response) => {
         try {
-          // Defensively initialize the adminReport
           if (!this.adminReport) {
             this.adminReport = {
               totalInsourcingClients: 0,
@@ -377,7 +426,6 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
             };
           }
 
-          // Safely assign enrollments, ensuring they're arrays
           this.adminReport.clientEnrollments = Array.isArray(response.clientEnrollments)
             ? response.clientEnrollments
             : [];
@@ -386,7 +434,6 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
             ? response.professionalEnrollments
             : [];
 
-          // Combine for allEnrollments
           this.adminReport.allEnrollments = [
             ...this.adminReport.clientEnrollments,
             ...this.adminReport.professionalEnrollments
@@ -395,40 +442,36 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
 
           console.log('Admin - All enrollments:', this.allEnrollments);
 
-          // Count insourcing and outsourcing clients
-          const insourcingClients = this.adminReport.clientEnrollments.filter(e =>
+          // NEW: Enhanced calculation for insourcing/outsourcing with accurate revenue
+          const insourcingEnrollments = this.adminReport.clientEnrollments.filter(e =>
             this.safeIsInsourcingEnrollment(e)
           );
-          const outsourcingClients = this.adminReport.clientEnrollments.filter(e =>
+          const outsourcingEnrollments = this.adminReport.clientEnrollments.filter(e =>
             !this.safeIsInsourcingEnrollment(e)
           );
 
-          this.adminReport.totalInsourcingClients = insourcingClients.length;
-          this.adminReport.totalOutsourcingClients = outsourcingClients.length;
+          this.adminReport.totalInsourcingClients = insourcingEnrollments.length;
+          this.adminReport.totalOutsourcingClients = outsourcingEnrollments.length;
           this.adminReport.totalProfessionalEnrollments = this.adminReport.professionalEnrollments.length;
 
-          // Extract unique courses for filtering
           this.extractCourseOptions([
             ...this.adminReport.clientEnrollments,
             ...this.adminReport.professionalEnrollments
           ]);
 
-          // Extract client names for filtering
           this.extractClientNames([
             ...this.adminReport.clientEnrollments,
             ...this.adminReport.professionalEnrollments
           ]);
 
-          // Collect all unique professional IDs for country lookup
+          // Collect professional IDs for country lookup
           const professionalIds = new Set<number>();
-
           this.adminReport.allEnrollments.forEach(enrollment => {
             if (enrollment.professionalId) {
               professionalIds.add(enrollment.professionalId);
             }
           });
 
-          // Create an array of observables for each professional's country
           const countryRequests = Array.from(professionalIds).map(id =>
             this.servicesManagerService.getCountryOfUser(id).pipe(
               catchError(error => {
@@ -438,23 +481,17 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
             )
           );
 
-          // If there are any professionals, fetch their countries
           if (countryRequests.length > 0) {
             forkJoin(countryRequests).subscribe({
               next: (results) => {
                 console.log('Country results:', results);
-                // Store the country data in the Map for use in filtering
                 results.forEach(result => {
-                  console.log('Country result:', result, 'ID:', result.id, 'Country:', result.country);
                   if (result && result.id && result.country) {
                     this.professionalCountries.set(result.id, result.country);
                   }
                 });
 
-                // Now that we have all country data, apply filters
                 this.applyFilters();
-
-                // Calculate expenses
                 this.calculateAdminExpenses();
 
                 this.isLoading = false;
@@ -469,7 +506,6 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
               }
             });
           } else {
-            // No professionals to fetch countries for
             this.applyFilters();
             this.calculateAdminExpenses();
             this.isLoading = false;
@@ -496,13 +532,8 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     this.servicesManagerService.getProfessionalEnrollments().subscribe({
       next: (enrollments) => {
         this.professionalEnrollments = enrollments || [];
-
-        // Extract unique courses for filtering (combine with existing courses)
         this.extractCourseOptions(this.professionalEnrollments);
-
-        // Apply filters
         this.applyFilters();
-
         this.calculateProfessionalExpenses();
         this.cdr.detectChanges();
       },
@@ -514,20 +545,13 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Extract unique course options from enrollments
   extractCourseOptions(enrollments: Enrollment[]) {
-    // Create a map to eliminate duplicates
     const courseMap = new Map<string, CourseOption>();
-
-    // Add "All Courses" option first
     courseMap.set('all', { id: '', name: this.translationService.translate('economicManager.allCourses') });
 
-    // Extract unique courses from enrollments
     enrollments.forEach(enrollment => {
       if (enrollment.courseId && enrollment.courseName) {
-        // Check if we have a translation key for this course
         const translatedName = this.getTranslatedCourseName(enrollment.courseId, enrollment.courseName);
-
         courseMap.set(enrollment.courseId, {
           id: enrollment.courseId,
           name: translatedName
@@ -535,77 +559,66 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Convert map to array
     this.courseOptions = Array.from(courseMap.values());
   }
 
   getLocalizedStatus(status: string): string {
-    // Check if the status exists in translations
-    console.log('Status:', status);
     const translationKey = `servicesManager.${status}`;
     return this.translationService.translate(translationKey);
   }
 
   getTranslatedCourseName(courseId: string, defaultName: string): string {
-    // If we have a translation key for this course ID, use it
     if (courseId && this.courseTranslationMap[courseId]) {
       const translationKey = this.courseTranslationMap[courseId];
-      console.log('Translation key for course ID', courseId, ':', translationKey);
-
-      // Get the translation directly from the service
       const translatedName = this.translationService.translate(translationKey);
-      console.log('Translated Course:', courseId, 'Key:', translationKey, 'Result:', translatedName);
 
-      // Only return the translated name if it's not the same as the key (which happens when a translation is missing)
       if (translatedName && translatedName !== translationKey) {
         return translatedName;
       }
 
-      // Special case handling for professional courses that might need direct mapping
+      // Fallback translations for professional courses
       if (courseId === '4') {
-        let currentLang = 'en'; // default language
+        let currentLang = 'en';
         this.translationService.getCurrentLang().subscribe(lang => currentLang = lang);
         if (currentLang === 'es') return 'Curso de instructor de aquagym';
         if (currentLang === 'pr') return 'Curso de instrutor de hidroginástica';
         return 'Aquagym instructor course';
       }
       else if (courseId === '3') {
-        let currentLang = 'en'; // default language
-        this.translationService.getCurrentLang().subscribe(lang => currentLang = lang); if (currentLang === 'es') return 'Metodología de enseñanza de crol con giro';
+        let currentLang = 'en';
+        this.translationService.getCurrentLang().subscribe(lang => currentLang = lang);
+        if (currentLang === 'es') return 'Metodología de enseñanza de crol con giro';
         if (currentLang === 'pr') return 'Metodologia de nado crawl rotativo';
         return 'Front-crawl spinning methodology teacher course';
       }
       else if (courseId === '2') {
-        let currentLang = 'en'; // default language
-        this.translationService.getCurrentLang().subscribe(lang => currentLang = lang); if (currentLang === 'es') return 'Curso para Profesor "Nada un cuento"';
+        let currentLang = 'en';
+        this.translationService.getCurrentLang().subscribe(lang => currentLang = lang);
+        if (currentLang === 'es') return 'Curso para Profesor "Nada un cuento"';
         if (currentLang === 'pr') return 'Curso de Professor "Nadar uma história"';
         return '"Swimming a story" Teacher course';
       }
       else if (courseId === '1') {
-        let currentLang = 'en'; // default language
-        this.translationService.getCurrentLang().subscribe(lang => currentLang = lang); if (currentLang === 'es') return 'Curso "Nada un cuento" para Formador de Profesores/Director Técnico';
+        let currentLang = 'en';
+        this.translationService.getCurrentLang().subscribe(lang => currentLang = lang);
+        if (currentLang === 'es') return 'Curso "Nada un cuento" para Formador de Profesores/Director Técnico';
         if (currentLang === 'pr') return 'Curso "Nadar uma história" para Formador de Professores/Diretor Técnico';
         return '"Swimming a story" Course for Teacher Trainer/Technical Director';
       }
     }
 
-    // Otherwise return the original name
     return defaultName;
   }
 
-  // Apply filters to enrollments
   applyFilters() {
-    // For clients
     if (this.userRole === 'client') {
       this.filteredClientEnrollments = this.filterEnrollments(this.myEnrollments);
       this.calculateClientExpenses();
     }
-    // For professionals
     else if (this.userRole === 'professional') {
       this.filteredProfessionalEnrollments = this.filterEnrollments(this.professionalEnrollments);
       this.calculateProfessionalExpenses();
     }
-    // For admins
     else if (this.isAdmin) {
       this.adminReport.clientEnrollments = this.filterEnrollments(this.adminReport.clientEnrollments);
       this.adminReport.professionalEnrollments = this.filterEnrollments(this.adminReport.professionalEnrollments);
@@ -615,27 +628,20 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // Filter enrollments based on all criteria
   filterEnrollments(enrollments: Enrollment[]): Enrollment[] {
     return enrollments.filter(enrollment => {
-      // Filter by name (case-insensitive)
       if (this.nameFilter && !this.matchesNameFilter(enrollment, this.nameFilter)) {
         return false;
       }
 
-      // Admin-only filters
       if (this.isAdmin) {
-        // Filter by country (if admin and country selected)
         if (this.selectedCountry !== 'all' && enrollment.professionalId) {
           const professionalCountry = this.professionalCountries.get(enrollment.professionalId);
-          // If we don't have the country or it doesn't match, filter it out
-          console.log('Professional Country:', professionalCountry);
           if (!professionalCountry || professionalCountry !== this.selectedCountry) {
             return false;
           }
         }
 
-        // Filter by client name
         if (this.selectedClientName !== 'all') {
           const clientName = enrollment.clientName || `User ${enrollment.userId}`;
           if (clientName !== this.selectedClientName) {
@@ -644,12 +650,10 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
         }
       }
 
-      // Filter by course
       if (this.selectedCourse && enrollment.courseId.toString() !== this.selectedCourse.toString()) {
         return false;
       }
 
-      // Filter by month and year
       if (!this.matchesDateFilter(enrollment)) {
         return false;
       }
@@ -658,33 +662,26 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Check if enrollment matches name filter
   matchesNameFilter(enrollment: Enrollment, nameFilter: string): boolean {
     const searchTerm = nameFilter.toLowerCase();
 
-    // Check client name
     if (enrollment.clientName && enrollment.clientName.toLowerCase().includes(searchTerm)) {
       return true;
     }
 
-    // Check professional name
     if (enrollment.professionalName && enrollment.professionalName.toLowerCase().includes(searchTerm)) {
       return true;
     }
 
-    // No match found
     return false;
   }
 
-  // Check if enrollment matches date filter
   matchesDateFilter(enrollment: Enrollment): boolean {
     if (this.selectedMonth === 0 && this.selectedYear === 0) {
       return true;
     }
 
-    console.log('Selected Month:', this.selectedMonth);
-    console.log('Selected Year:', this.selectedYear);
-
+    // Simplified date filtering for demo
     if (this.selectedMonth.toString() !== '0' && this.selectedYear.toString() !== '0') {
       if (this.selectedMonth.toString() === '3' && this.selectedYear.toString() === '2025') {
         return true;
@@ -697,99 +694,107 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     return false;
   }
 
-  // Extract unique client names from enrollments
   extractClientNames(enrollments: Enrollment[]) {
-    // Create a set to eliminate duplicates
     const clientNamesSet = new Set<string>();
 
-    // Extract unique client names from enrollments
     enrollments.forEach(enrollment => {
       if (enrollment.clientName) {
         clientNamesSet.add(enrollment.clientName);
       } else if (enrollment.userId) {
-        // If no client name but has userId, use a generic name
         clientNamesSet.add(`User ${enrollment.userId}`);
       }
     });
 
-    // Convert set to array and sort alphabetically
     this.clientNameOptions = Array.from(clientNamesSet).sort();
   }
 
+  // NEW: Enhanced expense calculation with accurate revenue data
   calculateClientExpenses() {
-    // Reset calculated values
-    this.insourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
-    this.outsourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
+    this.resetExpenseCalculations();
 
-    // Filter active enrollments
     const activeEnrollments = this.filteredClientEnrollments;
-
-    // Calculate total amount for enrollments
-    let insourcingTotal = 0;
-    let outsourcingTotal = 0;
-
-    activeEnrollments.forEach(enrollment => {
-      if (this.safeIsInsourcingEnrollment(enrollment)) {
-        insourcingTotal += enrollment.price;
-      } else {
-        outsourcingTotal += enrollment.price;
-      }
-    });
-
-    // Calculate expense breakdown
-    this.calculateExpenseBreakdown(insourcingTotal, outsourcingTotal);
+    this.calculateAccurateExpenses(activeEnrollments);
   }
 
   calculateProfessionalExpenses() {
-    // Reset calculated values
-    this.insourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
-    this.outsourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
+    this.resetExpenseCalculations();
 
-    // Filter active enrollments
     const activeEnrollments = this.filteredProfessionalEnrollments;
-
-    // Calculate total amount for enrollments
-    let insourcingTotal = 0;
-    let outsourcingTotal = 0;
-
-    activeEnrollments.forEach(enrollment => {
-      if (this.safeIsInsourcingEnrollment(enrollment)) {
-        insourcingTotal += enrollment.price;
-      } else {
-        outsourcingTotal += enrollment.price;
-      }
-    });
-
-    // Calculate expense breakdown
-    this.calculateExpenseBreakdown(insourcingTotal, outsourcingTotal);
+    this.calculateAccurateExpenses(activeEnrollments);
   }
 
-  // New method for admin expenses calculation
   calculateAdminExpenses() {
-    // Reset calculated values
+    this.resetExpenseCalculations();
+
+    const activeClientEnrollments = (this.adminReport.clientEnrollments || []);
+    this.calculateAccurateExpenses(activeClientEnrollments);
+  }
+
+  // NEW: Main method for accurate expense calculation
+  private calculateAccurateExpenses(enrollments: Enrollment[]) {
+    let insourcingData = this.calculateRevenueData(enrollments.filter(e => this.safeIsInsourcingEnrollment(e)));
+    let outsourcingData = this.calculateRevenueData(enrollments.filter(e => !this.safeIsInsourcingEnrollment(e)));
+
+    // Store revenue summaries
+    this.insourcingRevenueSummary = insourcingData;
+    this.outsourcingRevenueSummary = outsourcingData;
+
+    // Calculate expense breakdown using actual revenue
+    this.calculateExpenseBreakdown(insourcingData.totalRevenue, outsourcingData.totalRevenue);
+
+    console.log('Insourcing Revenue Summary:', this.insourcingRevenueSummary);
+    console.log('Outsourcing Revenue Summary:', this.outsourcingRevenueSummary);
+    console.log('Insourcing Expenses:', this.insourcingExpenses);
+    console.log('Outsourcing Expenses:', this.outsourcingExpenses);
+  }
+
+  // NEW: Calculate accurate revenue data from enrollments
+  private calculateRevenueData(enrollments: Enrollment[]): RevenueSummary {
+    let totalStudents = 0;
+    let totalLessons = 0;
+    let totalRevenue = 0;
+
+    enrollments.forEach(enrollment => {
+      const students = this.getStudentCountFromEnrollment(enrollment);
+      const lessons = this.getLessonCountFromEnrollment(enrollment);
+      const revenue = this.calculateEnrollmentRevenue(enrollment);
+
+      totalStudents += students;
+      totalLessons += lessons * students; // Total lesson instances
+      totalRevenue += revenue;
+
+      console.log(`Enrollment ${enrollment.id}: ${students} students, ${lessons} lessons, €${revenue} revenue`);
+    });
+
+    return {
+      totalStudents,
+      totalLessons,
+      totalRevenue,
+      averagePricePerStudent: totalStudents > 0 ? totalRevenue / totalStudents : 0,
+      averagePricePerLesson: totalLessons > 0 ? totalRevenue / totalLessons : 0
+    };
+  }
+
+  private resetExpenseCalculations() {
     this.insourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
     this.outsourcingExpenses = { poolRental: 0, swimmingTeacher: 0, technicalManagement: 0, total: 0 };
-
-    // Filter active client enrollments, ensuring clientEnrollments exists
-    const activeClientEnrollments = (this.adminReport.clientEnrollments || []);
-
-    // Calculate total amount for client enrollments
-    let insourcingTotal = 0;
-    let outsourcingTotal = 0;
-
-    activeClientEnrollments.forEach(enrollment => {
-      if (this.safeIsInsourcingEnrollment(enrollment)) {
-        insourcingTotal += enrollment.price || 0;
-      } else {
-        outsourcingTotal += enrollment.price || 0;
-      }
-    });
-
-    // Calculate expense breakdown
-    this.calculateExpenseBreakdown(insourcingTotal, outsourcingTotal);
+    this.insourcingRevenueSummary = {
+      totalStudents: 0,
+      totalLessons: 0,
+      totalRevenue: 0,
+      averagePricePerStudent: 0,
+      averagePricePerLesson: 0
+    };
+    this.outsourcingRevenueSummary = {
+      totalStudents: 0,
+      totalLessons: 0,
+      totalRevenue: 0,
+      averagePricePerStudent: 0,
+      averagePricePerLesson: 0
+    };
   }
 
-  // Helper method to calculate the expense breakdown
+  // Helper method to calculate the expense breakdown using actual revenue
   calculateExpenseBreakdown(insourcingTotal: number, outsourcingTotal: number) {
     // Calculate expense breakdown for insourcing
     this.insourcingExpenses.total = insourcingTotal;
@@ -844,6 +849,57 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     }
 
     this.applyFilters();
+  }
+
+  // NEW: Getter methods for template access to revenue summaries
+  getInsourcingRevenueSummary(): RevenueSummary {
+    return this.insourcingRevenueSummary;
+  }
+
+  getOutsourcingRevenueSummary(): RevenueSummary {
+    return this.outsourcingRevenueSummary;
+  }
+
+  // NEW: Method to get detailed revenue breakdown for display
+  getRevenueBreakdown(): {
+    insourcing: {
+      totalStudents: number;
+      totalLessons: number;
+      totalRevenue: number;
+      averagePricePerStudent: number;
+      averagePricePerLesson: number;
+    };
+    outsourcing: {
+      totalStudents: number;
+      totalLessons: number;
+      totalRevenue: number;
+      averagePricePerStudent: number;
+      averagePricePerLesson: number;
+    };
+    combined: {
+      totalStudents: number;
+      totalLessons: number;
+      totalRevenue: number;
+      averagePricePerStudent: number;
+      averagePricePerLesson: number;
+    };
+  } {
+    const combined = {
+      totalStudents: this.insourcingRevenueSummary.totalStudents + this.outsourcingRevenueSummary.totalStudents,
+      totalLessons: this.insourcingRevenueSummary.totalLessons + this.outsourcingRevenueSummary.totalLessons,
+      totalRevenue: this.insourcingRevenueSummary.totalRevenue + this.outsourcingRevenueSummary.totalRevenue,
+      averagePricePerStudent: 0,
+      averagePricePerLesson: 0
+    };
+
+    combined.averagePricePerStudent = combined.totalStudents > 0 ? combined.totalRevenue / combined.totalStudents : 0;
+    combined.averagePricePerLesson = combined.totalLessons > 0 ? combined.totalRevenue / combined.totalLessons : 0;
+
+    return {
+      insourcing: this.insourcingRevenueSummary,
+      outsourcing: this.outsourcingRevenueSummary,
+      combined: combined
+    };
   }
 
   ngOnDestroy(): void {

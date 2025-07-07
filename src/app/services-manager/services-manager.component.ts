@@ -1546,21 +1546,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       langValue.subscribe((val: string) => currentLang = val).unsubscribe();
     }
 
-    if (currentLang === 'en') {
-      return uniquePricing
-        .map(gp => `${gp.studentRange} students: €${gp.price}/student`)
-        .join('<br>');
-    } else if (currentLang === 'pr') {
-      return uniquePricing
-        .map(gp => `${gp.studentRange} alunos: €${gp.price}/aluno`)
-        .join('<br>');
-    } else if (currentLang === 'es') {
-      return uniquePricing
-        .map(gp => `${gp.studentRange} estudiantes: €${gp.price}/estudiante`)
-        .join('<br>');
-    }
     return uniquePricing
-      .map(gp => `${gp.studentRange} students: €${gp.price}/student`)
+      .map(gp => `${gp.studentRange} estudiantes: €${gp.price}/estudiante`)
       .join('<br>');
   }
 

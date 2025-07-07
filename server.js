@@ -31,12 +31,12 @@ app.use(express.json());
 
 // Database connection DEV
 // const pool = new Pool({
-//   user: process.env.DB_USER || 'postgres',
-//   host: process.env.DB_HOST || 'localhost',
-//   database: process.env.DB_NAME || 'happyswimming',
-//   password: process.env.DB_PASSWORD || 'postgres',
-//   port: process.env.DB_PORT || 5432,
-//   schema: 'happyswimming'
+// user: process.env.DB_USER || 'postgres',
+// host: process.env.DB_HOST || 'localhost',
+// database: process.env.DB_NAME || 'happyswimming',
+// password: process.env.DB_PASSWORD || 'postgres',
+// port: process.env.DB_PORT || 5432,
+// schema: 'happyswimming'
 // });
 
 // Database connection PROD
@@ -1424,30 +1424,231 @@ app.get('/api/admin/students-statistics', authenticateToken, isAdmin, async (req
   }
 });
 
-// Update the student update endpoint to allow admin access
-app.put('/api/professional/students/:enrollmentId', authenticateToken, async (req, res) => {
+// POST: Initialize attendance records for enrollments with kid names
+app.post('/api/attendance/initialize', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+
+    const { enrollmentId, kidNames } = req.body;
+    console.log('Initializing attendance for enrollment:', enrollmentId, 'with kids:', kidNames);
+
+    // Validate input
+    if (!enrollmentId || !kidNames || !Array.isArray(kidNames)) {
+      return res.status(400).json({ error: 'Invalid enrollment ID or kid names' });
+    }
+
+    // Check if enrollment exists
+    const enrollmentCheck = await client.query(
+      'SELECT id FROM happyswimming.client_services WHERE id = $1',
+      [enrollmentId]
+    );
+
+    if (enrollmentCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Enrollment not found' });
+    }
+
+    const results = [];
+
+    // Initialize attendance record for each kid name
+    for (const kidName of kidNames) {
+      if (!kidName || kidName.trim() === '') continue;
+
+      const trimmedKidName = kidName.trim();
+
+      // Check if attendance record already exists
+      const existingRecord = await client.query(
+        'SELECT id FROM happyswimming.attendance WHERE enrollment_id = $1 AND kid_name = $2',
+        [enrollmentId, trimmedKidName]
+      );
+
+      if (existingRecord.rows.length === 0) {
+        // Create new attendance record
+        const insertResult = await client.query(
+          `INSERT INTO happyswimming.attendance (enrollment_id, kid_name, status, calification, assistance, notes)
+           VALUES ($1, $2, 'pending', NULL, 0, NULL)
+           RETURNING id, enrollment_id, kid_name, status, calification, assistance, notes, created_at`,
+          [enrollmentId, trimmedKidName]
+        );
+
+        results.push(insertResult.rows[0]);
+        console.log('Created attendance record for:', trimmedKidName);
+      } else {
+        // Get existing record
+        const existingData = await client.query(
+          'SELECT id, enrollment_id, kid_name, status, calification, assistance, notes, created_at FROM happyswimming.attendance WHERE enrollment_id = $1 AND kid_name = $2',
+          [enrollmentId, trimmedKidName]
+        );
+
+        results.push(existingData.rows[0]);
+        console.log('Attendance record already exists for:', trimmedKidName);
+      }
+    }
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      message: 'Attendance records initialized successfully',
+      records: results
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error initializing attendance records:', error);
+    res.status(500).json({ error: 'Failed to initialize attendance records' });
+  } finally {
+    client.release();
+  }
+});
+
+// GET: Fetch attendance records for an enrollment
+app.get('/api/attendance/enrollment/:enrollmentId', authenticateToken, async (req, res) => {
+  try {
+    const enrollmentId = req.params.enrollmentId;
+
+    const query = `
+      SELECT 
+        a.id,
+        a.enrollment_id,
+        a.kid_name,
+        a.status,
+        a.calification,
+        a.assistance,
+        a.notes,
+        a.created_at,
+        a.updated_at
+      FROM happyswimming.attendance a
+      WHERE a.enrollment_id = $1
+      ORDER BY a.kid_name
+    `;
+
+    const result = await pool.query(query, [enrollmentId]);
+
+    res.json(result.rows);
+
+  } catch (error) {
+    console.error('Error fetching attendance records:', error);
+    res.status(500).json({ error: 'Failed to fetch attendance records' });
+  }
+});
+
+// PUT: Update attendance record for a specific kid
+app.put('/api/attendance/:attendanceId', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const attendanceId = req.params.attendanceId;
+    const { status, calification, assistance, notes } = req.body;
     const userId = req.user.id;
     const userRole = req.user.role;
     const userEmail = req.user.email;
-    const enrollmentId = req.params.enrollmentId;
-    const { calification, assistance, status, notes } = req.body;
 
-    // Check if user is admin
+    console.log('Updating attendance record:', attendanceId, 'with data:', req.body);
+
+    // Check if user is admin or professional
     const isAdmin = userEmail === 'admin@gmail.com' || userRole === 'admin';
 
     if (userRole !== 'professional' && !isAdmin) {
       return res.status(403).json({ error: 'Professional or admin access required' });
     }
 
+    // Verify the attendance record exists and user has permission
+    let verifyQuery;
+    let verifyParams;
+
+    if (userRole === 'professional' && !isAdmin) {
+      // Professional can only update their own enrollments
+      verifyQuery = `
+        SELECT a.id, a.enrollment_id, a.kid_name 
+        FROM happyswimming.attendance a
+        JOIN happyswimming.client_services cs ON a.enrollment_id = cs.id
+        JOIN happyswimming.professionals p ON cs.professional_id = p.id
+        WHERE a.id = $1 AND p.user_id = $2
+      `;
+      verifyParams = [attendanceId, userId];
+    } else {
+      // Admin can update any attendance record
+      verifyQuery = `
+        SELECT a.id, a.enrollment_id, a.kid_name 
+        FROM happyswimming.attendance a
+        WHERE a.id = $1
+      `;
+      verifyParams = [attendanceId];
+    }
+
+    const verifyResult = await client.query(verifyQuery, verifyParams);
+
+    if (verifyResult.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied or attendance record not found' });
+    }
+
+    // Update the attendance record
+    const updateQuery = `
+      UPDATE happyswimming.attendance 
+      SET status = $1, calification = $2, assistance = $3, notes = $4, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $5
+      RETURNING id, enrollment_id, kid_name, status, calification, assistance, notes, updated_at
+    `;
+
+    const updateResult = await client.query(updateQuery, [
+      status || 'pending',
+      calification !== undefined ? calification : null,
+      assistance !== undefined ? assistance : 0,
+      notes || null,
+      attendanceId
+    ]);
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      message: 'Attendance record updated successfully',
+      record: updateResult.rows[0]
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error updating attendance record:', error);
+    res.status(500).json({ error: 'Failed to update attendance record' });
+  } finally {
+    client.release();
+  }
+});
+
+// Update the existing PUT endpoint for professional students
+app.put('/api/professional/students/:enrollmentId', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const userEmail = req.user.email;
+    const enrollmentId = req.params.enrollmentId;
+    const { kidName, calification, assistance, status, notes } = req.body;
+
+    console.log('Updating student attendance by kidName:', { enrollmentId, kidName, calification, assistance, status, notes });
+
+    // Check if user is admin
+    const isAdmin = userEmail === 'admin@gmail.com' || userRole === 'admin';
+
+    if (userRole !== 'professional' && !isAdmin) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Professional or admin access required' });
+    }
+
+    // Verify enrollment exists and user has permission
     let professionalId = null;
 
     if (userRole === 'professional' && !isAdmin) {
-      // Get professional ID for regular professionals
       const professionalQuery = 'SELECT id FROM happyswimming.professionals WHERE user_id = $1';
-      const professionalResult = await pool.query(professionalQuery, [userId]);
+      const professionalResult = await client.query(professionalQuery, [userId]);
 
       if (professionalResult.rows.length === 0) {
+        await client.query('ROLLBACK');
         return res.status(404).json({ error: 'Professional profile not found' });
       }
 
@@ -1455,95 +1656,103 @@ app.put('/api/professional/students/:enrollmentId', authenticateToken, async (re
 
       // Verify the professional owns this enrollment
       const verifyQuery = `
-        SELECT id, admin_course_id, student_count FROM happyswimming.client_services 
+        SELECT id FROM happyswimming.client_services 
         WHERE id = $1 AND professional_id = $2
       `;
 
       const verifyResult = await client.query(verifyQuery, [enrollmentId, professionalId]);
 
       if (verifyResult.rows.length === 0) {
+        await client.query('ROLLBACK');
         return res.status(403).json({ error: 'Access denied. Enrollment not found or not assigned to you.' });
       }
     } else if (isAdmin) {
-      // Admin can cancel any enrollment, just verify it exists
+      // Admin can update any enrollment, just verify it exists
       const verifyQuery = `
-        SELECT id, professional_id, admin_course_id, student_count FROM happyswimming.client_services 
+        SELECT id, professional_id FROM happyswimming.client_services 
         WHERE id = $1
       `;
 
       const verifyResult = await client.query(verifyQuery, [enrollmentId]);
 
       if (verifyResult.rows.length === 0) {
+        await client.query('ROLLBACK');
         return res.status(404).json({ error: 'Enrollment not found.' });
       }
 
       professionalId = verifyResult.rows[0].professional_id;
     }
 
-    // Get enrollment details before deletion
-    const enrollmentQuery = `
-      SELECT cs.admin_course_id, cs.student_count, cs.kid_name
-      FROM happyswimming.client_services cs
-      WHERE cs.id = $1
+    // Find or create attendance record for this specific kid
+    const attendanceQuery = `
+      SELECT id FROM happyswimming.attendance 
+      WHERE enrollment_id = $1 AND kid_name = $2
     `;
 
-    const enrollmentResult = await client.query(enrollmentQuery, [enrollmentId]);
+    const attendanceResult = await client.query(attendanceQuery, [enrollmentId, kidName]);
 
-    if (enrollmentResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Enrollment not found' });
-    }
+    let attendanceId;
 
-    const enrollment = enrollmentResult.rows[0];
-    const adminCourseId = enrollment.admin_course_id;
-    const studentCount = enrollment.student_count || 1;
-
-    // Delete the enrollment from client_services
-    const deleteQuery = `
-      DELETE FROM happyswimming.client_services 
-      WHERE id = $1
-      RETURNING id, kid_name
-    `;
-
-    const deleteResult = await client.query(deleteQuery, [enrollmentId]);
-
-    if (deleteResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Failed to cancel enrollment' });
-    }
-
-    // Update admin_courses.current_students (decrease by student_count)
-    if (adminCourseId) {
-      const updateCourseQuery = `
-        UPDATE happyswimming.admin_courses 
-        SET current_students = GREATEST(0, current_students - $1)
-        WHERE id = $2
-        RETURNING current_students
+    if (attendanceResult.rows.length === 0) {
+      // Create new attendance record
+      const insertQuery = `
+        INSERT INTO happyswimming.attendance (enrollment_id, kid_name, status, calification, assistance, notes)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id
       `;
 
-      const updateCourseResult = await client.query(updateCourseQuery, [studentCount, adminCourseId]);
+      const insertResult = await client.query(insertQuery, [
+        enrollmentId,
+        kidName,
+        status || 'pending',
+        calification !== undefined ? calification : null,
+        assistance !== undefined ? assistance : 0,
+        notes || null
+      ]);
 
-      console.log('Updated course current_students:', updateCourseResult.rows[0]?.current_students);
+      attendanceId = insertResult.rows[0].id;
+      console.log('Created new attendance record for kid:', kidName);
+    } else {
+      // Update existing attendance record
+      attendanceId = attendanceResult.rows[0].id;
+
+      const updateQuery = `
+        UPDATE happyswimming.attendance 
+        SET status = $1, calification = $2, assistance = $3, notes = $4, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $5
+      `;
+
+      await client.query(updateQuery, [
+        status || 'pending',
+        calification !== undefined ? calification : null,
+        assistance !== undefined ? assistance : 0,
+        notes || null,
+        attendanceId
+      ]);
+
+      console.log('Updated existing attendance record for kid:', kidName);
     }
 
     await client.query('COMMIT');
 
     res.json({
       success: true,
-      message: 'Enrollment cancelled successfully',
-      enrollmentId: enrollmentId,
-      kidName: deleteResult.rows[0].kid_name
+      message: 'Student attendance updated successfully',
+      attendanceId: attendanceId,
+      kidName: kidName
     });
 
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Error cancelling enrollment:', error);
-    res.status(500).json({ error: 'Failed to cancel enrollment' });
+    console.error('Error updating student attendance:', error);
+    res.status(500).json({ error: 'Failed to update student attendance' });
   } finally {
     client.release();
   }
 });
 
 
-// Update the existing GET route for admin courses to include admin access
+// Update the existing professional students endpoint to include attendance data
 app.get('/api/professional/admin-courses', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -1570,7 +1779,7 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
 
         professionalId = professionalResult.rows[0].id;
 
-        // Query for specific professional
+        // Query for specific professional with attendance data
         query = `
         SELECT 
           cs.id as enrollment_id,
@@ -1581,8 +1790,6 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
           cs.status,
           cs.price,
           cs.notes,
-          cs.calification,
-          cs.assistance,
           cs.kid_name,
           cs.mother_contact,
           cs.created_at as enrollment_date,
@@ -1603,7 +1810,22 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
           
           -- Professional details for admin view
           cs.professional_id,
-          CONCAT(pu.first_name, ' ', pu.last_name1) as professional_name
+          CONCAT(pu.first_name, ' ', pu.last_name1) as professional_name,
+          
+          -- Attendance data aggregated by enrollment
+          COALESCE(
+            JSON_AGG(
+              JSON_BUILD_OBJECT(
+                'attendanceId', a.id,
+                'kidName', a.kid_name,
+                'status', a.status,
+                'calification', a.calification,
+                'assistance', a.assistance,
+                'notes', a.notes
+              ) ORDER BY a.kid_name
+            ) FILTER (WHERE a.id IS NOT NULL),
+            '[]'::json
+          ) as attendance_records
           
         FROM happyswimming.client_services cs
         JOIN happyswimming.admin_courses ac ON cs.admin_course_id = ac.id
@@ -1611,13 +1833,19 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
         JOIN happyswimming.users cu ON c.user_id = cu.id
         LEFT JOIN happyswimming.professionals p ON cs.professional_id = p.id
         LEFT JOIN happyswimming.users pu ON p.user_id = pu.id
+        LEFT JOIN happyswimming.attendance a ON cs.id = a.enrollment_id
         WHERE cs.professional_id = $1
           AND ac.is_historical = FALSE
+        GROUP BY cs.id, cs.client_id, cs.admin_course_id, cs.start_date, cs.end_date, cs.status, 
+                 cs.price, cs.notes, cs.kid_name, cs.mother_contact, cs.created_at,
+                 ac.id, ac.course_code, ac.name, ac.description, ac.client_name,
+                 ac.start_date, ac.end_date, ac.status, ac.max_students,
+                 cu.first_name, cu.last_name1, cs.professional_id, pu.first_name, pu.last_name1
         ORDER BY ac.start_date DESC, cs.created_at DESC
       `;
         queryParams = [professionalId];
       } else if (isAdmin) {
-        // Admin can see all courses and students
+        // Admin can see all courses and students with attendance data
         query = `
           SELECT 
             cs.id as enrollment_id,
@@ -1628,8 +1856,6 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
             cs.status,
             cs.price,
             cs.notes,
-            cs.calification,
-            cs.assistance,
             cs.kid_name,
             cs.mother_contact,
             cs.created_at as enrollment_date,
@@ -1650,7 +1876,22 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
             
             -- Professional details for admin view
             cs.professional_id,
-            CONCAT(pu.first_name, ' ', pu.last_name1) as professional_name
+            CONCAT(pu.first_name, ' ', pu.last_name1) as professional_name,
+
+            -- Attendance data aggregated by enrollment
+            COALESCE(
+              JSON_AGG(
+                JSON_BUILD_OBJECT(
+                  'attendanceId', a.id,
+                  'kidName', a.kid_name,
+                  'status', a.status,
+                  'calification', a.calification,
+                  'assistance', a.assistance,
+                  'notes', a.notes
+                ) ORDER BY a.kid_name
+              ) FILTER (WHERE a.id IS NOT NULL),
+              '[]'::json
+            ) as attendance_records
 
           FROM happyswimming.client_services cs
           JOIN happyswimming.admin_courses ac ON cs.admin_course_id = ac.id
@@ -1658,7 +1899,13 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
           JOIN happyswimming.users cu ON c.user_id = cu.id
           LEFT JOIN happyswimming.professionals p ON cs.professional_id = p.id
           LEFT JOIN happyswimming.users pu ON p.user_id = pu.id
+          LEFT JOIN happyswimming.attendance a ON cs.id = a.enrollment_id
           WHERE ac.is_historical = FALSE
+          GROUP BY cs.id, cs.client_id, cs.admin_course_id, cs.start_date, cs.end_date, cs.status, 
+                   cs.price, cs.notes, cs.kid_name, cs.mother_contact, cs.created_at,
+                   ac.id, ac.course_code, ac.name, ac.description, ac.client_name,
+                   ac.start_date, ac.end_date, ac.status, ac.max_students,
+                   cu.first_name, cu.last_name1, cs.professional_id, pu.first_name, pu.last_name1
           ORDER BY ac.start_date DESC, cs.created_at DESC
         `;
         queryParams = [];
@@ -1684,12 +1931,11 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
         startDate: row.start_date,
         endDate: row.end_date,
         price: parseFloat(row.price),
-        calification: row.calification !== null ? parseFloat(row.calification) : undefined,
-        assistance: row.assistance !== null ? parseFloat(row.assistance) : undefined,
         notes: row.notes || '',
         enrollmentDate: row.enrollment_date,
         professionalId: row.professional_id,
-        professionalName: row.professional_name // Include professional name for admin view
+        professionalName: row.professional_name,
+        attendanceRecords: row.attendance_records || []
       }));
 
       console.log('Admin/Professional courses result:', enrollments.length, 'enrollments found');
