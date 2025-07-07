@@ -1171,9 +1171,9 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       const maxPrice = Math.max(...prices);
 
       if (minPrice === maxPrice) {
-        return `From €${minPrice}/student`;
+        return `From €${minPrice}/estudiante`;
       }
-      return `€${minPrice}-€${maxPrice}/student`;
+      return `€${minPrice}-€${maxPrice}/estudiante`;
     }
     return `€${course.price}`;
   }
@@ -1633,7 +1633,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     const groupPricing = this.getApplicableGroupPricing();
     if (!groupPricing) return '';
 
-    return `${groupPricing.studentRange} students: €${groupPricing.price}/student`;
+    return `${groupPricing.studentRange} estudiantes: €${groupPricing.price}/estudiante`;
   }
 
   getPriceBreakdown(): string {
