@@ -29,6 +29,8 @@ interface Enrollment {
   clientId?: number;
   clientName?: string;
   isOutsourcing?: boolean;
+  studentCount?: number; // For client services
+  selectedLessonCount?: number; // For admin courses
   notes?: string;
 }
 

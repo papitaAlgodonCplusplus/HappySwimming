@@ -2143,7 +2143,7 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
     // Added calification and assistance to the SELECT fields
     const clientServicesQuery = `
       SELECT cs.id, cs.client_id, cs.service_id, cs.professional_id, 
-        cs.start_date, cs.end_date, cs.day_of_week, cs.start_time, cs.end_time,
+        cs.start_date, cs.end_date, cs.day_of_week, cs.start_time, cs.end_time, cs.student_count, cs.selected_lesson_count,
         cs.price, cs.status, cs.notes, cs.created_at, cs.calification, cs.assistance, cs.kid_name, cs.mother_contact,
         s.name as service_name,
         c.user_id, c.is_outsourcing,
@@ -2197,6 +2197,8 @@ app.get('/api/admin/enrollments', authenticateToken, async (req, res) => {
       assistance: row.assistance,
       kid_name: row.kid_name,
       mother_contact: row.mother_contact,
+      studentCount: row.student_count,
+      selectedLessonCount: row.selected_lesson_count,
     }));
 
     // Format professional enrollments

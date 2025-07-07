@@ -243,6 +243,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
 
   // NEW: Method to get student count from enrollment
   public getStudentCountFromEnrollment(enrollment: Enrollment): number {
+    console.log('Calculating student count for enrollment:', enrollment);
     if (enrollment.studentCount) {
       return enrollment.studentCount;
     }
@@ -258,6 +259,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
 
   // NEW: Method to get lesson count from enrollment
   public getLessonCountFromEnrollment(enrollment: Enrollment): number {
+    console.log('Calculating lesson count for enrollment:', enrollment);
     return enrollment.selectedLessonCount || 1; // Default to 1 lesson if not specified
   }
 
