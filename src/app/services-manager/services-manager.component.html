@@ -334,12 +334,6 @@
                 [disabled]="childNames.length >= selectedStudentCount" title="Add another child name">
                 <i class="fas fa-plus me-1"></i> {{ 'servicesManager.addChildName' | translate }}
               </button>
-
-              <!-- Show helper text when limit is reached -->
-              <div *ngIf="childNames.length >= selectedStudentCount" class="text-muted mt-1 small">
-                Maximum {{ selectedStudentCount }} child name{{ selectedStudentCount > 1 ? 's' : '' }} allowed based on
-                selected student count.
-              </div>
             </div>
 
             <!-- Mother contact (required for all courses) -->
