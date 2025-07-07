@@ -3982,7 +3982,7 @@ app.post('/api/enrollments/admin-course', authenticateToken, async (req, res) =>
     const groupPrice = parseFloat(groupPricingResult.rows[0].group_price);
 
     // Calculate total price: (group price per student * student count) + lesson price
-    const totalPrice = (groupPrice * studentCount) * lessonPrice;
+    const totalPrice = (groupPrice * studentCount) * selectedLessonCount;
 
     // Get or create admin service
     let adminServiceId;
