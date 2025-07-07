@@ -1936,3 +1936,268 @@ p {
     color: #9ca3af;
   }
 }
+
+/* NEW: QR Access Welcome Section */
+.qr-access-welcome {
+  background: linear-gradient(135deg, #0f766e 0%, #0891b2 50%, #0284c7 100%);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  color: white;
+  box-shadow: 0 8px 32px rgba(15, 118, 110, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.qr-access-welcome::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="qr-pattern" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="none"/><circle cx="10" cy="10" r="2" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23qr-pattern)"/></svg>');
+  pointer-events: none;
+}
+
+.welcome-header {
+  position: relative;
+  z-index: 1;
+}
+
+.welcome-header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.client-info-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.client-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.client-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.client-details h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  word-wrap: break-word;
+}
+
+.client-email {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.75rem;
+  word-wrap: break-word;
+}
+
+.qr-access-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.badge-icon {
+  font-size: 1rem;
+}
+
+/* QR Access Empty State Messages */
+.qr-access-empty-message {
+  background: #f0f9ff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border-left: 4px solid #0ea5e9;
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.qr-access-empty-message .client-note {
+  background: transparent;
+  padding: 0;
+  border: none;
+  color: #0c4a6e;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.qr-access-empty-message .help-text {
+  color: #0369a1;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.qr-access-empty-message strong {
+  color: #0284c7;
+  font-weight: 700;
+}
+
+/* Responsive Design for QR Access */
+@media (max-width: 768px) {
+  .qr-access-welcome {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .welcome-header h2 {
+    font-size: 1.6rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .client-info-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+
+  .client-avatar {
+    width: 56px;
+    height: 56px;
+    font-size: 1.3rem;
+  }
+
+  .client-details h3 {
+    font-size: 1.2rem;
+  }
+
+  .client-email {
+    font-size: 0.9rem;
+  }
+
+  .qr-access-badge {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .qr-access-welcome {
+    padding: 1.25rem;
+  }
+
+  .welcome-header h2 {
+    font-size: 1.4rem;
+  }
+
+  .client-info-card {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .client-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 1.1rem;
+  }
+
+  .client-details h3 {
+    font-size: 1.1rem;
+  }
+
+  .qr-access-empty-message {
+    padding: 1.25rem;
+    margin-top: 1.25rem;
+  }
+}
+
+/* Enhanced Course Card for QR Access */
+.qr-access-welcome + .filter-section {
+  border-top: 3px solid #0891b2;
+}
+
+/* QR Access Course Cards Enhancement */
+.qr-access-welcome ~ .main-content .course-card {
+  border-left: 4px solid #0891b2;
+  transition: all 0.3s ease;
+}
+
+.qr-access-welcome ~ .main-content .course-card:hover {
+  border-left-color: #0f766e;
+  box-shadow: 0 12px 32px rgba(15, 118, 110, 0.15);
+}
+
+/* QR Access Mode Indicator */
+.qr-access-mode-indicator {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  background: linear-gradient(135deg, #0f766e 0%, #0891b2 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  z-index: 999;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qr-access-mode-indicator::before {
+  content: '📱';
+  font-size: 0.9rem;
+}
+
+/* Print Styles for QR Access */
+@media print {
+  .qr-access-welcome {
+    background: #f8f9fa !important;
+    color: #333 !important;
+    border: 2px solid #0891b2 !important;
+  }
+
+  .client-info-card {
+    background: rgba(8, 145, 178, 0.1) !important;
+    border: 1px solid #0891b2 !important;
+  }
+
+  .client-avatar {
+    background: #0891b2 !important;
+    color: white !important;
+  }
+
+  .qr-access-badge {
+    background: #e0f2fe !important;
+    color: #0c4a6e !important;
+    border: 1px solid #0891b2 !important;
+  }
+}

@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Subject } from 'rxjs';
 import { takeUntil, catchError, min } from 'rxjs/operators';
@@ -133,6 +133,16 @@ interface ScheduleEnrollmentDetails {
   lessonCount?: number;
 }
 
+// NEW: Interface for client info from backend
+interface ClientInfo {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName1: string;
+  lastName2?: string;
+  companyName?: string;
+}
+
 @Component({
   selector: 'app-services-manager',
   standalone: true,
@@ -154,10 +164,13 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
   private authService = inject(AuthService);
   private datePipe = inject(DatePipe);
+  private route = inject(ActivatedRoute);
 
   // User information
   userRole: string | null = null;
   userId: number | null = null;
+  clientInfo: ClientInfo | null = null; // NEW: Store client information
+  isQRAccess: boolean = false; // NEW: Track if accessed via QR
 
   // Available courses (now fetched from backend)
   clientCourses: Course[] = [];
@@ -278,8 +291,29 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.http.post(`${this.apiUrl}/should-authenticate`, {}).subscribe();
-    this.getUserInfo();
+    // Check if accessed via QR with userId parameter
+    this.route.queryParams.subscribe(params => {
+      if (params['userId']) {
+        this.isQRAccess = true;
+        this.userId = parseInt(params['userId'], 10);
+        this.userRole = 'client'; // Default to client role for QR access
+        console.log('QR Access detected for userId:', this.userId);
+
+        // Set should-not-authenticate for QR access
+        this.http.post(`${this.apiUrl}/should-not-authenticate`, {}).subscribe(() => {
+          // Load client info by userId
+        });
+        this.loadClientInfoByUserId(this.userId!);
+      } else {
+        // Normal authenticated access
+        console.log('Normal authenticated access');
+        this.http.post(`${this.apiUrl}/should-authenticate`, {}).subscribe(() => {
+        });
+        this.getUserInfo();
+      }
+    });
+
+    console.log('Initializing ServicesManagerComponent');
     this.loadAvailableCourses();
     this.loadEnrollments();
 
@@ -298,13 +332,41 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  // NEW: Load client info by userId for QR access
+  private loadClientInfoByUserId(userId: number): void {
+    console.log('Loading client info for userId:', userId);
+    this.isLoading = true;
+
+    this.http.get<ClientInfo>(`${this.apiUrl}/client-info/${userId}`, {
+      headers: this.getAuthHeaders()
+    }).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Error loading client info:', error);
+        this.error = 'Failed to load client information';
+        this.isLoading = false;
+        this.cdr.detectChanges();
+        return of(null);
+      })
+    ).subscribe(clientInfo => {
+      if (clientInfo) {
+        this.clientInfo = clientInfo;
+        this.userRole = 'client';
+        this.userClientName = clientInfo.companyName || `${clientInfo.firstName} ${clientInfo.lastName1}`;
+        console.log('Client company name:', this.userClientName);
+      }
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    });
+  }
+
   private getUserInfo(): void {
     this.authService.getCurrentUser().subscribe({
       next: user => {
+        console.log('Current user info:', user);
         if (!this.authService.isAuthenticated() || !user || !user.email || !user.id) {
           this.userRole = 'client';
           this.userId = 37; // Default user ID for clients
-          this.http.post(`${this.apiUrl}/should-not-authenticate`, {}).subscribe();
           return;
         }
         this.userRole = (user.email === 'admin@gmail.com') ? 'admin' : 'client';
@@ -312,9 +374,9 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         this.userId = userIdStr ? parseInt(userIdStr, 10) : null;
       },
       error: () => {
+        console.error('Failed to load user info');
         // Failed to load user, do nothing
         this.userRole = 'client';
-        this.http.post(`${this.apiUrl}/should-not-authenticate`, {}).subscribe();
         this.userId = 37;
         return;
       }
@@ -331,6 +393,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.error = '';
 
+    console.log('Loading available courses for user role:', this.userRole);
     if (this.userRole === 'client') {
       this.loadAdminCourses();
     } else if (this.userRole === 'professional') {
@@ -338,7 +401,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Load admin-created courses for clients
+  // UPDATED: Load admin-created courses for clients with client name filtering
   private loadAdminCourses(): void {
     this.http.get<Course[]>(`${this.apiUrl}/client/available-courses`, {
       headers: this.getAuthHeaders()
@@ -352,10 +415,27 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         return of([]);
       })
     ).subscribe(courses => {
-      this.adminCourses = courses.filter(course => course.type === 'admin_course');
+      console.log('All courses loaded:', courses);
+
+      // Filter courses by client name if we have client info
+      if (this.isQRAccess && this.clientInfo?.companyName) {
+        console.log('Filtering courses for client company:', this.clientInfo.companyName);
+
+        this.adminCourses = courses.filter(course => {
+          const match = course.clientName === this.clientInfo!.companyName;
+          console.log(`Course "${course.name}" clientName: "${course.clientName}" - Match: ${match}`);
+          return match && course.type === 'admin_course';
+        });
+
+        console.log('Filtered courses for client:', this.adminCourses);
+      } else {
+        // For normal authenticated access, show all courses
+        this.adminCourses = courses.filter(course => course.type === 'admin_course');
+      }
+
       this.clientCourses = [...this.adminCourses];
       this.calculateScheduleConflicts();
-      console.log('Loaded admin courses:', this.adminCourses);
+      console.log('Final admin courses:', this.adminCourses);
       this.isLoading = false;
       this.cdr.detectChanges();
     });
@@ -390,6 +470,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
   }
+
   private calculateScheduleConflicts(): void {
     this.scheduleConflicts = [];
     this.scheduleOwnership.clear();
@@ -477,15 +558,12 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return courseIdStr;
   }
 
-
   // NEW: Check if a schedule is owned by a specific course
   private isScheduleOwnedBy(schedule: Schedule, courseId: string): boolean {
     const scheduleKey = `${schedule.startTime}-${schedule.endTime}`;
     const owner = this.scheduleOwnership.get(scheduleKey);
     return owner === courseId;
   }
-
-
 
   // UPDATED: Enhanced schedule availability check that considers overlapping time slots
   private isScheduleAvailableForCourse(schedule: Schedule, courseId: string): boolean {
@@ -573,7 +651,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return Math.max(0, maxStudents - currentStudents);
   }
 
-
   // NEW: Get the lesson count that must be used for a specific schedule-course combination
   public getRequiredLessonCountForSchedule(schedule: Schedule, courseId: string): number | null {
     const conflict = this.scheduleConflicts.find(c =>
@@ -601,7 +678,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     return hours * 60 + minutes;
   }
 
-
   get availableCourses(): Course[] {
     let courses: Course[] = [];
 
@@ -611,16 +687,16 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       courses = this.professionalCourses;
     }
 
-    console.log('Initial courses before filtering:', courses.length, courses.map(c => ({ id: c.id, name: c.name })));
+    console.log('Initial courses before filtering:', courses.length, courses.map(c => ({ id: c.id, name: c.name, clientName: c.clientName })));
 
     // Apply filters first
     const filteredCourses = this.applyFilters(courses);
-    console.log('After applying filters:', filteredCourses.length, filteredCourses.map(c => ({ id: c.id, name: c.name })));
+    console.log('After applying filters:', filteredCourses.length, filteredCourses.map(c => ({ id: c.id, name: c.name, clientName: c.clientName })));
 
     // BUSINESS RULE: Only hide courses that have no available schedules
     const availableCoursesAfterBusinessRules = filteredCourses.filter(course => {
       const hasSpots = this.hasAvailableSpots(course);
-      console.log(`Course ${course.name} (${course.id}): hasAvailableSpots = ${hasSpots}`);
+      console.log(`Course ${course.name} (${course.id}) for client ${course.clientName}: hasAvailableSpots = ${hasSpots}`);
 
       if (!hasSpots) {
         console.log(`  -> Filtering out course ${course.name} because it has no available spots`);
@@ -629,7 +705,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       return hasSpots;
     });
 
-    console.log('Final available courses:', availableCoursesAfterBusinessRules.length, availableCoursesAfterBusinessRules.map(c => ({ id: c.id, name: c.name })));
+    console.log('Final available courses:', availableCoursesAfterBusinessRules.length, availableCoursesAfterBusinessRules.map(c => ({ id: c.id, name: c.name, clientName: c.clientName })));
 
     return availableCoursesAfterBusinessRules;
   }
@@ -801,7 +877,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-
   // Modified onStudentCountChange method to adjust child names array
   onStudentCountChange(count: number): void {
     this.selectedStudentCount = count;
@@ -955,7 +1030,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     // Cancel only the specific enrollment ID
     this.cancelEnrollmentById(this.selectedEnrollment.id);
   }
-
 
   // Modified resetEnrollmentForm method to initialize properly
   resetEnrollmentForm(): void {
@@ -1189,7 +1263,6 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     }
     return course.duration ? `${course.duration} hours` : '';
   }
-
 
   // UPDATED: Enhanced hasAvailableSpots method with overlap detection
   hasAvailableSpots(course: Course): boolean {

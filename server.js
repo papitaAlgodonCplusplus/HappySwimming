@@ -1751,6 +1751,86 @@ app.put('/api/professional/students/:enrollmentId', authenticateToken, async (re
   }
 });
 
+// NEW: Get client information by userId (for QR code access)
+app.get('/api/client-info/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    // Validate userId
+    if (!userId || isNaN(parseInt(userId))) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    console.log('Fetching client info for userId:', userId);
+
+    // Get user basic information
+    const userQuery = `
+      SELECT u.id, u.email, u.first_name, u.last_name1, u.last_name2, u.role
+      FROM happyswimming.users u
+      WHERE u.id = $1 AND u.is_authorized = true AND u.is_active = true
+    `;
+
+    const userResult = await pool.query(userQuery, [userId]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found or not authorized' });
+    }
+
+    const user = userResult.rows[0];
+
+    // If user is not a client, return error
+    if (user.role !== 'client') {
+      return res.status(403).json({ error: 'User is not a client' });
+    }
+
+    // Get client-specific information
+    const clientQuery = `
+      SELECT c.id as client_id, c.company_name, c.identification_number, 
+             c.address, c.postal_code, c.city, c.country, 
+             c.phone_fixed, c.phone_mobile, c.website, c.pl_code, 
+             c.is_outsourcing, c.habilities
+      FROM happyswimming.clients c
+      WHERE c.user_id = $1
+    `;
+
+    const clientResult = await pool.query(clientQuery, [userId]);
+
+    let clientInfo = null;
+    if (clientResult.rows.length > 0) {
+      clientInfo = clientResult.rows[0];
+    }
+
+    // Combine user and client information
+    const response = {
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName1: user.last_name1,
+      lastName2: user.last_name2,
+      role: user.role,
+      companyName: clientInfo?.company_name || null,
+      identificationNumber: clientInfo?.identification_number || null,
+      address: clientInfo?.address || null,
+      postalCode: clientInfo?.postal_code || null,
+      city: clientInfo?.city || null,
+      country: clientInfo?.country || null,
+      phoneFixed: clientInfo?.phone_fixed || null,
+      phoneMobile: clientInfo?.phone_mobile || null,
+      website: clientInfo?.website || null,
+      plCode: clientInfo?.pl_code || null,
+      isOutsourcing: clientInfo?.is_outsourcing || false,
+      abilities: clientInfo?.habilities || null
+    };
+
+    console.log('Client info response:', response);
+
+    res.json(response);
+
+  } catch (error) {
+    console.error('Error fetching client info:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Update the existing professional students endpoint to include attendance data
 app.get('/api/professional/admin-courses', authenticateToken, async (req, res) => {

@@ -433,6 +433,15 @@
         "noTemplatesAvailable": "No existing courses available to use as templates. Create your first course manually."
     },
     "servicesManager": {
+        "welcomeQRAccess": "Welcome to Course Management",
+        "qrAccessMode": "QR Code Access",
+        "noCoursesForSpecificClient": "No courses found for client",
+        "contactAdminForCourses": "Please contact the administrator to create courses for your company.",
+        "loadingClientInfo": "Loading client information...",
+        "clientInfoLoadError": "Failed to load client information. Please try again.",
+        "qrAccessTitle": "Course Enrollment Portal",
+        "accessModeQR": "Accessed via QR Code",
+        "personalizedAccess": "Personalized Access for",
         "dateRangeStart": "Start Date",
         "dateRangeEnd": "End Date",
         "scheduleStatus": "Schedule Status",

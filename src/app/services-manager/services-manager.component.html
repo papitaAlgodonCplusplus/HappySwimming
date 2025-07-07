@@ -1,4 +1,4 @@
-<!-- src/app/services-manager/services-manager.component.html (Updated with Enhanced Business Rules) -->
+<!-- Updated services-manager.component.html with QR access support -->
 <app-header></app-header>
 
 <div class="services-manager-container">
@@ -13,6 +13,26 @@
     <span class="alert-icon">✅</span>
     <span class="alert-message">{{ successMessage }}</span>
     <button class="alert-close" (click)="clearMessages()">×</button>
+  </div>
+
+  <!-- NEW: QR Access Welcome Message -->
+  <div *ngIf="isQRAccess && clientInfo" class="qr-access-welcome">
+    <div class="welcome-header">
+      <h2>{{ 'servicesManager.welcomeQRAccess' | translate }}</h2>
+      <div class="client-info-card">
+        <div class="client-avatar">
+          <span>{{ getInitials(clientInfo.firstName) }}</span>
+        </div>
+        <div class="client-details">
+          <h3>{{ clientInfo.companyName || (clientInfo.firstName) }}</h3>
+          <p class="client-email">{{ clientInfo.email }}</p>
+          <div class="qr-access-badge">
+            <span class="badge-icon">📱</span>
+            {{ 'servicesManager.qrAccessMode' | translate }}
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Enhanced Filter Section with Date Range -->
@@ -89,9 +109,19 @@
       <div *ngIf="!isLoading && availableCourses.length === 0" class="empty-state">
         <div class="empty-icon">📚</div>
         <h3>{{ 'servicesManager.noCourses' | translate }}</h3>
-        <p *ngIf="userRole === 'client'">{{ 'servicesManager.noCoursesClientMessage' | translate }}</p>
+        <p *ngIf="userRole === 'client' && !isQRAccess">{{ 'servicesManager.noCoursesClientMessage' | translate }}</p>
         <p *ngIf="userRole === 'professional'">{{ 'servicesManager.noCoursesProfessionalMessage' | translate }}</p>
-        <p *ngIf="userClientName" class="client-note">
+
+        <!-- NEW: QR Access specific messages -->
+        <div *ngIf="isQRAccess && clientInfo" class="qr-access-empty-message">
+          <p class="client-note">
+            {{ 'servicesManager.noCoursesForSpecificClient' | translate }}:
+            <strong>{{ clientInfo.companyName || (clientInfo.firstName + ' ' + clientInfo.lastName1) }}</strong>
+          </p>
+          <p class="help-text">{{ 'servicesManager.contactAdminForCourses' | translate }}</p>
+        </div>
+
+        <p *ngIf="userClientName && !isQRAccess" class="client-note">
           {{ 'servicesManager.coursesForClient' | translate }}: <strong>{{ userClientName }}</strong>
         </p>
       </div>
@@ -107,8 +137,8 @@
 
           <!-- Course Info -->
           <div class="course-info">
-            <!-- Client name -->
-            <div class="info-row">
+            <!-- Client name (show for QR access) -->
+            <div class="info-row" *ngIf="isQRAccess || course.clientName">
               <span class="info-label">{{ 'servicesManager.client' | translate }}:</span>
               <span class="info-value">{{ course.clientName }}</span>
             </div>
@@ -142,24 +172,24 @@
               <table class="enrollments-table">
                 <thead>
                   <tr>
+                    <th>{{ 'servicesManager.courseStartDate' | translate }}</th>
                     <th>{{ 'servicesManager.schedule' | translate }}</th>
                     <th>{{ 'servicesManager.students' | translate }}</th>
-                    <th>{{ 'servicesManager.courseStartDate' | translate }}</th>
                     <th>{{ 'servicesManager.availableSpots' | translate }}</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr *ngFor="let scheduleEnrollment of getScheduleEnrollments(course.id); trackBy: trackByIndex"
                     [ngClass]="{'schedule-winner': scheduleEnrollment.isWinner, 'schedule-unavailable': !scheduleEnrollment.isWinner && scheduleEnrollment.students === 0 && scheduleEnrollment.availableSpots === 0}">
+                    <td class="course-start-date">
+                      {{ scheduleEnrollment.courseStartDate | date:'shortDate' }}
+                    </td>
                     <td class="schedule-time">{{ scheduleEnrollment.schedule }}</td>
                     <td class="student-count">
                       <span class="count-badge"
                         [ngClass]="{'badge-winner': scheduleEnrollment.isWinner, 'badge-unavailable': !scheduleEnrollment.isWinner && scheduleEnrollment.availableSpots === 0}">
                         {{ scheduleEnrollment.students }}
                       </span>
-                    </td>
-                    <td class="course-start-date">
-                      {{ scheduleEnrollment.courseStartDate | date:'shortDate' }}
                     </td>
                     <td class="available-spots">
                       <span class="spots-badge"

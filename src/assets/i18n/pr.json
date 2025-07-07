@@ -99,6 +99,15 @@
         "noTemplatesAvailable": "Nenhum curso existente disponível para usar como modelos. Crie seu primeiro curso manualmente."
     },
     "servicesManager": {
+        "welcomeQRAccess": "Bem-vindo ao Gerenciamento de Cursos",
+        "qrAccessMode": "Acesso por Código QR",
+        "noCoursesForSpecificClient": "Nenhum curso encontrado para o cliente",
+        "contactAdminForCourses": "Por favor, entre em contato com o administrador para criar cursos para sua empresa.",
+        "loadingClientInfo": "Carregando informações do cliente...",
+        "clientInfoLoadError": "Falha ao carregar informações do cliente. Por favor, tente novamente.",
+        "qrAccessTitle": "Portal de Inscrição em Cursos",
+        "accessModeQR": "Acessado via Código QR",
+        "personalizedAccess": "Acesso Personalizado para",
         "childAge": "Idade da Criança",
         "dateRangeStart": "Data de Início",
         "dateRangeEnd": "Data de Fim",
