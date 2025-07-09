@@ -182,7 +182,7 @@
                   <tr *ngFor="let scheduleEnrollment of getScheduleEnrollments(course.id); trackBy: trackByIndex"
                     [ngClass]="{'schedule-winner': scheduleEnrollment.isWinner, 'schedule-unavailable': !scheduleEnrollment.isWinner && scheduleEnrollment.students === 0 && scheduleEnrollment.availableSpots === 0}">
                     <td class="course-start-date">
-                      {{ scheduleEnrollment.courseStartDate | date:'shortDate' }}
+                      {{ scheduleEnrollment.courseStartDate | date:'dd/MM/yyyy' }}
                     </td>
                     <td class="schedule-time">{{ scheduleEnrollment.schedule }}</td>
                     <td class="student-count">

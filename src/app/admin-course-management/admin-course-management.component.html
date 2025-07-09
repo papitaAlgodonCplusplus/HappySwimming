@@ -736,6 +736,14 @@
             </div>
           </div>
 
+          <!-- Course Start Date -->
+          <div class="course-start-date-preview">
+            <h4>{{ 'adminCourseManagement.startDate' | translate }}</h4>
+            <div class="start-date-display">
+              <div class="start-date-item">{{ course.startDate | date:'dd/MM/yyyy' }}</div>
+            </div>
+          </div>
+
           <!-- Schedules Preview -->
           <div class="schedules-preview">
             <h4>{{ 'adminCourseManagement.schedules' | translate }} ({{ getUniqueSchedules(course).length }})</h4>

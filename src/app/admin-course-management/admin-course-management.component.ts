@@ -473,10 +473,19 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  // 7. NEW: Method to clean course data before submission
+  // 7. UPDATED: Method to clean course data before submission
   private cleanCourseDataForSubmission(): any {
     // Deep clone to avoid modifying original data
     const cleanedData = JSON.parse(JSON.stringify(this.courseForm));
+
+    // Clean client name - remove company name in parentheses if present
+    if (cleanedData.clientName) {
+      // Extract just the name part before any parentheses
+      const nameMatch = cleanedData.clientName.match(/^([^(]+?)(?:\s*\([^)]*\))?$/);
+      if (nameMatch) {
+        cleanedData.clientName = nameMatch[1].trim();
+      }
+    }
 
     // Remove duplicate schedules based on time slots
     const uniqueSchedules = new Map<string, Schedule>();
@@ -517,7 +526,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
 
     return cleanedData;
   }
-
 
   // Helper method to get group pricing value
   getGroupPricingValue(range: '1-4' | '5-6'): number {
