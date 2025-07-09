@@ -3862,7 +3862,6 @@ app.get('/api/client/available-courses', authenticateToken, async (req, res) => 
       LEFT JOIN happyswimming.users pu ON p.user_id = pu.id
       WHERE ac.status = 'active' 
         AND ac.is_historical = FALSE
-        AND ac.start_date > CURRENT_DATE
     `;
 
     const queryParams = [];
