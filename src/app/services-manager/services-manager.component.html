@@ -9,6 +9,14 @@
     <button class="alert-close" (click)="clearMessages()">×</button>
   </div>
 
+  <!-- Translation Status Indicator -->
+  <div class="language-selector-container">
+    <div *ngIf="isTranslating" class="translation-status">
+      <span class="loading-spinner"></span>
+      <span>{{ 'servicesManager.translating' | translate }}</span>
+    </div>
+  </div>
+
   <div *ngIf="successMessage" class="alert alert-success">
     <span class="alert-icon">✅</span>
     <span class="alert-message">{{ successMessage }}</span>
@@ -71,7 +79,7 @@
           class="form-control">
           <option value="">{{ 'servicesManager.allCourses' | translate }}</option>
           <option *ngFor="let courseTitle of getAvailableCoursesTitles()" [value]="courseTitle">
-            {{ courseTitle | translate }}
+            {{ courseTitle }}
           </option>
         </select>
       </div>
@@ -131,7 +139,7 @@
         <div *ngFor="let course of availableCourses; trackBy: trackByCourseId" class="course-card">
           <!-- Course Header -->
           <div class="course-header">
-            <h3 class="course-title">{{ course.name.trim() | translate }}</h3>
+            <h3 class="course-title">{{ getCourseName(course) }}</h3>
             <div *ngIf="course.courseCode" class="course-code">{{ course.courseCode }}</div>
           </div>
 
@@ -153,7 +161,7 @@
 
           <!-- Course Description -->
           <div class="course-description">
-            <p>{{ course.description.trim() | translate }}</p>
+            <p>{{ getCourseDescription(course) }}</p>
           </div>
 
           <!-- Group Pricing Information -->
@@ -232,8 +240,8 @@
 
       <div class="modal-body">
         <div *ngIf="selectedCourse" class="selected-course-info">
-          <h3>{{ selectedCourse.name.trim() | translate }}</h3>
-          <p>{{ selectedCourse.description.trim() | translate }}</p>
+          <h3> {{ getCourseName(selectedCourse) }}</h3>
+          <p>{{ getCourseDescription(selectedCourse) }}</p>
           <div class="course-details-modal">
             <div class="modal-detail">
               <strong>{{ 'servicesManager.client' | translate }}:</strong> {{ selectedCourse.clientName }}

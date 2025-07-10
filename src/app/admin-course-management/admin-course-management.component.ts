@@ -1,4 +1,4 @@
-// src/app/admin-course-management/admin-course-management.component.ts (Updated)
+// src/app/admin-course-management/admin-course-management.component.ts (Updated with Direct Translation API)
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -8,6 +8,7 @@ import { Subject } from 'rxjs';
 import { takeUntil, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { TranslationService } from '../services/translation.service';
 
 // Components
 import { HeaderComponent } from '../header/header.component';
@@ -48,6 +49,10 @@ interface AdminCourse {
   groupPricing: GroupPricing[];
   createdAt?: Date;
   isHistorical?: boolean;
+
+  // Translation fields
+  translatedName?: string;
+  translatedDescription?: string;
 }
 
 interface Professional {
@@ -68,7 +73,6 @@ interface CourseFormData {
   groupPricing: GroupPricing[];
 }
 
-// NEW: Client interface for dropdown
 interface Client {
   id: number;
   firstName: string;
@@ -82,14 +86,23 @@ interface Client {
 @Component({
   selector: 'app-admin-course-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, HeaderComponent, TranslatePipe],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    HeaderComponent,
+    TranslatePipe
+  ],
   templateUrl: './admin-course-management.component.html',
   styleUrls: ['./admin-course-management.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdminCourseManagementComponent implements OnInit, OnDestroy {
+  // Translation properties
+  currentLanguage: string = 'es';
+  isTranslating: boolean = false;
+
   private destroy$ = new Subject<void>();
-  // NEW: Global lesson options management
   globalLessonOption = {
     lessonCount: 1,
     price: 0
@@ -111,7 +124,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   // Course management state
   courses: AdminCourse[] = [];
   professionals: Professional[] = [];
-  clients: Client[] = []; // NEW: Array to store clients
+  clients: Client[] = [];
   isLoading: boolean = false;
   error: string = '';
   successMessage: string = '';
@@ -120,7 +133,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   showCreateForm: boolean = false;
   editingCourse: AdminCourse | null = null;
 
-  // NEW: Course template selection
+  // Course template selection
   selectedCourseTemplate: AdminCourse | null = null;
   showTemplateSelection: boolean = false;
 
@@ -156,15 +169,280 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
 
   constructor(
     private http: HttpClient,
+    private translateService: TranslationService,
     private cdr: ChangeDetectorRef
   ) { }
 
+  // ========================================
+  // DIRECT TRANSLATION API METHODS
+  // ========================================
+
+  /**
+   * Get current language from local storage or translation service
+   */
+  private getCurrentLanguage(): string {
+    const savedLang = localStorage.getItem('preferredLanguage');
+    if (savedLang) {
+      this.currentLanguage = savedLang;
+      return savedLang;
+    }
+
+    try {
+      this.translateService.getCurrentLang().subscribe(lang => {
+        if (typeof lang === 'string') {
+          this.currentLanguage = lang;
+        }
+      });
+    } catch (error) {
+      console.log('Could not get language from translation service, using default');
+    }
+
+    return this.currentLanguage;
+  }
+
+  /**
+   * Subscribe to language changes
+   */
+  private subscribeToLanguageChanges(): void {
+    try {
+      this.translateService.getCurrentLang().subscribe(lang => {
+        if (typeof lang === 'string' && lang !== this.currentLanguage) {
+          console.log('Admin: Language changed from', this.currentLanguage, 'to', lang);
+          this.currentLanguage = lang;
+          this.translateAllCourses();
+        }
+      });
+    } catch (error) {
+      console.log('Could not subscribe to language changes:', error);
+    }
+  }
+
+  /**
+   * Translate all available courses
+   */
+  private async translateAllCourses(): Promise<void> {
+    if (this.courses.length === 0) {
+      return;
+    }
+
+    this.isTranslating = true;
+    this.cdr.detectChanges();
+
+    try {
+      // Translate courses in batches
+      const batchSize = 3;
+      for (let i = 0; i < this.courses.length; i += batchSize) {
+        const batch = this.courses.slice(i, i + batchSize);
+        await this.translateCourseBatch(batch);
+
+        // Small delay between batches
+        if (i + batchSize < this.courses.length) {
+          await this.delay(200);
+        }
+      }
+    } catch (error) {
+      console.error('Error translating admin courses:', error);
+    } finally {
+      this.isTranslating = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  /**
+   * Translate a batch of courses
+   */
+  private async translateCourseBatch(courses: AdminCourse[]): Promise<void> {
+    const promises = courses.map(course => this.translateSingleCourse(course));
+    await Promise.all(promises);
+  }
+
+  /**
+   * Translate a single course using direct API call
+   */
+  private async translateSingleCourse(course: AdminCourse): Promise<void> {
+    try {
+      console.log('Admin: Translating course:', course.name);
+
+      // Prepare texts to translate
+      const textsToTranslate: any[] = [];
+      if (course.name) textsToTranslate.push(course.name);
+      if (course.description) textsToTranslate.push(course.description);
+
+      if (textsToTranslate.length === 0) {
+        return;
+      }
+
+      const translateTo = this.currentLanguage === 'pr' ? 'pt' : this.currentLanguage;
+      // Call translation API directly
+      const translationData = {
+        texts: textsToTranslate,
+        targetLang: translateTo,
+        sourceLang: 'auto'
+      };
+
+      const response = await this.http.post<any>(`${this.apiUrl}/translate/batch`, translationData, {
+        headers: this.getAuthHeaders()
+      }).toPromise();
+
+      console.log('Admin: Translation response for', course.name, ':', response);
+
+      // Extract translated texts - handle different response formats
+      let translations: string[] = [];
+
+      if (response && response.translations && Array.isArray(response.translations)) {
+        console.log('Admin: Found translations array:', response.translations);
+
+        // The translations array contains objects or strings, extract the actual text
+        translations = response.translations.map((item: any, index: number) => {
+          console.log(`Admin: Processing translation item ${index}:`, item, 'type:', typeof item);
+
+          // If item is a string, return it directly
+          if (typeof item === 'string') {
+            return item;
+          }
+
+          // If item is an object, try to extract the translated text
+          if (typeof item === 'object' && item !== null) {
+            // Check for common translation response formats
+            if (item.translation && Array.isArray(item.translation) && item.translation.length > 0) {
+              return item.translation[0]; // Format: { translation: ["translated text", "lang"] }
+            }
+            if (item.translatedText) {
+              return item.translatedText; // Format: { translatedText: "..." }
+            }
+            if (item.text) {
+              return item.text; // Format: { text: "..." }
+            }
+
+            // If it's an object but doesn't match expected formats, convert to string
+            console.warn('Admin: Unknown translation object format:', item);
+            return JSON.stringify(item);
+          }
+
+          // Fallback: return original text for this index
+          return textsToTranslate[index] || '';
+        });
+
+        console.log('Admin: Extracted translations:', translations);
+      }
+      // Check if response is directly an array
+      else if (Array.isArray(response)) {
+        translations = response.map((item: any, index: number) => {
+          if (typeof item === 'string') {
+            return item;
+          }
+          if (typeof item === 'object' && item !== null) {
+            if (item.translation && Array.isArray(item.translation)) {
+              return item.translation[0];
+            }
+            return textsToTranslate[index] || '';
+          }
+          return textsToTranslate[index] || '';
+        });
+        console.log('Admin: Response is array, extracted:', translations);
+      }
+      // Fallback: use original texts
+      else {
+        console.warn('Admin: Unexpected response format:', response);
+        translations = textsToTranslate; // Use original texts as fallback
+      }
+
+      // Assign translations back to course - ensure we're setting strings
+      if (translations.length > 0 && course.name) {
+        const translatedName = translations[0];
+        if (typeof translatedName === 'string') {
+          course.translatedName = translatedName;
+          console.log('Admin: Set translated name (string):', translatedName);
+        } else {
+          console.warn('Admin: Translated name is not a string:', translatedName, 'type:', typeof translatedName);
+          course.translatedName = course.name; // Fallback to original
+        }
+      }
+
+      if (translations.length > 1 && course.description) {
+        const translatedDescription = translations[1];
+        if (typeof translatedDescription === 'string') {
+          course.translatedDescription = translatedDescription;
+          console.log('Admin: Set translated description (string):', translatedDescription.substring(0, 50) + '...');
+        } else {
+          console.warn('Admin: Translated description is not a string:', translatedDescription, 'type:', typeof translatedDescription);
+          course.translatedDescription = course.description; // Fallback to original
+        }
+      }
+
+      // If only one translation but we have both name and description, 
+      // keep original description
+      if (translations.length === 1 && course.description && !course.translatedDescription) {
+        course.translatedDescription = course.description; // Keep original description
+      }
+
+    } catch (error) {
+      console.error('Admin: Error translating course:', course.name, error);
+      // Keep original text on error
+      course.translatedName = course.name;
+      course.translatedDescription = course.description;
+    }
+  }
+
+  /**
+   * Get the display name for a course (translated or original)
+   */
+  getCourseName(course: AdminCourse): string {
+    const result = course.translatedName || course.name;
+
+    // Safety check to ensure we're returning a string
+    if (typeof result === 'object') {
+      console.warn('Admin: getCourseName returned an object, using original name:', result);
+      return course.name;
+    }
+
+    return result;
+  }
+
+  /**
+   * Get the display description for a course (translated or original)
+   */
+  getCourseDescription(course: AdminCourse): string {
+    const result = course.translatedDescription || course.description;
+
+    // Safety check to ensure we're returning a string
+    if (typeof result === 'object') {
+      console.warn('Admin: getCourseDescription returned an object, using original description:', result);
+      return course.description;
+    }
+
+    return result;
+  }
+
+  /**
+   * Manually refresh translations
+   */
+  refreshTranslations(): void {
+    console.log('Admin: Manually refreshing translations');
+    this.translateAllCourses();
+  }
+
+  /**
+   * Utility method to create delay
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // ========================================
+  // EXISTING METHODS (UNCHANGED)
+  // ========================================
+
   ngOnInit(): void {
+    // Get current language and subscribe to changes
+    this.getCurrentLanguage();
+    this.subscribeToLanguageChanges();
+
     this.http.post(`${this.apiUrl}/should-authenticate`, {}).subscribe();
     this.checkUserRole();
     this.loadCourses();
     this.loadProfessionals();
-    this.loadClients(); // NEW: Load clients
+    this.loadClients();
     this.initializeGroupPricing();
   }
 
@@ -178,7 +456,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     return new HttpHeaders().set('Authorization', `Bearer ${token}`);
   }
 
-  // NEW: Load clients from API
   loadClients(): void {
     this.http.get<Client[]>(`${this.apiUrl}/admin/clients`, {
       headers: this.getAuthHeaders()
@@ -195,29 +472,24 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  // NEW: Get client display name for dropdown
   getClientDisplayName(client: Client): string {
     const name = `${client.firstName} ${client.lastName1}${client.lastName2 ? ' ' + client.lastName2 : ''}`;
     return client.companyName ? `${name} (${client.companyName})` : name;
   }
 
-  // NEW: Handle client selection
   onClientSelected(clientName: string): void {
     this.courseForm.clientName = clientName;
   }
 
-  // NEW: Show template selection modal
   showCourseTemplateSelection(): void {
     this.showTemplateSelection = true;
   }
 
-  // NEW: Hide template selection modal
   hideCourseTemplateSelection(): void {
     this.showTemplateSelection = false;
     this.selectedCourseTemplate = null;
   }
 
-  // Initialize default group pricing structure
   private initializeGroupPricing(): void {
     this.courseForm.groupPricing = [
       { studentRange: '1-4', price: 0 },
@@ -225,7 +497,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     ];
   }
 
-  // Load courses from API
   loadCourses(): void {
     this.isLoading = true;
     this.error = '';
@@ -245,12 +516,17 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       console.log('Loaded courses:', courses);
       this.courses = courses;
       this.extractClientOptions();
+
+      // Trigger translation after courses are loaded
+      setTimeout(() => {
+        this.translateAllCourses();
+      }, 200);
+
       this.isLoading = false;
       this.cdr.detectChanges();
     });
   }
 
-  // Load available professionals
   loadProfessionals(): void {
     this.http.get<Professional[]>(`${this.apiUrl}/professionals/available`, {
       headers: this.getAuthHeaders()
@@ -267,7 +543,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Extract unique client names for filter
   private extractClientOptions(): void {
     const clients = new Set(this.courses.map(course => course.clientName));
     this.clientOptions = Array.from(clients).sort();
@@ -291,7 +566,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       return false;
     }
 
-    // Check for duplicate schedule times
     const duplicate = this.courseForm.schedules.find(s =>
       s.startTime === this.newSchedule.startTime && s.endTime === this.newSchedule.endTime
     );
@@ -303,13 +577,11 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     return true;
   }
 
-  // Lesson option management
   addLessonOptionToNewSchedule(): void {
     if (!this.validateNewLessonOption()) {
       return;
     }
 
-    // Check for duplicate lesson counts in current schedule
     const duplicate = this.newSchedule.lessonOptions.find(l =>
       l.lessonCount === this.newLessonOption.lessonCount
     );
@@ -323,7 +595,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       price: this.newLessonOption.price
     });
 
-    // Sort by lesson count
     this.newSchedule.lessonOptions.sort((a, b) => a.lessonCount - b.lessonCount);
 
     this.resetNewLessonOption();
@@ -352,7 +623,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     const schedule = this.courseForm.schedules[scheduleIndex];
     if (!schedule) return;
 
-    // Add a default lesson option
     schedule.lessonOptions.push({
       lessonCount: 1,
       price: 0
@@ -374,7 +644,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
 
     schedule.lessonOptions[lessonIndex][field] = value;
 
-    // Sort lesson options if lesson count changed
     if (field === 'lessonCount') {
       schedule.lessonOptions.sort((a, b) => a.lessonCount - b.lessonCount);
     }
@@ -382,7 +651,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // Group pricing management
   updateGroupPricing(range: '1-4' | '5-6', price: number): void {
     const groupPricing = this.courseForm.groupPricing.find(gp => gp.studentRange === range);
     if (groupPricing) {
@@ -391,7 +659,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // Get helper methods
   getLessonCountOptions(): number[] {
     return Array.from({ length: 20 }, (_, i) => i + 1);
   }
@@ -417,7 +684,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     return time.substring(0, 5);
   }
 
-  // Reset methods
   private resetNewSchedule(): void {
     this.newSchedule = {
       startTime: '',
@@ -433,7 +699,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     };
   }
 
-  // 6. FIX: Update the createCourse method to clean data before sending
   createCourse(): void {
     if (!this.validateCourseForm()) {
       console.warn('Course form validation failed:', this.error);
@@ -444,8 +709,22 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.error = '';
     this.successMessage = '';
 
-    // FIXED: Clean and deduplicate data before sending
     const cleanedCourseData = this.cleanCourseDataForSubmission();
+
+    // Remove translation markers from name and description
+    if (cleanedCourseData.name && cleanedCourseData.name.includes('[Original:')) {
+      const originalMatch = cleanedCourseData.name.match(/\[Original: (.+)\]$/);
+      if (originalMatch) {
+        cleanedCourseData.name = originalMatch[1];
+      }
+    }
+
+    if (cleanedCourseData.description && cleanedCourseData.description.includes('[Original:')) {
+      const originalMatch = cleanedCourseData.description.match(/\[Original: (.+)\]$/);
+      if (originalMatch) {
+        cleanedCourseData.description = originalMatch[1];
+      }
+    }
 
     console.log('Creating course with cleaned data:', cleanedCourseData);
 
@@ -467,32 +746,29 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
         this.resetForm();
         this.showCreateForm = false;
         this.successMessage = `Course "${course.name}" created successfully with code: ${course.courseCode}`;
+
+        // Trigger translation for new course
+        this.translateAllCourses();
       }
       this.isLoading = false;
       this.cdr.detectChanges();
     });
   }
 
-  // 7. UPDATED: Method to clean course data before submission
   private cleanCourseDataForSubmission(): any {
-    // Deep clone to avoid modifying original data
     const cleanedData = JSON.parse(JSON.stringify(this.courseForm));
 
-    // Clean client name - remove company name in parentheses if present
     if (cleanedData.clientName) {
-      // Extract just the name part before any parentheses
       const nameMatch = cleanedData.clientName.match(/^([^(]+?)(?:\s*\([^)]*\))?$/);
       if (nameMatch) {
         cleanedData.clientName = nameMatch[1].trim();
       }
     }
 
-    // Remove duplicate schedules based on time slots
     const uniqueSchedules = new Map<string, Schedule>();
     cleanedData.schedules.forEach((schedule: Schedule) => {
       const key = `${schedule.startTime}-${schedule.endTime}`;
       if (!uniqueSchedules.has(key)) {
-        // Clean lesson options for this schedule
         const uniqueLessonOptions = new Map<number, LessonOption>();
         schedule.lessonOptions.forEach((option: LessonOption) => {
           uniqueLessonOptions.set(option.lessonCount, {
@@ -510,7 +786,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
 
     cleanedData.schedules = Array.from(uniqueSchedules.values());
 
-    // Remove duplicate group pricing
     const uniqueGroupPricing = new Map<string, GroupPricing>();
     cleanedData.groupPricing.forEach((pricing: GroupPricing) => {
       uniqueGroupPricing.set(pricing.studentRange, {
@@ -520,14 +795,11 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     });
 
     cleanedData.groupPricing = Array.from(uniqueGroupPricing.values());
-
-    // Add maxStudents
     cleanedData.maxStudents = 6;
 
     return cleanedData;
   }
 
-  // Helper method to get group pricing value
   getGroupPricingValue(range: '1-4' | '5-6'): number {
     const groupPricing = this.courseForm.groupPricing.find(gp => gp.studentRange === range);
     return groupPricing ? groupPricing.price : 0;
@@ -539,7 +811,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       return false;
     }
     if (this.globalLessonOption.price <= 0 || isNaN(this.globalLessonOption.price)) {
-      this.globalLessonOption.price = 0; // Reset price to 0 if invalid
+      this.globalLessonOption.price = 0;
     }
     return true;
   }
@@ -557,7 +829,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-
   private resetGlobalLessonOption(): void {
     this.globalLessonOption = {
       lessonCount: 1,
@@ -570,14 +841,13 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     return this.globalLessonOptions;
   }
 
-  // UPDATED: Add schedule method to include global lesson options
   addSchedule(): void {
     const scheduleId = Date.now().toString();
     const newSchedule: Schedule = {
       id: scheduleId,
       startTime: this.newSchedule.startTime,
       endTime: this.newSchedule.endTime,
-      lessonOptions: [...this.globalLessonOptions] // Apply all global lesson options
+      lessonOptions: [...this.globalLessonOptions]
     };
 
     this.courseForm.schedules.push(newSchedule);
@@ -586,14 +856,12 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // UPDATED: Remove schedule method
   removeSchedule(index: number): void {
     const uniqueSchedules = this.getUniqueCourseSchedules(this.courseForm.schedules);
     if (index < 0 || index >= uniqueSchedules.length) return;
 
     const scheduleToRemove = uniqueSchedules[index];
 
-    // Remove all schedules with matching time
     this.courseForm.schedules = this.courseForm.schedules.filter(schedule =>
       !(schedule.startTime === scheduleToRemove.startTime &&
         schedule.endTime === scheduleToRemove.endTime)
@@ -601,7 +869,7 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
 
     this.cdr.detectChanges();
   }
-  // UPDATED: Reset form method
+
   resetForm(): void {
     this.courseForm = {
       name: '',
@@ -621,47 +889,12 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.error = '';
   }
 
-  // UPDATED: Cancel edit method
   cancelEdit(): void {
     this.editingCourse = null;
     this.showCreateForm = false;
     this.resetForm();
   }
 
-  // UPDATED: Apply course template method
-  applyCourseTemplate(course: AdminCourse): void {
-    if (!course) return;
-
-    // Copy course data to form, excluding dates and course-specific info
-    this.courseForm = {
-      name: course.name + ' - Copy',
-      description: course.description,
-      clientName: course.clientName,
-      startDate: '', // Don't copy dates
-      endDate: '',   // Don't copy dates
-      professionalId: course.professionalId,
-      schedules: course.schedules ? course.schedules.map(schedule => ({
-        ...schedule,
-        id: undefined // Remove ID so new schedules are created
-      })) : [],
-      groupPricing: course.groupPricing ? [...course.groupPricing] : []
-    };
-
-    // Initialize group pricing if empty
-    if (this.courseForm.groupPricing.length === 0) {
-      this.initializeGroupPricing();
-    }
-
-    // Extract global lesson options from template
-    this.extractGlobalLessonOptions();
-
-    this.hideCourseTemplateSelection();
-    this.clearMessages();
-    this.successMessage = `Template from "${course.name}" applied successfully. Please update the dates and course name as needed.`;
-    this.cdr.detectChanges();
-  }
-
-  // UPDATED: Form invalid check
   isFormInvalid(): boolean {
     return this.isLoading ||
       this.courseForm.schedules.length === 0 ||
@@ -669,9 +902,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       this.courseForm.groupPricing.some(gp => gp.price <= 0);
   }
 
-  // Updated admin-course-management.component.ts - Fix updateCourse method
-
-  // UPDATED: Update course method with better data preparation and debugging
   updateCourse(): void {
     if (!this.editingCourse || !this.validateCourseForm()) {
       console.warn('Update course validation failed');
@@ -682,14 +912,22 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.error = '';
     this.successMessage = '';
 
-    // CRITICAL: Ensure lesson options are properly structured
     const preparedCourseData = this.prepareCourseDataForUpdate();
 
-    console.log('=== UPDATE COURSE DEBUG ===');
-    console.log('Original form data:', JSON.stringify(this.courseForm, null, 2));
-    console.log('Global lesson options:', JSON.stringify(this.globalLessonOptions, null, 2));
-    console.log('Prepared course data:', JSON.stringify(preparedCourseData, null, 2));
-    console.log('========================');
+    // Remove translation markers from name and description
+    if (preparedCourseData.name && preparedCourseData.name.includes('[Original:')) {
+      const originalMatch = preparedCourseData.name.match(/\[Original: (.+)\]$/);
+      if (originalMatch) {
+        preparedCourseData.name = originalMatch[1];
+      }
+    }
+
+    if (preparedCourseData.description && preparedCourseData.description.includes('[Original:')) {
+      const originalMatch = preparedCourseData.description.match(/\[Original: (.+)\]$/);
+      if (originalMatch) {
+        preparedCourseData.description = originalMatch[1];
+      }
+    }
 
     const courseData: Partial<AdminCourse> = {
       ...preparedCourseData,
@@ -720,13 +958,75 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
         this.extractClientOptions();
         this.cancelEdit();
         this.successMessage = `Course "${updatedCourse.name}" updated successfully.`;
+
+        // Trigger translation for updated course
+        this.translateAllCourses();
       }
       this.isLoading = false;
       this.cdr.detectChanges();
     });
   }
 
-  // NEW: Method to properly prepare course data for update
+  applyCourseTemplate(course: AdminCourse): void {
+    if (!course) return;
+
+    // Use original course data (not translated) for template
+    const originalCourse = this.getOriginalCourseData(course);
+
+    // Copy course data to form, excluding dates and course-specific info
+    this.courseForm = {
+      name: originalCourse.name + ' - Copy',
+      description: originalCourse.description,
+      clientName: originalCourse.clientName,
+      startDate: '', // Don't copy dates
+      endDate: '',   // Don't copy dates
+      professionalId: originalCourse.professionalId,
+      schedules: originalCourse.schedules ? originalCourse.schedules.map(schedule => ({
+        ...schedule,
+        id: undefined // Remove ID so new schedules are created
+      })) : [],
+      groupPricing: originalCourse.groupPricing ? [...originalCourse.groupPricing] : []
+    };
+
+    // Initialize group pricing if empty
+    if (this.courseForm.groupPricing.length === 0) {
+      this.initializeGroupPricing();
+    }
+
+    // Extract global lesson options from template
+    this.extractGlobalLessonOptions();
+
+    this.hideCourseTemplateSelection();
+    this.clearMessages();
+    this.successMessage = `Template from "${originalCourse.name}" applied successfully. Please update the dates and course name as needed.`;
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Get original course data (without translation markers)
+   */
+  private getOriginalCourseData(course: AdminCourse): AdminCourse {
+    const originalCourse = { ...course };
+
+    // Extract original name if it has translation markers
+    if (originalCourse.name && originalCourse.name.includes('[Original:')) {
+      const originalMatch = originalCourse.name.match(/\[Original: (.+)\]$/);
+      if (originalMatch) {
+        originalCourse.name = originalMatch[1];
+      }
+    }
+
+    // Extract original description if it has translation markers
+    if (originalCourse.description && originalCourse.description.includes('[Original:')) {
+      const originalMatch = originalCourse.description.match(/\[Original: (.+)\]$/);
+      if (originalMatch) {
+        originalCourse.description = originalMatch[1];
+      }
+    }
+
+    return originalCourse;
+  }
+
   private prepareCourseDataForUpdate(): any {
     // Start with a clean copy of the form data
     const cleanedData = JSON.parse(JSON.stringify(this.courseForm));
@@ -774,7 +1074,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     return cleanedData;
   }
 
-  // UPDATED: Enhanced validation for global lesson options
   private validateCourseForm(): boolean {
     if (!this.courseForm.name.trim()) {
       this.error = 'Course name is required.';
@@ -828,7 +1127,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     return true;
   }
 
-  // UPDATED: Enhanced add global lesson option with better validation
   addGlobalLessonOption(): void {
     if (!this.validateGlobalLessonOption()) {
       return;
@@ -865,7 +1163,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // UPDATED: Enhanced global lesson option removal
   removeGlobalLessonOption(index: number): void {
     if (index < 0 || index >= this.globalLessonOptions.length) return;
 
@@ -886,7 +1183,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // UPDATED: Enhanced application of global lesson options to schedules
   private applyGlobalLessonOptionToAllSchedules(lessonOption: LessonOption): void {
     this.courseForm.schedules.forEach(schedule => {
       // Check if this lesson count already exists in the schedule
@@ -904,7 +1200,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     console.log('Applied lesson option to all schedules:', lessonOption);
   }
 
-  // UPDATED: Extract global lesson options with better logging
   private extractGlobalLessonOptions(): void {
     const allLessonOptions = new Map<number, LessonOption>();
 
@@ -930,7 +1225,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     console.log('Extracted global lesson options:', this.globalLessonOptions);
   }
 
-  // UPDATED: Enhanced edit course method
   editCourse(course: AdminCourse): void {
     console.log('=== EDIT COURSE DEBUG ===');
     console.log('Original course data:', JSON.stringify(course, null, 2));
@@ -967,7 +1261,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // Delete course (mark as historical)
   deleteCourse(course: AdminCourse): void {
     if (!confirm(`Are you sure you want to delete the course "${course.name}"? This will preserve all student historical data.`)) {
       return;
@@ -998,7 +1291,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Get filtered courses
   get filteredCourses(): AdminCourse[] {
     return this.courses.filter(course => {
       const matchesSearch = !this.searchTerm ||
@@ -1013,14 +1305,12 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Get professional name by ID
   getProfessionalName(professionalId: number | null): string {
     if (!professionalId) return 'Not Assigned';
     const professional = this.professionals.find(p => p.id === professionalId);
     return professional?.name || 'Unknown Professional';
   }
 
-  // Get status badge class
   getStatusClass(status: string): string {
     switch (status) {
       case 'active': return 'status-active';
@@ -1030,13 +1320,11 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Clear messages
   clearMessages(): void {
     this.error = '';
     this.successMessage = '';
   }
 
-  // Toggle create form
   toggleCreateForm(): void {
     this.showCreateForm = !this.showCreateForm;
     if (!this.showCreateForm) {
@@ -1056,7 +1344,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     })
   }
 
-  // Helper methods for display
   getScheduleDisplay(schedules: Schedule[]): string {
     const seen = new Set<string>();
     const uniqueDisplays: string[] = [];
@@ -1072,7 +1359,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     uniqueDisplays.sort((a, b) => a.localeCompare(b));
     return uniqueDisplays.join(', ');
   }
-
 
   getLessonOptionsDisplay(schedule: Schedule): string {
     if (!schedule.lessonOptions || schedule.lessonOptions.length === 0) {

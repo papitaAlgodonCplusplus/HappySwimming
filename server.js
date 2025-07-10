@@ -3433,6 +3433,165 @@ app.get('/api/admin/clients', authenticateToken, isAdmin, async (req, res) => {
   }
 });
 
+// Add these routes to your server.js file
+
+const translator = require("open-google-translator");
+
+// Single text translation endpoint
+app.post('/api/translate/text', async (req, res) => {
+  try {
+    console.log('📥 Received translation request:', req.body);
+    const { text, targetLang, sourceLang = "auto" } = req.body;
+
+    if (!text || !targetLang) {
+      return res.status(400).json({ error: 'Text and target language are required' });
+    }
+
+    // Handle empty or whitespace-only text
+    if (!text.trim()) {
+      return res.json({ translatedText: text });
+    }
+
+    const result = await translator.TranslateLanguageData({
+      listOfWordsToTranslate: [text],
+      fromLanguage: sourceLang,
+      toLanguage: targetLang,
+    });
+
+    console.log('🔁 Translation result:', result);
+    
+    // Extract the translated text from the result
+    const translatedText = result && result.length > 0 ? result[0] : text;
+    
+    res.json({ 
+      translatedText: translatedText,
+      originalText: text,
+      sourceLanguage: sourceLang,
+      targetLanguage: targetLang
+    });
+
+  } catch (error) {
+    console.error('❌ Translation Error:', error);
+    res.status(500).json({ 
+      error: 'Server error translating text.',
+      translatedText: req.body.text // Fallback to original text
+    });
+  }
+});
+
+// Batch translation endpoint for multiple texts
+app.post('/api/translate/batch', async (req, res) => {
+  try {
+    console.log('📥 Received batch translation request:', req.body);
+    const { texts, targetLang, sourceLang = "auto" } = req.body;
+
+    if (!texts || !Array.isArray(texts) || !targetLang) {
+      return res.status(400).json({ error: 'Texts array and target language are required' });
+    }
+
+    // Filter out empty texts
+    const nonEmptyTexts = texts.filter(text => text && text.trim());
+    
+    if (nonEmptyTexts.length === 0) {
+      return res.json({ translations: texts }); // Return original if all empty
+    }
+
+    const result = await translator.TranslateLanguageData({
+      listOfWordsToTranslate: nonEmptyTexts,
+      fromLanguage: sourceLang,
+      toLanguage: targetLang,
+    });
+
+    console.log('🔁 Batch translation result:', result);
+    
+    // Map back to original array structure
+    let translationIndex = 0;
+    const translations = texts.map(originalText => {
+      if (!originalText || !originalText.trim()) {
+        return originalText; // Keep empty texts as is
+      }
+      return result && result[translationIndex] ? result[translationIndex++] : originalText;
+    });
+    
+    res.json({ 
+      translations: translations,
+      originalTexts: texts,
+      sourceLanguage: sourceLang,
+      targetLanguage: targetLang
+    });
+
+  } catch (error) {
+    console.error('❌ Batch Translation Error:', error);
+    res.status(500).json({ 
+      error: 'Server error translating texts.',
+      translations: req.body.texts // Fallback to original texts
+    });
+  }
+});
+
+// Course-specific translation endpoint
+app.post('/api/translate/course', async (req, res) => {
+  try {
+    console.log('📥 Received course translation request:', req.body);
+    const { course, targetLang, sourceLang = "auto" } = req.body;
+
+    if (!course || !targetLang) {
+      return res.status(400).json({ error: 'Course object and target language are required' });
+    }
+
+    const textsToTranslate = [];
+    const fieldMap = [];
+
+    // Extract translatable fields
+    if (course.name && course.name.trim()) {
+      textsToTranslate.push(course.name.trim());
+      fieldMap.push('name');
+    }
+    
+    if (course.description && course.description.trim()) {
+      textsToTranslate.push(course.description.trim());
+      fieldMap.push('description');
+    }
+
+    if (textsToTranslate.length === 0) {
+      return res.json({ translatedCourse: course });
+    }
+
+    const result = await translator.TranslateLanguageData({
+      listOfWordsToTranslate: textsToTranslate,
+      fromLanguage: sourceLang,
+      toLanguage: targetLang,
+    });
+
+    console.log('🔁 Course translation result:', result);
+
+    // Create translated course object
+    const translatedCourse = { ...course };
+    
+    if (result && Array.isArray(result)) {
+      fieldMap.forEach((field, index) => {
+        if (result[index]) {
+          translatedCourse[field] = result[index];
+        }
+      });
+    }
+    
+    res.json({ 
+      translatedCourse: translatedCourse,
+      originalCourse: course,
+      sourceLanguage: sourceLang,
+      targetLanguage: targetLang
+    });
+
+  } catch (error) {
+    console.error('❌ Course Translation Error:', error);
+    res.status(500).json({ 
+      error: 'Server error translating course.',
+      translatedCourse: req.body.course // Fallback to original course
+    });
+  }
+});
+
 app.post('/api/admin/courses', authenticateToken, async (req, res) => {
   const client = await pool.connect();
   console.log('Creating new admin course:', req.body);

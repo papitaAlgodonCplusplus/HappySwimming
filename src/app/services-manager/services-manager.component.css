@@ -2139,17 +2139,17 @@ p {
 }
 
 /* Enhanced Course Card for QR Access */
-.qr-access-welcome + .filter-section {
+.qr-access-welcome+.filter-section {
   border-top: 3px solid #0891b2;
 }
 
 /* QR Access Course Cards Enhancement */
-.qr-access-welcome ~ .main-content .course-card {
+.qr-access-welcome~.main-content .course-card {
   border-left: 4px solid #0891b2;
   transition: all 0.3s ease;
 }
 
-.qr-access-welcome ~ .main-content .course-card:hover {
+.qr-access-welcome~.main-content .course-card:hover {
   border-left-color: #0f766e;
   box-shadow: 0 12px 32px rgba(15, 118, 110, 0.15);
 }
@@ -2199,5 +2199,75 @@ p {
     background: #e0f2fe !important;
     color: #0c4a6e !important;
     border: 1px solid #0891b2 !important;
+  }
+}
+
+.language-selector-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.translation-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #3182ce;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.refresh-translations-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+}
+
+.course-title {
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.course-description p {
+  min-height: 3rem;
+  line-height: 1.5;
+}
+
+/* Loading indicator for translations */
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #3182ce;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .language-selector-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .translation-status {
+    justify-content: center;
   }
 }

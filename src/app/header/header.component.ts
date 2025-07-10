@@ -1,8 +1,11 @@
+// Key changes to header.component.ts
+
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TranslationService } from '../services/translation.service';
+import { GoogleTranslationService } from '../services/google-translation.service'; // Add this import
 import { TranslatePipe } from '../pipes/translate.pipe';
 import { AuthService } from '../services/auth.service';
 import { ContactService } from '../services/contact.service';
@@ -38,6 +41,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   // Use inject for dependency injection
   private translationService = inject(TranslationService);
+  private googleTranslationService = inject(GoogleTranslationService); // Add this
   private authService = inject(AuthService);
   private contactService = inject(ContactService);
   private cdr = inject(ChangeDetectorRef);
@@ -46,16 +50,16 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Subscribe to language changes
     this.langSubscription = this.translationService.getCurrentLang().subscribe(lang => {
-      console.log('Language changed to:', lang);
+      console.log('Header: Language changed to:', lang);
       this.currentLang = lang;
-      this.cdr.detectChanges(); // Force immediate change detection
+      this.cdr.detectChanges();
     });
 
     // Subscribe to translations loaded event
     this.loadedSubscription = this.translationService.isTranslationsLoaded().subscribe(loaded => {
       if (loaded) {
-        console.log('Translations loaded');
-        this.cdr.detectChanges(); // Force immediate change detection
+        console.log('Header: Translations loaded');
+        this.cdr.detectChanges();
       }
     });
 
@@ -69,8 +73,20 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   switchLanguage(lang: string): void {
-    console.log('Switching language to:', lang);
+    console.log('Header: Switching language to:', lang);
+    
+    // Update both translation services
     this.translationService.setLanguage(lang);
+    this.googleTranslationService.setCurrentLanguage(lang);
+    
+    // Force immediate UI update
+    this.currentLang = lang;
+    this.cdr.detectChanges();
+    
+    // Add a small delay to ensure the language change propagates
+    setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 100);
   }
 
   navigateToAuth(): void {
@@ -102,14 +118,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
     // Validate form
     if (!this.contactSubject.trim() || !this.contactMessage.trim() || !this.userEmail.trim()) {
       this.contactError = this.translationService.translate('contact.errorRequiredFields');
-      this.cdr.detectChanges();
-      return;
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(this.userEmail)) {
-      this.contactError = this.translationService.translate('contact.errorInvalidEmail');
       this.cdr.detectChanges();
       return;
     }
@@ -160,12 +168,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
- * Toggles the mobile menu
- */
   toggleMobileMenu(): void {
     this.mobileMenuOpen = !this.mobileMenuOpen;
-    // When opening mobile menu, we need to allow body scrolling
     if (this.mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -174,28 +178,18 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  /**
-   * Opens contact modal from mobile menu and closes the mobile menu
-   */
   openContactModalFromMobile(): void {
-    this.toggleMobileMenu(); // Close mobile menu first
-    this.openContactModal(); // Then open contact modal
+    this.toggleMobileMenu();
+    this.openContactModal();
   }
 
-  /**
-   * Switches language from mobile menu
-   */
   switchLanguageMobile(lang: string): void {
     this.switchLanguage(lang);
-    // Don't close the mobile menu when changing language
     this.cdr.detectChanges();
   }
 
-  /**
-   * Logs out and closes mobile menu
-   */
   logoutFromMobile(): void {
-    this.toggleMobileMenu(); // Close mobile menu first
-    this.logout(); // Then perform logout
+    this.toggleMobileMenu();
+    this.logout();
   }
 }
