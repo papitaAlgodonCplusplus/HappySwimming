@@ -1925,6 +1925,7 @@ app.get('/api/professional/admin-courses', authenticateToken, async (req, res) =
       `;
         queryParams = [professionalId];
       } else if (isAdmin) {
+        console.log('Admin user detected');
         // Admin can see all courses and students with attendance data
         query = `
           SELECT 

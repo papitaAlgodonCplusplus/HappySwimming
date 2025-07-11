@@ -2,11 +2,8 @@
 <app-header></app-header>
 
 <div class="students-management-container">
-  <div class="page-header">
-    <h1 class="page-title">{{ 'studentsManagement.title' | translate }}</h1>
-    <p class="page-subtitle" *ngIf="!isAdmin">{{ 'studentsManagement.professionalSubtitle' | translate }}</p>
-    <p class="page-subtitle" *ngIf="isAdmin">{{ 'studentsManagement.adminSubtitle' | translate }}</p>
-  </div>
+  <br />
+  <br />
 
   <!-- Admin Statistics Dashboard -->
   <div *ngIf="isAdmin && adminStatistics" class="admin-dashboard">
@@ -14,7 +11,7 @@
       <div class="stat-card">
         <div class="stat-icon">👥</div>
         <div class="stat-content">
-          <h3>{{ adminStatistics.totalStudents }}</h3>
+          <h3>{{ getStudentsTotal() }}</h3>
           <p>{{ 'studentsManagement.totalStudents' | translate }}</p>
         </div>
       </div>
@@ -94,16 +91,11 @@
     <!-- Action Bar -->
     <div class="action-bar">
       <div class="view-controls">
-        <button 
-          class="btn btn-secondary"
-          [ngClass]="{ 'active': viewMode === 'list' }"
-          (click)="setViewMode('list')">
+        <button class="btn btn-secondary" [ngClass]="{ 'active': viewMode === 'list' }" (click)="setViewMode('list')">
           <span class="btn-icon">📋</span>
           {{ 'studentsManagement.listView' | translate }}
         </button>
-        <button 
-          class="btn btn-secondary"
-          [ngClass]="{ 'active': viewMode === 'calendar' }"
+        <button class="btn btn-secondary" [ngClass]="{ 'active': viewMode === 'calendar' }"
           (click)="setViewMode('calendar')">
           <span class="btn-icon">📅</span>
           {{ 'studentsManagement.calendarView' | translate }}
@@ -206,8 +198,8 @@
                 <td>
                   <div class="student-name-container">
                     <span class="student-name">{{ student.kidName }}</span>
-                    <span *ngIf="hasMultipleChildren(student)" class="multiple-children-indicator" 
-                          [title]="'studentsManagement.multipleChildren' | translate">
+                    <span *ngIf="hasMultipleChildren(student)" class="multiple-children-indicator"
+                      [title]="'studentsManagement.multipleChildren' | translate">
                       👨‍👩‍👧‍👦
                     </span>
                     <small *ngIf="hasMultipleChildren(student)" class="children-names">
@@ -224,12 +216,15 @@
                   </span>
                 </td>
                 <td>
-                  <span class="calification-badge" [ngClass]="student.calification !== undefined && student.calification !== null ? (student.calification >= 7 ? 'good' : student.calification >= 5 ? 'average' : 'needs-improvement') : 'needs-improvement'">
-                    {{ student.calification != null ? student.calification : ('studentsManagement.notAvailable' | translate) }}
+                  <span class="calification-badge"
+                    [ngClass]="student.calification !== undefined && student.calification !== null ? (student.calification >= 7 ? 'good' : student.calification >= 5 ? 'average' : 'needs-improvement') : 'needs-improvement'">
+                    {{ student.calification != null ? student.calification : ('studentsManagement.notAvailable' |
+                    translate) }}
                   </span>
                 </td>
                 <td>
-                  <span class="assistance-badge" [ngClass]="(student.assistance ?? 0) >= 80 ? 'good' : (student.assistance ?? 0) >= 60 ? 'average' : 'needs-improvement'">
+                  <span class="assistance-badge"
+                    [ngClass]="(student.assistance ?? 0) >= 80 ? 'good' : (student.assistance ?? 0) >= 60 ? 'average' : 'needs-improvement'">
                     {{ student.assistance ?? 0 }}%
                   </span>
                 </td>
@@ -239,10 +234,8 @@
                       <span class="btn-icon">✏️</span>
                       {{ 'studentsManagement.edit' | translate }}
                     </button>
-                    <button *ngIf="canCancelEnrollment()" 
-                            class="btn btn-danger btn-sm" 
-                            (click)="showCancelConfirmation(student)"
-                            [disabled]="student.status === 'cancelled'">
+                    <button *ngIf="canCancelEnrollment()" class="btn btn-danger btn-sm"
+                      (click)="showCancelConfirmation(student)" [disabled]="student.status === 'cancelled'">
                       <span class="btn-icon">❌</span>
                       {{ 'studentsManagement.cancel' | translate }}
                     </button>
@@ -271,19 +264,14 @@
 
         <!-- Calendar days -->
         <div class="calendar-body">
-          <div 
-            *ngFor="let day of calendarDays; trackBy: trackByDayDate"
-            class="calendar-day"
-            [ngClass]="{
+          <div *ngFor="let day of calendarDays; trackBy: trackByDayDate" class="calendar-day" [ngClass]="{
               'other-month': !day.isCurrentMonth,
               'today': day.isToday,
               'has-events': day.hasEvents
             }">
             <div class="day-number">{{ day.day }}</div>
             <div class="day-events">
-              <div 
-                *ngFor="let course of day.courses" 
-                class="event-dot"
+              <div *ngFor="let course of day.courses" class="event-dot"
                 [title]="course.name + ' - ' + course.clientName + (isAdmin ? ' (' + course.professionalName + ')' : '')">
                 {{ course.name.substring(0, 1) }}
               </div>
@@ -320,32 +308,24 @@
           <h3>{{ editingStudent.kidName }}</h3>
           <p><strong>{{ 'studentsManagement.course' | translate }}:</strong> {{ editingStudent.courseName }}</p>
           <p><strong>{{ 'studentsManagement.client' | translate }}:</strong> {{ editingStudent.clientName }}</p>
-          <p *ngIf="isAdmin"><strong>{{ 'studentsManagement.professional' | translate }}:</strong> {{ editingStudent.professionalName || ('studentsManagement.unknown' | translate) }}</p>
-          <p><strong>{{ 'studentsManagement.motherContact' | translate }}:</strong> {{ editingStudent.motherContact }}</p>
+          <p *ngIf="isAdmin"><strong>{{ 'studentsManagement.professional' | translate }}:</strong> {{
+            editingStudent.professionalName || ('studentsManagement.unknown' | translate) }}</p>
+          <p><strong>{{ 'studentsManagement.motherContact' | translate }}:</strong> {{ editingStudent.motherContact }}
+          </p>
         </div>
 
         <form class="edit-form" (ngSubmit)="saveStudentChanges()">
           <!-- Kid Name (Read-only, for reference) -->
           <div class="form-group">
             <label for="kidName">{{ 'studentsManagement.studentName' | translate }}</label>
-            <input 
-              type="text"
-              id="kidName"
-              [(ngModel)]="editForm.kidName"
-              name="kidName"
-              class="form-control"
-              readonly
+            <input type="text" id="kidName" [(ngModel)]="editForm.kidName" name="kidName" class="form-control" readonly
               style="background-color: #f8f9fa;">
           </div>
 
           <!-- Status -->
           <div class="form-group">
             <label for="status">{{ 'studentsManagement.status' | translate }}</label>
-            <select 
-              id="status"
-              [(ngModel)]="editForm.status"
-              name="status"
-              class="form-control">
+            <select id="status" [(ngModel)]="editForm.status" name="status" class="form-control">
               <option value="pending">{{ 'studentsManagement.pending' | translate }}</option>
               <option value="approved">{{ 'studentsManagement.approved' | translate }}</option>
               <option value="active">{{ 'studentsManagement.active' | translate }}</option>
@@ -357,39 +337,21 @@
           <!-- Calification -->
           <div class="form-group">
             <label for="calification">{{ 'studentsManagement.calification' | translate }} (0-10)</label>
-            <input 
-              type="number" 
-              id="calification"
-              [(ngModel)]="editForm.calification"
-              name="calification"
-              min="0"
-              max="10"
-              step="0.1"
-              class="form-control">
+            <input type="number" id="calification" [(ngModel)]="editForm.calification" name="calification" min="0"
+              max="10" step="0.1" class="form-control">
           </div>
 
           <!-- Assistance -->
           <div class="form-group">
             <label for="assistance">{{ 'studentsManagement.assistance' | translate }} (%)</label>
-            <input 
-              type="number" 
-              id="assistance"
-              [(ngModel)]="editForm.assistance"
-              name="assistance"
-              min="0"
-              max="100"
+            <input type="number" id="assistance" [(ngModel)]="editForm.assistance" name="assistance" min="0" max="100"
               class="form-control">
           </div>
 
           <!-- Notes -->
           <div class="form-group">
             <label for="notes">{{ 'studentsManagement.notes' | translate }}</label>
-            <textarea 
-              id="notes"
-              [(ngModel)]="editForm.notes"
-              name="notes"
-              rows="4"
-              class="form-control"
+            <textarea id="notes" [(ngModel)]="editForm.notes" name="notes" rows="4" class="form-control"
               placeholder="{{ 'studentsManagement.notesPlaceholder' | translate }}"></textarea>
           </div>
 
@@ -420,14 +382,16 @@
         <div *ngIf="studentToCancel" class="cancellation-info">
           <div class="warning-icon">⚠️</div>
           <h3>{{ 'studentsManagement.cancellationWarning' | translate }}</h3>
-          
+
           <div class="student-details">
             <p><strong>{{ 'studentsManagement.studentName' | translate }}:</strong> {{ studentToCancel.kidName }}</p>
             <div *ngIf="hasMultipleChildren(studentToCancel)">
-              <p><strong>{{ 'studentsManagement.allChildren' | translate }}:</strong> {{ getChildrenDisplayNames(studentToCancel) }}</p>
+              <p><strong>{{ 'studentsManagement.allChildren' | translate }}:</strong> {{
+                getChildrenDisplayNames(studentToCancel) }}</p>
             </div>
             <p><strong>{{ 'studentsManagement.course' | translate }}:</strong> {{ studentToCancel.courseName }}</p>
-            <p><strong>{{ 'studentsManagement.motherContact' | translate }}:</strong> {{ studentToCancel.motherContact }}</p>
+            <p><strong>{{ 'studentsManagement.motherContact' | translate }}:</strong> {{ studentToCancel.motherContact
+              }}</p>
           </div>
 
           <div class="cancellation-consequences">
@@ -436,7 +400,8 @@
               <li>{{ 'studentsManagement.enrollmentWillBeDeleted' | translate }}</li>
               <li>{{ 'studentsManagement.courseCapacityWillIncrease' | translate }}</li>
               <li>{{ 'studentsManagement.attendanceRecordsWillBeDeleted' | translate }}</li>
-              <li *ngIf="hasMultipleChildren(studentToCancel)">{{ 'studentsManagement.allChildrenWillBeRemoved' | translate }}</li>
+              <li *ngIf="hasMultipleChildren(studentToCancel)">{{ 'studentsManagement.allChildrenWillBeRemoved' |
+                translate }}</li>
               <li>{{ 'studentsManagement.actionCannotBeUndone' | translate }}</li>
             </ul>
           </div>

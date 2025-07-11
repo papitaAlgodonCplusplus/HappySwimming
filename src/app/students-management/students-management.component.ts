@@ -235,6 +235,14 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     });
   }
 
+  getStudentsTotal(): number {
+    let total = 0;
+    this.adminCourses.forEach(course => {
+      total += course.students.length;
+    });
+    return total;
+  }
+
   // Load courses assigned to the professional or all courses for admin
   loadProfessionalCourses(): void {
     this.isLoading = true;
@@ -532,11 +540,11 @@ export class StudentsManagementComponent implements OnInit, OnDestroy {
     ).subscribe(response => {
       if (response !== null) {
         // Update local data for the specific student
-        const studentToUpdate = this.allStudents.find(s => 
-          s.enrollmentId === this.editingStudent!.enrollmentId && 
+        const studentToUpdate = this.allStudents.find(s =>
+          s.enrollmentId === this.editingStudent!.enrollmentId &&
           s.kidName === this.editForm.kidName
         );
-        
+
         if (studentToUpdate) {
           studentToUpdate.calification = this.editForm.calification;
           studentToUpdate.assistance = this.editForm.assistance;

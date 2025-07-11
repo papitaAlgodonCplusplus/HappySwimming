@@ -2,10 +2,8 @@
 <app-header></app-header>
 
 <div class="course-management-container">
-  <div class="page-header">
-    <h1 class="page-title">{{ 'adminCourseManagement.title' | translate }}</h1>
-    <p class="page-subtitle">{{ 'adminCourseManagement.subtitle' | translate }}</p>
-  </div>
+  <br />
+  <br />
 
   <!-- Error and Success Messages -->
   <div *ngIf="error" class="alert alert-error">
@@ -118,7 +116,8 @@
               <label
                 style="width: 100%; display: block; background-color: #3b4753; color:#ffffff; padding: 0.5rem; border-radius: 4px;">{{'adminCourseManagement.startDate'
                 | translate }}</label>
-              <span class="form-control-static" style="display: block; padding: 0.5rem; background-color: #f0f4f8; border-radius: 4px; align-items: center;">
+              <span class="form-control-static"
+                style="display: block; padding: 0.5rem; background-color: #f0f4f8; border-radius: 4px; align-items: center;">
                 {{ courseForm.startDate | date: 'dd/MM/yyyy' }}
               </span>
             </div>
@@ -591,8 +590,13 @@
           }
 
           @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+              transform: rotate(0deg);
+            }
+
+            100% {
+              transform: rotate(360deg);
+            }
           }
 
           .refresh-translations-btn {
