@@ -657,11 +657,14 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     this.authService.getCurrentUser().subscribe({
       next: user => {
         if (!this.authService.isAuthenticated() || !user || !user.email || !user.id) {
+          console.warn('User not authenticated or missing information');
           this.userRole = 'client';
           this.userId = 37;
           return;
         }
         this.userRole = (user.email === 'admin@gmail.com') ? 'admin' : 'client';
+        console.log('User role determined:', this.userRole);
+        console.log('User ID determined:', this.userId, 'user email:', user.email, 'user:', user);
         const userIdStr = user.id || localStorage.getItem('userId');
         this.userId = userIdStr ? parseInt(userIdStr, 10) : null;
       },
