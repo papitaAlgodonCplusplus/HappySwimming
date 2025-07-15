@@ -716,18 +716,21 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       })
     ).subscribe(courses => {
       if (this.isQRAccess && this.clientInfo?.companyName) {
-        console.log('Filtering admin courses for client:', this.clientInfo.companyName);
-        // Filter courses for the specific client
+        console.log('Filtering admin courses for client (LIKE):', this.clientInfo.companyName);
+        // Filter courses for the specific client using partial match (LIKE)
+        const clientName = this.clientInfo.companyName.toLowerCase();
         this.adminCourses = courses.filter(course => {
-          const match = course.clientName === this.clientInfo!.companyName;
+          const courseClientName = (course.clientName || '').toLowerCase();
+          const match = courseClientName.includes(clientName);
           return match && course.type === 'admin_course';
         });
       } else {
-        console.log('No QR access or client info, filtering by userClientName:', this.userClientName);
-        const clientName = this.removeParentheses(this.userClientName || (this.clientInfo?.companyName ? this.clientInfo.companyName : '') || '');
-        console.log('Filtering admin courses for client:', clientName);
+        console.log('No QR access or client info, filtering by userClientName (LIKE):', this.userClientName);
+        const clientName = this.removeParentheses(this.userClientName || (this.clientInfo?.companyName ? this.clientInfo.companyName : '') || '').toLowerCase();
+        console.log('Filtering admin courses for client (LIKE):', clientName);
         this.adminCourses = courses.filter(course => {
-          const match = course.clientName === clientName;
+          const courseClientName = (course.clientName || '').toLowerCase();
+          const match = courseClientName.includes(clientName);
           return match && course.type === 'admin_course';
         });
       }
