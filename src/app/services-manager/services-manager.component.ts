@@ -700,12 +700,19 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       })
     ).subscribe(courses => {
       if (this.isQRAccess && this.clientInfo?.companyName) {
+        console.log('Filtering admin courses for client:', this.clientInfo.companyName);
+         // Filter courses for the specific client
         this.adminCourses = courses.filter(course => {
           const match = course.clientName === this.clientInfo!.companyName;
           return match && course.type === 'admin_course';
         });
       } else {
-        this.adminCourses = courses.filter(course => course.type === 'admin_course');
+        const clientName = this.removeParentheses(this.userClientName || (this.clientInfo?.companyName ? this.clientInfo.companyName : '') || '');
+        console.log('Filtering admin courses for client:', clientName);
+        this.adminCourses = courses.filter(course => {
+          const match = course.clientName === clientName;
+          return match && course.type === 'admin_course';
+        });
       }
 
       this.clientCourses = [...this.adminCourses];
@@ -719,6 +726,13 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         this.translateAllCourses();
       }, 200);
     });
+  }
+
+  removeParentheses(str: string): string {
+    const step_1 = str.replace(/\(.*?\)/g, '').trim();
+    // Now remove all ')'
+    const step_2 = step_1.replace(/\)/g, '').trim();
+    return step_2;
   }
 
   private loadProfessionalCourses(): void {
