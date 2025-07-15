@@ -301,7 +301,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       for (let i = 0; i < this.availableCourses.length; i += batchSize) {
         const batch = this.availableCourses.slice(i, i + batchSize);
         await this.translateCourseBatch(batch);
-        
+
         // Small delay between batches
         if (i + batchSize < this.availableCourses.length) {
           await this.delay(200);
@@ -361,16 +361,16 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
 
       if (response && response.translations && Array.isArray(response.translations)) {
         console.log('Found translations array:', response.translations);
-        
+
         // The translations array contains objects or strings, we need to extract the actual text
         translations = response.translations.map((item: any, index: number) => {
           console.log(`Processing translation item ${index}:`, item, 'type:', typeof item);
-          
+
           // If item is a string, return it directly
           if (typeof item === 'string') {
             return item;
           }
-          
+
           // If item is an object, try to extract the translated text
           if (typeof item === 'object' && item !== null) {
             // Check for common translation response formats
@@ -383,16 +383,16 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
             if (item.text) {
               return item.text; // Format: { text: "..." }
             }
-            
+
             // If it's an object but doesn't match expected formats, convert to string
             console.warn('Unknown translation object format:', item);
             return JSON.stringify(item);
           }
-          
+
           // Fallback: return original text for this index
           return textsToTranslate[index] || '';
         });
-        
+
         console.log('Extracted translations:', translations);
       }
       // Check if response is directly an array
@@ -416,7 +416,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         console.warn('Unexpected response format:', response);
         translations = textsToTranslate; // Use original texts as fallback
       }
-      
+
       // Assign translations back to course - ensure we're setting strings
       if (translations.length > 0 && course.name) {
         const translatedName = translations[0];
@@ -428,7 +428,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           course.translatedName = course.name; // Fallback to original
         }
       }
-      
+
       if (translations.length > 1 && course.description) {
         const translatedDescription = translations[1];
         if (typeof translatedDescription === 'string') {
@@ -460,13 +460,13 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   getCourseName(course: Course): string {
     const result = course.translatedName || course.name;
     console.log(`getCourseName for "${course.name}": translatedName="${course.translatedName}", result="${result}"`);
-    
+
     // Safety check to ensure we're returning a string
     if (typeof result === 'object') {
       console.warn('getCourseName returned an object, using original name:', result);
       return course.name;
     }
-    
+
     return result;
   }
 
@@ -476,13 +476,13 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   getCourseDescription(course: Course): string {
     const result = course.translatedDescription || course.description;
     console.log(`getCourseDescription for "${course.name}": translatedDescription="${course.translatedDescription}", result type="${typeof result}"`);
-    
+
     // Safety check to ensure we're returning a string
     if (typeof result === 'object') {
       console.warn('getCourseDescription returned an object, using original description:', result);
       return course.description;
     }
-    
+
     return result;
   }
 
@@ -640,9 +640,13 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       })
     ).subscribe(clientInfo => {
       if (clientInfo) {
+        console.log('Loaded client info:', clientInfo);
         this.clientInfo = clientInfo;
         this.userRole = 'client';
         this.userClientName = clientInfo.companyName || `${clientInfo.firstName} ${clientInfo.lastName1}`;
+      } else {
+        console.warn('No client info found for userId:', userId);
+        this.error = 'Client information not found';
       }
       this.isLoading = false;
       this.cdr.detectChanges();
@@ -701,7 +705,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     ).subscribe(courses => {
       if (this.isQRAccess && this.clientInfo?.companyName) {
         console.log('Filtering admin courses for client:', this.clientInfo.companyName);
-         // Filter courses for the specific client
+        // Filter courses for the specific client
         this.adminCourses = courses.filter(course => {
           const match = course.clientName === this.clientInfo!.companyName;
           return match && course.type === 'admin_course';
