@@ -667,6 +667,14 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         console.log('User ID determined:', this.userId, 'user email:', user.email, 'user:', user);
         const userIdStr = user.id || localStorage.getItem('userId');
         this.userId = userIdStr ? parseInt(userIdStr, 10) : null;
+        this.clientInfo = {
+          id: this.userId || 37,
+          email: user.email || '',
+          firstName: user.firstName || '',
+          lastName1: user.lastName1 || '',
+          lastName2: user.lastName2 || '',
+          companyName: user.companyName || '',
+        };
       },
       error: () => {
         console.error('Failed to load user info');
@@ -694,6 +702,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   }
 
   private loadAdminCourses(): void {
+    console.log('Loading admin courses for user:', this.userId, 'role:', this.userRole);
     this.http.get<Course[]>(`${this.apiUrl}/client/available-courses`, {
       headers: this.getAuthHeaders()
     }).pipe(
@@ -714,6 +723,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           return match && course.type === 'admin_course';
         });
       } else {
+        console.log('No QR access or client info, filtering by userClientName:', this.userClientName);
         const clientName = this.removeParentheses(this.userClientName || (this.clientInfo?.companyName ? this.clientInfo.companyName : '') || '');
         console.log('Filtering admin courses for client:', clientName);
         this.adminCourses = courses.filter(course => {
