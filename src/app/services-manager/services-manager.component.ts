@@ -261,7 +261,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         }
       });
     } catch (error) {
-      console.log('Could not get language from translation service, using default');
+      
     }
 
     return this.currentLanguage;
@@ -274,13 +274,13 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     try {
       this.translateService.getCurrentLang().subscribe(lang => {
         if (typeof lang === 'string' && lang !== this.currentLanguage) {
-          console.log('Language changed from', this.currentLanguage, 'to', lang);
+          
           this.currentLanguage = lang;
           this.translateAllCourses();
         }
       });
     } catch (error) {
-      console.log('Could not subscribe to language changes:', error);
+      
     }
   }
 
@@ -328,7 +328,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
    */
   private async translateSingleCourse(course: Course): Promise<void> {
     try {
-      console.log('Translating course:', course.name);
+      
 
       // Prepare texts to translate
       const textsToTranslate: any[] = [];
@@ -352,19 +352,19 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         headers: this.getAuthHeaders()
       }).toPromise();
 
-      console.log('Translation response for', course.name, ':', response);
-      console.log('Response type:', typeof response);
-      console.log('Response keys:', response ? Object.keys(response) : 'null');
+      
+      
+      
 
       // Extract translated texts - handle different response formats
       let translations: string[] = [];
 
       if (response && response.translations && Array.isArray(response.translations)) {
-        console.log('Found translations array:', response.translations);
+        
 
         // The translations array contains objects or strings, we need to extract the actual text
         translations = response.translations.map((item: any, index: number) => {
-          console.log(`Processing translation item ${index}:`, item, 'type:', typeof item);
+          
 
           // If item is a string, return it directly
           if (typeof item === 'string') {
@@ -393,7 +393,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           return textsToTranslate[index] || '';
         });
 
-        console.log('Extracted translations:', translations);
+        
       }
       // Check if response is directly an array
       else if (Array.isArray(response)) {
@@ -409,7 +409,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           }
           return textsToTranslate[index] || '';
         });
-        console.log('Response is array, extracted:', translations);
+        
       }
       // Fallback: use original texts
       else {
@@ -422,7 +422,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         const translatedName = translations[0];
         if (typeof translatedName === 'string') {
           course.translatedName = translatedName;
-          console.log('Set translated name (string):', translatedName);
+          
         } else {
           console.warn('Translated name is not a string:', translatedName, 'type:', typeof translatedName);
           course.translatedName = course.name; // Fallback to original
@@ -433,7 +433,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         const translatedDescription = translations[1];
         if (typeof translatedDescription === 'string') {
           course.translatedDescription = translatedDescription;
-          console.log('Set translated description (string):', translatedDescription.substring(0, 50) + '...');
+          
         } else {
           console.warn('Translated description is not a string:', translatedDescription, 'type:', typeof translatedDescription);
           course.translatedDescription = course.description; // Fallback to original
@@ -459,7 +459,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
    */
   getCourseName(course: Course): string {
     const result = course.translatedName || course.name;
-    console.log(`getCourseName for "${course.name}": translatedName="${course.translatedName}", result="${result}"`);
+    
 
     // Safety check to ensure we're returning a string
     if (typeof result === 'object') {
@@ -475,7 +475,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
    */
   getCourseDescription(course: Course): string {
     const result = course.translatedDescription || course.description;
-    console.log(`getCourseDescription for "${course.name}": translatedDescription="${course.translatedDescription}", result type="${typeof result}"`);
+    
 
     // Safety check to ensure we're returning a string
     if (typeof result === 'object') {
@@ -490,7 +490,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
    * Manually refresh translations
    */
   refreshTranslations(): void {
-    console.log('Manually refreshing translations');
+    
     this.translateAllCourses();
   }
 
@@ -499,7 +499,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
    */
   async debugTranslation(): Promise<void> {
     try {
-      console.log('=== DEBUG TRANSLATION TEST ===');
+      
       const testData = {
         texts: ['NADO EN FAMILIA', 'Test description'],
         targetLang: 'en',
@@ -510,12 +510,12 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         headers: this.getAuthHeaders()
       }).toPromise();
 
-      console.log('Debug response:', response);
-      console.log('Response type:', typeof response);
-      console.log('Response constructor:', response?.constructor?.name);
-      console.log('Response keys:', response ? Object.keys(response) : 'null');
-      console.log('Response stringified:', JSON.stringify(response, null, 2));
-      console.log('=== END DEBUG ===');
+      
+      
+      
+      
+      
+      
     } catch (error) {
       console.error('Debug translation error:', error);
     }
@@ -640,7 +640,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       })
     ).subscribe(clientInfo => {
       if (clientInfo) {
-        console.log('Loaded client info:', clientInfo);
+        
         this.clientInfo = clientInfo;
         this.userRole = 'client';
         this.userClientName = clientInfo.companyName || `${clientInfo.firstName} ${clientInfo.lastName1}`;
@@ -663,8 +663,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           return;
         }
         this.userRole = (user.email === 'admin@gmail.com') ? 'admin' : 'client';
-        console.log('User role determined:', this.userRole);
-        console.log('User ID determined:', this.userId, 'user email:', user.email, 'user:', user);
+        
+        
         const userIdStr = user.id || localStorage.getItem('userId');
         this.userId = userIdStr ? parseInt(userIdStr, 10) : null;
         this.clientInfo = {
@@ -702,7 +702,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   }
 
   private loadAdminCourses(): void {
-    console.log('Loading admin courses for user:', this.userId, 'role:', this.userRole);
+    
     this.http.get<Course[]>(`${this.apiUrl}/client/available-courses`, {
       headers: this.getAuthHeaders()
     }).pipe(
@@ -716,7 +716,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       })
     ).subscribe(courses => {
       if (this.isQRAccess && this.clientInfo?.companyName) {
-        console.log('Filtering admin courses for client (LIKE):', this.clientInfo.companyName);
+        
         // Filter courses for the specific client using partial match (LIKE)
         const clientName = this.clientInfo.companyName.toLowerCase();
         this.adminCourses = courses.filter(course => {
@@ -725,9 +725,9 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           return match && course.type === 'admin_course';
         });
       } else {
-        console.log('No QR access or client info, filtering by userClientName (LIKE):', this.userClientName);
+        
         const clientName = this.removeParentheses(this.userClientName || (this.clientInfo?.companyName ? this.clientInfo.companyName : '') || '').toLowerCase();
-        console.log('Filtering admin courses for client (LIKE):', clientName);
+        
         this.adminCourses = courses.filter(course => {
           const courseClientName = (course.clientName || '').toLowerCase();
           const match = courseClientName.includes(clientName);
@@ -893,6 +893,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     const exactOwner = this.scheduleOwnership.get(exactScheduleKey);
 
     if (exactOwner && normalizedCourseId && exactOwner !== normalizedCourseId) {
+      console.error(`Exact owner ${exactOwner} does not match normalized courseId ${normalizedCourseId}, returning 0`);
       return 0;
     }
 
@@ -902,6 +903,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           const [reservedStart, reservedEnd] = reservedScheduleKey.split('-');
 
           if (this.timeRangesOverlap(schedule.startTime, schedule.endTime, reservedStart, reservedEnd)) {
+            console.error(`Schedule ${JSON.stringify(schedule)} conflicts with reserved schedule ${reservedScheduleKey}`);
             return 0;
           }
         }
@@ -1644,8 +1646,9 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
             availableSpots = this.getAvailableSpotsForSchedule(schedule, courseId.toString());
             lessonCount = conflict.lessonCount;
           } else {
-            students = 0;
-            availableSpots = 0;
+            const thisCourseCurrentStudents = this.getCurrentStudentsInSchedule(schedule, courseId.toString());
+            students = thisCourseCurrentStudents;
+            availableSpots = 6 - thisCourseCurrentStudents;
           }
         } else {
           students = 0;

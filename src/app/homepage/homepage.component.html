@@ -80,7 +80,7 @@
       </div>
 
       <!-- Medium Economic Manager -->
-      <div class="economic-manager-medium" (click)="navigateTo('/economic-manager')">
+      <div *ngIf="isAdmin" class="economic-manager-medium" (click)="navigateTo('/economic-manager')">
         <div class="item-content">
           <h2 class="item-title">{{ 'economicManagerTitle' | translate }}</h2>
           <p class="item-description">{{ 'economicManagerDesc' | translate }}</p>
