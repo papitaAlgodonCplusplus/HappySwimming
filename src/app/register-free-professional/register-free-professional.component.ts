@@ -135,27 +135,27 @@ export class RegisterFreeProfessionalComponent implements OnInit, OnDestroy {
  */
   getTermsLink(language: string, jobArea: string): string {
     // Default link if none of the conditions match
-    let link = 'https://drive.google.com/file/d/1xZQoIss3amWRcEfst9xoZ_R282U4T7eg/view?usp=sharing';
+    let link = 'https://drive.google.com/file/d/1MTrMiwFjG3yH7UPEG401jSCJPaRyU2Lx/view?usp=sharing';
 
-    if (jobArea === 'dt') { // Technical Director
-      if (language === 'en') {
-        link = 'https://drive.google.com/file/d/1xZQoIss3amWRcEfst9xoZ_R282U4T7eg/view?usp=sharing';
-      } else {
-        link = 'https://drive.google.com/file/d/1Cvub8QSqhdEXJN0RV7Db7UXrn801kyMy/view?usp=sharing';
-      }
-    } else if (jobArea === 'pr') { // Teacher
-      if (language === 'en') {
-        link = 'https://drive.google.com/file/d/1xZQoIss3amWRcEfst9xoZ_R282U4T7eg/view?usp=sharing';
-      } else {
-        link = 'https://drive.google.com/file/d/1Cvub8QSqhdEXJN0RV7Db7UXrn801kyMy/view?usp=sharing';
-      }
-    } else {
-      if (language === 'en') {
-        link = 'https://drive.google.com/file/d/1xZQoIss3amWRcEfst9xoZ_R282U4T7eg/view?usp=sharing';
-      } else {
-        link = 'https://drive.google.com/file/d/1Cvub8QSqhdEXJN0RV7Db7UXrn801kyMy/view?usp=sharing';
-      }
-    }
+    // if (jobArea === 'dt') { // Technical Director
+    //   if (language === 'en') {
+    //     link = 'https://drive.google.com/file/d/1xZQoIss3amWRcEfst9xoZ_R282U4T7eg/view?usp=sharing';
+    //   } else {
+    //     link = 'https://drive.google.com/file/d/1Cvub8QSqhdEXJN0RV7Db7UXrn801kyMy/view?usp=sharing';
+    //   }
+    // } else if (jobArea === 'pr') { // Teacher
+    //   if (language === 'en') {
+    //     link = 'https://drive.google.com/file/d/1xZQoIss3amWRcEfst9xoZ_R282U4T7eg/view?usp=sharing';
+    //   } else {
+    //     link = 'https://drive.google.com/file/d/1Cvub8QSqhdEXJN0RV7Db7UXrn801kyMy/view?usp=sharing';
+    //   }
+    // } else {
+    //   if (language === 'en') {
+    //     link = 'https://drive.google.com/file/d/1xZQoIss3amWRcEfst9xoZ_R282U4T7eg/view?usp=sharing';
+    //   } else {
+    //     link = 'https://drive.google.com/file/d/1Cvub8QSqhdEXJN0RV7Db7UXrn801kyMy/view?usp=sharing';
+    //   }
+    // }
 
     return link;
   }

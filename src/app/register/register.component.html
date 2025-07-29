@@ -127,7 +127,7 @@
                 <input type="checkbox" id="acceptTerms" [(ngModel)]="acceptTerms" [disabled]="isLoading">
                 <label for="acceptTerms">
                     <a *ngIf="translationService.getCurrentLang() | async as currentLang"
-                        [href]="currentLang === 'en' ? 'https://drive.google.com/file/d/1n2cC-OtM0sy4BSaT_baNDkn_HHR4N7xi/view?usp=sharing' : 'https://drive.google.com/file/d/1IFvoJbtGGZjdjwDkCp8AaPlnrTUywYGx/view?usp=sharing'"
+                        [href]="currentLang === 'pr' ? 'https://drive.google.com/file/d/1BEwZTRN_S6Zq_J2MasqiVuTtiy66dhyS/view?usp=sharing' : 'https://drive.google.com/file/d/1IFvoJbtGGZjdjwDkCp8AaPlnrTUywYGx/view?usp=sharing'"
                         target="_blank">
                         {{ 'registration.acceptTerms' | translate }}
                     </a>
