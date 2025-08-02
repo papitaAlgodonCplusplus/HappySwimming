@@ -1,4 +1,3 @@
-<!-- Updated homepage.component.html - Add visits viewer option for admin -->
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
 
@@ -29,10 +28,8 @@
   .assign-professional {
     background-color: #8a2be2;
   }
-
-  /* NEW: Visits Viewer Styling */
   .visits-viewer {
-    background-color: #1e40af;
+    background-color: #ff6347;
   }
 
   .grid-item {
@@ -49,11 +46,83 @@
     <!-- Header section with welcome title and small profile editor -->
     <div class="header-section">
       <h1 class="welcome-title">{{ 'welcome' | translate }}</h1>
-      
+
       <!-- Small profile editor next to welcome title -->
       <div *ngIf="!isAdmin" class="profile-editor-small" (click)="navigateTo('/edit-profile')">
         <div class="item-content">
           <h2 class="item-title">{{ 'editProfile' | translate }}</h2>
+          <div class="icon-container">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content with large services manager and medium economic manager -->
+    <div class="main-content">
+      <!-- Large Services Manager -->
+      <div *ngIf="!isAdmin && userRole !== 'Profesional'" class="services-manager-large"
+        (click)="navigateTo('/services-manager')">
+        <div class="item-content">
+          <h2 class="item-title">{{ 'servicesManagerTitle' | translate }}</h2>
+          <p class="item-description">{{ 'servicesManagerDesc' | translate }}</p>
+          <div class="icon-container">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEW: Website Analytics / Visits Viewer (admin only) -->
+      <div *ngIf="isAdmin" class="grid-item visits-viewer" (click)="navigateTo('/visits-viewer')">
+        <div class="item-content">
+          <h2 class="item-title">{{ 'visitsViewer.title' | translate }}</h2>
+          <div class="icon-container">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v18h18"></path>
+              <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path>
+              <circle cx="9" cy="9" r="1"></circle>
+              <circle cx="20" cy="4" r="1"></circle>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Medium Economic Manager -->
+      <div class="economic-manager-medium" (click)="navigateTo('/economic-manager')">
+        <div class="item-content">
+          <h2 class="item-title">{{ 'economicManagerTitle' | translate }}</h2>
+          <p class="item-description">{{ 'economicManagerDesc' | translate }}</p>
+          <div class="icon-container">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Additional content for other modules -->
+    <div class="additional-content">
+      <!-- Students Management for professionals -->
+      <div *ngIf="userRole === 'professional' || userRole === 'Profesional'" class="grid-item students-manager"
+        (click)="navigateTo('/students-management')">
+        <div class="item-content">
+          <h2 class="item-title">{{ 'studentsManagement.title' | translate }}</h2>
+          <p class="item-description">{{ 'studentsManagement.description' | translate }}</p>
           <div class="icon-container">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -113,22 +182,6 @@
           </div>
         </div>
       </div>
-
-      <!-- NEW: Website Analytics / Visits Viewer (admin only) -->
-      <div *ngIf="isAdmin" class="grid-item visits-viewer" (click)="navigateTo('/visits-viewer')">
-        <div class="item-content">
-          <h2 class="item-title">{{ 'visitsViewer.title' | translate }}</h2>
-          <p class="item-description">{{ 'visitsViewer.homeDescription' | translate }}</p>
-          <div class="icon-container">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 3v18h18"></path>
-              <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path>
-              <circle cx="9" cy="9" r="1"></circle>
-              <circle cx="20" cy="4" r="1"></circle>
-            </svg>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
+</div>
