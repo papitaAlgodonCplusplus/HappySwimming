@@ -1,0 +1,494 @@
+<!-- src/app/visits-viewer/visits-viewer.component.html -->
+<app-header></app-header>
+
+<div class="visits-viewer-container">
+  <!-- Error and Success Messages -->
+  <div *ngIf="error" class="alert alert-error">
+    <span class="alert-icon">⚠️</span>
+    <span class="alert-message">{{ error }}</span>
+    <button class="alert-close" (click)="clearMessages()">×</button>
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success">
+    <span class="alert-icon">✅</span>
+    <span class="alert-message">{{ successMessage }}</span>
+    <button class="alert-close" (click)="clearMessages()">×</button>
+  </div>
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <span class="title-icon">📊</span>
+        {{ 'visitsViewer.title' | translate }}
+      </h1>
+      <p class="page-subtitle">{{ 'visitsViewer.subtitle' | translate }}</p>
+
+      <!-- Real-time indicator -->
+      <div class="real-time-indicator" [class.active]="isRealTimeEnabled">
+        <span class="indicator-dot"></span>
+        <span class="indicator-text">
+          {{ isRealTimeEnabled ? ('visitsViewer.realTimeLive' | translate) : ('visitsViewer.realTimeOff' | translate) }}
+        </span>
+        <span class="last-refresh">{{ 'visitsViewer.lastRefresh' | translate }}: {{ lastRefreshTime | date:'HH:mm:ss'
+          }}</span>
+      </div>
+    </div>
+
+    <!-- Header Controls -->
+    <div class="header-controls">
+      <button class="btn btn-secondary" (click)="refreshData()" [disabled]="isLoading">
+        <span class="btn-icon" [class.loading]="isLoading">🔄</span>
+        {{ 'visitsViewer.refresh' | translate }}
+      </button>
+
+      <button class="btn btn-primary" (click)="toggleRealTime()">
+        <span class="btn-icon">{{ isRealTimeEnabled ? '⏸️' : '▶️' }}</span>
+        {{ isRealTimeEnabled ? ('visitsViewer.stopRealTime' | translate) : ('visitsViewer.startRealTime' | translate) }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <div class="filters-header">
+      <h3>{{ 'visitsViewer.filters' | translate }}</h3>
+      <button class="btn btn-text" (click)="showAdvancedFilters = !showAdvancedFilters">
+        <span class="btn-icon">{{ showAdvancedFilters ? '▲' : '▼' }}</span>
+        {{ 'visitsViewer.advancedFilters' | translate }}
+      </button>
+    </div>
+
+    <div class="filters-content">
+      <!-- Basic Filters -->
+      <div class="filter-row">
+        <div class="filter-group">
+          <label for="startDate">{{ 'visitsViewer.startDate' | translate }}:</label>
+          <input type="date" id="startDate" [(ngModel)]="dateRange.startDate" class="form-control">
+        </div>
+
+        <div class="filter-group">
+          <label for="endDate">{{ 'visitsViewer.endDate' | translate }}:</label>
+          <input type="date" id="endDate" [(ngModel)]="dateRange.endDate" class="form-control">
+        </div>
+
+        <div class="filter-group">
+          <label for="period">{{ 'visitsViewer.period' | translate }}:</label>
+          <select id="period" [(ngModel)]="dateRange.period" class="form-control">
+            <option value="hourly">{{ 'visitsViewer.hourly' | translate }}</option>
+            <option value="daily">{{ 'visitsViewer.daily' | translate }}</option>
+            <option value="weekly">{{ 'visitsViewer.weekly' | translate }}</option>
+            <option value="monthly">{{ 'visitsViewer.monthly' | translate }}</option>
+          </select>
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn btn-primary" (click)="applyFilters()" [disabled]="isLoading">
+            <span class="btn-icon">🔍</span>
+            {{ 'visitsViewer.apply' | translate }}
+          </button>
+          <button class="btn btn-secondary" (click)="clearFilters()">
+            <span class="btn-icon">🗑️</span>
+            {{ 'visitsViewer.clear' | translate }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Advanced Filters -->
+      <div *ngIf="showAdvancedFilters" class="advanced-filters">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label for="trendDays">{{ 'visitsViewer.trendDays' | translate }}:</label>
+            <select id="trendDays" [(ngModel)]="dateRange.trendDays" class="form-control">
+              <option value="7">7 {{ 'visitsViewer.days' | translate }}</option>
+              <option value="30">30 {{ 'visitsViewer.days' | translate }}</option>
+              <option value="90">90 {{ 'visitsViewer.days' | translate }}</option>
+              <option value="365">365 {{ 'visitsViewer.days' | translate }}</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="exportFormat">{{ 'visitsViewer.exportFormat' | translate }}:</label>
+            <select id="exportFormat" [(ngModel)]="exportFormat" class="form-control">
+              <option value="csv">CSV</option>
+              <option value="json">JSON</option>
+            </select>
+          </div>
+
+          <div class="filter-actions">
+            <button class="btn btn-secondary" (click)="exportData()" [disabled]="isExporting || isLoading">
+              <span class="btn-icon" [class.loading]="isExporting">📥</span>
+              {{ 'visitsViewer.export' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs">
+    <button class="nav-tab" [class.active]="selectedTab === 'overview'" (click)="selectTab('overview')">
+      <span class="tab-icon">📈</span>
+      {{ 'visitsViewer.overview' | translate }}
+    </button>
+    <button class="nav-tab" [class.active]="selectedTab === 'trends'" (click)="selectTab('trends')">
+      <span class="tab-icon">📊</span>
+      {{ 'visitsViewer.trends' | translate }}
+    </button>
+    <button class="nav-tab" [class.active]="selectedTab === 'pages'" (click)="selectTab('pages')">
+      <span class="tab-icon">📄</span>
+      {{ 'visitsViewer.pages' | translate }}
+    </button>
+    <button class="nav-tab" [class.active]="selectedTab === 'devices'" (click)="selectTab('devices')">
+      <span class="tab-icon">📱</span>
+      {{ 'visitsViewer.devices' | translate }}
+    </button>
+    <button class="nav-tab" [class.active]="selectedTab === 'realtime'" (click)="selectTab('realtime')">
+      <span class="tab-icon">⚡</span>
+      {{ 'visitsViewer.realTime' | translate }}
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading && !visitStats" class="loading-container">
+    <div class="loading-spinner-large"></div>
+    <p>{{ 'visitsViewer.loading' | translate }}</p>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!isLoading || visitStats" class="main-content">
+    <!-- Overview Tab -->
+    <div *ngIf="selectedTab === 'overview'" class="tab-content">
+      <!-- Statistics Cards -->
+      <div *ngIf="visitStats" class="stats-grid">
+        <div class="stat-card primary">
+          <div class="stat-icon">👥</div>
+          <div class="stat-content">
+            <h3 class="stat-number">{{ formatNumber(visitStats.basicStats.total_visits) }}</h3>
+            <p class="stat-label">{{ 'visitsViewer.totalVisits' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="stat-card success">
+          <div class="stat-icon">🔍</div>
+          <div class="stat-content">
+            <h3 class="stat-number">{{ formatNumber(visitStats.basicStats.unique_visitors) }}</h3>
+            <p class="stat-label">{{ 'visitsViewer.uniqueVisitors' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="stat-card info">
+          <div class="stat-icon">🌐</div>
+          <div class="stat-content">
+            <h3 class="stat-number">{{ formatNumber(visitStats.basicStats.unique_ips) }}</h3>
+            <p class="stat-label">{{ 'visitsViewer.uniqueIPs' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="stat-card warning">
+          <div class="stat-icon">📧</div>
+          <div class="stat-content">
+            <h3 class="stat-number">{{ formatNumber(visitStats.basicStats.registered_users) }}</h3>
+            <p class="stat-label">{{ 'visitsViewer.registeredUsers' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="stat-card secondary">
+          <div class="stat-icon">📱</div>
+          <div class="stat-content">
+            <h3 class="stat-number">{{ formatNumber(visitStats.basicStats.mobile_visits) }}</h3>
+            <p class="stat-label">{{ 'visitsViewer.mobileVisits' | translate }}</p>
+          </div>
+        </div>
+
+        <div class="stat-card accent">
+          <div class="stat-icon">🖥️</div>
+          <div class="stat-content">
+            <h3 class="stat-number">{{ formatNumber(visitStats.basicStats.desktop_visits) }}</h3>
+            <p class="stat-label">{{ 'visitsViewer.desktopVisits' | translate }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Time-based Statistics -->
+      <div *ngIf="visitStats?.timeStats" class="section">
+        <h3 class="section-title">{{ 'visitsViewer.visitsOverTime' | translate }}</h3>
+        <div class="time-stats-container">
+          <div class="time-stats-table">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>{{ 'visitsViewer.period' | translate }}</th>
+                  <th>{{ 'visitsViewer.visits' | translate }}</th>
+                  <th>{{ 'visitsViewer.uniqueIPs' | translate }}</th>
+                  <th>{{ 'visitsViewer.sessions' | translate }}</th>
+                  <th>{{ 'visitsViewer.registered' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let stat of visitStats?.timeStats?.slice(0, 10); trackBy: trackByIndex">
+                  <td class="period-cell">{{ stat.period | date:'short' }}</td>
+                  <td class="number-cell">{{ stat.visits }}</td>
+                  <td class="number-cell">{{ stat.unique_ips }}</td>
+                  <td class="number-cell">{{ stat.unique_sessions }}</td>
+                  <td class="number-cell">{{ stat.registered_users }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trends Tab -->
+    <div *ngIf="selectedTab === 'trends'" class="tab-content">
+      <div *ngIf="dailyTrends" class="section">
+        <div class="section-header">
+          <h3 class="section-title">{{ 'visitsViewer.dailyTrends' | translate }}</h3>
+          <div class="trend-summary">
+            <span class="summary-item">
+              {{ 'visitsViewer.totalDays' | translate }}: <strong>{{ dailyTrends.summary.totalDays }}</strong>
+            </span>
+            <span class="summary-item">
+              {{ 'visitsViewer.avgPerDay' | translate }}: <strong>{{ dailyTrends.summary.averageVisitsPerDay }}</strong>
+            </span>
+          </div>
+        </div>
+
+        <!-- Simple Chart Visualization -->
+        <div class="chart-container">
+          <canvas id="trendsChart" width="800" height="400">
+            <!-- Fallback table for browsers without canvas support -->
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>{{ 'visitsViewer.date' | translate }}</th>
+                  <th>{{ 'visitsViewer.totalVisits' | translate }}</th>
+                  <th>{{ 'visitsViewer.uniqueVisitors' | translate }}</th>
+                  <th>{{ 'visitsViewer.mobile' | translate }}</th>
+                  <th>{{ 'visitsViewer.desktop' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let trend of dailyTrends.trends.slice(0, 15); trackBy: trackByIndex">
+                  <td>{{ trend.visit_date | date:'shortDate' }}</td>
+                  <td class="number-cell">{{ trend.total_visits }}</td>
+                  <td class="number-cell">{{ trend.unique_visitors }}</td>
+                  <td class="number-cell">{{ trend.mobile_visits }}</td>
+                  <td class="number-cell">{{ trend.desktop_visits }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pages Tab -->
+    <div *ngIf="selectedTab === 'pages'" class="tab-content">
+      <div *ngIf="visitStats?.topPages" class="section">
+        <h3 class="section-title">{{ 'visitsViewer.topPages' | translate }}</h3>
+        <div class="pages-grid">
+          <div *ngFor="let page of visitStats?.topPages; trackBy: trackByPageUrl" class="page-card">
+            <div class="page-info">
+              <h4 class="page-url">{{ page.page_url }}</h4>
+              <div class="page-stats">
+                <span class="stat-badge visits">{{ page.visits }} {{ 'visitsViewer.visits' | translate }}</span>
+                <span class="stat-badge unique">{{ page.unique_visitors }} {{ 'visitsViewer.unique' | translate
+                  }}</span>
+              </div>
+            </div>
+            <div class="page-chart">
+              <div class="progress-bar">
+                <div class="progress-fill"
+                  [style.width.%]="getPercentage(page.visits ?? 0, visitStats?.basicStats?.total_visits ?? 0)"></div>
+              </div>
+              <span class="percentage">{{ getPercentage(page.visits ?? 0, visitStats?.basicStats?.total_visits ?? 0) }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Devices Tab -->
+    <div *ngIf="selectedTab === 'devices'" class="tab-content">
+      <div class="devices-content">
+        <!-- Device Statistics -->
+        <div *ngIf="visitStats?.deviceStats" class="section">
+          <h3 class="section-title">{{ 'visitsViewer.deviceTypes' | translate }}</h3>
+          <div class="device-stats">
+            <div *ngFor="let device of visitStats?.deviceStats; trackBy: trackByDevice" class="device-card">
+              <div class="device-icon">
+                <span *ngIf="device.device_type === 'mobile'">📱</span>
+                <span *ngIf="device.device_type === 'desktop'">🖥️</span>
+                <span *ngIf="device.device_type === 'tablet'">📱</span>
+                <span *ngIf="device.device_type === 'unknown'">❓</span>
+              </div>
+              <div class="device-info">
+                <h4 class="device-name">{{ device.device_type | titlecase }}</h4>
+                <p class="device-count">{{ device.visits }} {{ 'visitsViewer.visits' | translate }}</p>
+                <p class="device-unique">{{ device.unique_visitors }} {{ 'visitsViewer.uniqueUsers' | translate }}</p>
+              </div>
+              <div class="device-percentage">
+                {{ getPercentage(device.visits, visitStats?.basicStats?.total_visits ?? 0) }}%
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Browser Statistics -->
+        <div *ngIf="visitStats?.browserStats" class="section">
+          <h3 class="section-title">{{ 'visitsViewer.browsers' | translate }}</h3>
+          <div class="browser-stats">
+            <div *ngFor="let browser of visitStats?.browserStats; trackBy: trackByBrowser" class="browser-card">
+              <div class="browser-icon">
+                <span *ngIf="browser.browser === 'Chrome'">🌐</span>
+                <span *ngIf="browser.browser === 'Firefox'">🦊</span>
+                <span *ngIf="browser.browser === 'Safari'">🧭</span>
+                <span *ngIf="browser.browser === 'Edge'">🔷</span>
+                <span *ngIf="browser.browser === 'Opera'">🎭</span>
+                <span *ngIf="!['Chrome', 'Firefox', 'Safari', 'Edge', 'Opera'].includes(browser.browser)">🌐</span>
+              </div>
+              <div class="browser-info">
+                <h4 class="browser-name">{{ browser.browser }}</h4>
+                <p class="browser-count">{{ browser.visits }} {{ 'visitsViewer.visits' | translate }}</p>
+                <div class="browser-bar">
+                  <div class="progress-bar">
+                    <div class="progress-fill"
+                      [style.width.%]="getPercentage(browser.visits, visitStats?.basicStats?.total_visits ?? 0)"></div>
+                  </div>
+                  <span class="percentage">{{ getPercentage(browser.visits, visitStats?.basicStats?.total_visits ?? 0)
+                    }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Real-time Tab -->
+    <div *ngIf="selectedTab === 'realtime'" class="tab-content">
+      <div class="realtime-content">
+        <!-- Real-time Controls -->
+        <div class="realtime-controls">
+          <div class="control-group">
+            <label for="refreshInterval">{{ 'visitsViewer.refreshInterval' | translate }}:</label>
+            <select id="refreshInterval" [(ngModel)]="autoRefreshInterval" class="form-control">
+              <option value="10">10 {{ 'visitsViewer.seconds' | translate }}</option>
+              <option value="30">30 {{ 'visitsViewer.seconds' | translate }}</option>
+              <option value="60">1 {{ 'visitsViewer.minute' | translate }}</option>
+              <option value="300">5 {{ 'visitsViewer.minutes' | translate }}</option>
+            </select>
+          </div>
+
+          <div class="status-indicator">
+            <div class="status-dot" [class.active]="isRealTimeEnabled"></div>
+            <span class="status-text">
+              {{ isRealTimeEnabled ? ('visitsViewer.monitoring' | translate) : ('visitsViewer.stopped' | translate) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Recent Visits -->
+        <div *ngIf="visitStats?.recentVisits" class="section">
+          <div class="section-header">
+            <h3 class="section-title">{{ 'visitsViewer.recentVisits' | translate }}</h3>
+            <span class="visit-count">{{ visitStats?.recentVisits?.length }} {{ 'visitsViewer.recentEntries' | translate
+              }}</span>
+          </div>
+
+          <div class="recent-visits-container">
+            <div class="visits-list">
+              <div *ngFor="let visit of visitStats?.recentVisits?.slice(0, 50); trackBy: trackByVisitTime"
+                class="visit-item">
+                <!-- Visit Time -->
+                <div class="visit-time">
+                  <span class="time-ago">{{ getTimeAgo(visit.visit_timestamp) }}</span>
+                  <span class="exact-time">{{ visit.visit_timestamp | date:'HH:mm:ss' }}</span>
+                </div>
+
+                <!-- Visit Details -->
+                <div class="visit-details">
+                  <div class="visit-page">
+                    <span class="page-icon">📄</span>
+                    <span class="page-path">{{ visit.page_url }}</span>
+                  </div>
+
+                  <div class="visit-meta">
+                    <span class="meta-item device">
+                      <span class="meta-icon">
+                        <span *ngIf="visit.device_type === 'mobile'">📱</span>
+                        <span *ngIf="visit.device_type === 'desktop'">🖥️</span>
+                        <span *ngIf="visit.device_type === 'tablet'">📱</span>
+                        <span *ngIf="visit.device_type === 'unknown'">❓</span>
+                      </span>
+                      {{ visit.device_type }}
+                    </span>
+
+                    <span class="meta-item browser">
+                      <span class="meta-icon">🌐</span>
+                      {{ visit.browser }}
+                    </span>
+
+                    <span class="meta-item os">
+                      <span class="meta-icon">💻</span>
+                      {{ visit.os }}
+                    </span>
+
+                    <span class="meta-item ip" *ngIf="visit.visitor_ip">
+                      <span class="meta-icon">🌍</span>
+                      {{ visit.visitor_ip }}
+                    </span>
+                  </div>
+
+                  <!-- User Info (if available) -->
+                  <div class="visit-user" *ngIf="visit.user_email">
+                    <span class="user-icon">👤</span>
+                    <span class="user-email">{{ visit.user_email }}</span>
+                    <span class="user-role" [class]="visit.user_role">{{ visit.user_role }}</span>
+                  </div>
+                </div>
+
+                <!-- Visit Status -->
+                <div class="visit-status">
+                  <div class="status-badge" [class.registered]="visit.user_email" [class.anonymous]="!visit.user_email">
+                    {{ visit.user_email ? ('visitsViewer.registered' | translate) : ('visitsViewer.anonymous' |
+                    translate) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div *ngIf="!visitStats?.recentVisits || visitStats?.recentVisits?.length === 0" class="empty-visits">
+              <div class="empty-icon">📊</div>
+              <h3>{{ 'visitsViewer.noRecentVisits' | translate }}</h3>
+              <p>{{ 'visitsViewer.noRecentVisitsDesc' | translate }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No Data State -->
+  <div *ngIf="!isLoading && !visitStats" class="no-data-container">
+    <div class="no-data-icon">📈</div>
+    <h3>{{ 'visitsViewer.noData' | translate }}</h3>
+    <p>{{ 'visitsViewer.noDataDesc' | translate }}</p>
+    <button class="btn btn-primary" (click)="loadVisitStatistics()">
+      <span class="btn-icon">🔄</span>
+      {{ 'visitsViewer.tryAgain' | translate }}
+    </button>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div *ngIf="isLoading" class="loading-overlay">
+  <div class="loading-content">
+    <div class="loading-spinner-large"></div>
+    <p>{{ 'visitsViewer.loadingData' | translate }}</p>
+  </div>
+</div>

@@ -31,12 +31,12 @@ app.use(express.json());
 
 // Database connection DEV
 // const pool = new Pool({
-// user: process.env.DB_USER || 'postgres',
-// host: process.env.DB_HOST || 'localhost',
-// database: process.env.DB_NAME || 'happyswimming',
-// password: process.env.DB_PASSWORD || 'postgres',
-// port: process.env.DB_PORT || 5432,
-// schema: 'happyswimming'
+//   user: process.env.DB_USER || 'postgres',
+//   host: process.env.DB_HOST || 'localhost',
+//   database: process.env.DB_NAME || 'happyswimming',
+//   password: process.env.DB_PASSWORD || 'postgres',
+//   port: process.env.DB_PORT || 5432,
+//   schema: 'happyswimming'
 // });
 
 // Database connection PROD
@@ -3460,11 +3460,11 @@ app.post('/api/translate/text', async (req, res) => {
     });
 
     console.log('🔁 Translation result:', result);
-    
+
     // Extract the translated text from the result
     const translatedText = result && result.length > 0 ? result[0] : text;
-    
-    res.json({ 
+
+    res.json({
       translatedText: translatedText,
       originalText: text,
       sourceLanguage: sourceLang,
@@ -3473,7 +3473,7 @@ app.post('/api/translate/text', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Translation Error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Server error translating text.',
       translatedText: req.body.text // Fallback to original text
     });
@@ -3492,7 +3492,7 @@ app.post('/api/translate/batch', async (req, res) => {
 
     // Filter out empty texts
     const nonEmptyTexts = texts.filter(text => text && text.trim());
-    
+
     if (nonEmptyTexts.length === 0) {
       return res.json({ translations: texts }); // Return original if all empty
     }
@@ -3504,7 +3504,7 @@ app.post('/api/translate/batch', async (req, res) => {
     });
 
     console.log('🔁 Batch translation result:', result);
-    
+
     // Map back to original array structure
     let translationIndex = 0;
     const translations = texts.map(originalText => {
@@ -3513,8 +3513,8 @@ app.post('/api/translate/batch', async (req, res) => {
       }
       return result && result[translationIndex] ? result[translationIndex++] : originalText;
     });
-    
-    res.json({ 
+
+    res.json({
       translations: translations,
       originalTexts: texts,
       sourceLanguage: sourceLang,
@@ -3523,7 +3523,7 @@ app.post('/api/translate/batch', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Batch Translation Error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Server error translating texts.',
       translations: req.body.texts // Fallback to original texts
     });
@@ -3548,7 +3548,7 @@ app.post('/api/translate/course', async (req, res) => {
       textsToTranslate.push(course.name.trim());
       fieldMap.push('name');
     }
-    
+
     if (course.description && course.description.trim()) {
       textsToTranslate.push(course.description.trim());
       fieldMap.push('description');
@@ -3568,7 +3568,7 @@ app.post('/api/translate/course', async (req, res) => {
 
     // Create translated course object
     const translatedCourse = { ...course };
-    
+
     if (result && Array.isArray(result)) {
       fieldMap.forEach((field, index) => {
         if (result[index]) {
@@ -3576,8 +3576,8 @@ app.post('/api/translate/course', async (req, res) => {
         }
       });
     }
-    
-    res.json({ 
+
+    res.json({
       translatedCourse: translatedCourse,
       originalCourse: course,
       sourceLanguage: sourceLang,
@@ -3586,7 +3586,7 @@ app.post('/api/translate/course', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Course Translation Error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Server error translating course.',
       translatedCourse: req.body.course // Fallback to original course
     });
@@ -4354,6 +4354,542 @@ app.get('/api/admin/course-statistics', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch course statistics' });
   }
 });
+
+// Add these endpoints to your existing server.js file
+
+// ==============================================
+// WEBSITE VISITS TRACKING API ENDPOINTS
+// ==============================================
+
+// Utility function to detect device type from user agent
+function getDeviceType(userAgent) {
+  if (!userAgent) return 'unknown';
+
+  const ua = userAgent.toLowerCase();
+
+  if (/mobile|android|iphone|ipod|blackberry|windows phone/.test(ua)) {
+    return 'mobile';
+  } else if (/tablet|ipad/.test(ua)) {
+    return 'tablet';
+  } else {
+    return 'desktop';
+  }
+}
+
+// Utility function to get browser info
+function getBrowserInfo(userAgent) {
+  if (!userAgent) return 'unknown';
+
+  const ua = userAgent.toLowerCase();
+
+  if (ua.includes('chrome') && !ua.includes('edge')) return 'Chrome';
+  if (ua.includes('firefox')) return 'Firefox';
+  if (ua.includes('safari') && !ua.includes('chrome')) return 'Safari';
+  if (ua.includes('edge')) return 'Edge';
+  if (ua.includes('opera')) return 'Opera';
+
+  return 'Other';
+}
+
+// Utility function to get OS info
+function getOSInfo(userAgent) {
+  if (!userAgent) return 'unknown';
+
+  const ua = userAgent.toLowerCase();
+
+  if (ua.includes('windows')) return 'Windows';
+  if (ua.includes('mac os')) return 'macOS';
+  if (ua.includes('linux')) return 'Linux';
+  if (ua.includes('android')) return 'Android';
+  if (ua.includes('iphone') || ua.includes('ipad')) return 'iOS';
+
+  return 'Other';
+}
+
+// Check if visitor is unique (first visit in last 24 hours)
+async function isUniqueVisitor(client, visitorIP, sessionId) {
+  const twentyFourHoursAgo = new Date();
+  twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+  const existingVisit = await client.query(
+    `SELECT id FROM happyswimming.website_visits 
+     WHERE (visitor_ip = $1 OR session_id = $2) 
+     AND visit_timestamp > $3 
+     LIMIT 1`,
+    [visitorIP, sessionId, twentyFourHoursAgo]
+  );
+
+  return existingVisit.rows.length === 0;
+}
+
+// Utility to get client IP address
+function getClientIP(req) {
+  return req.ip ||
+    req.connection.remoteAddress ||
+    req.socket.remoteAddress ||
+    (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+    req.headers['x-forwarded-for']?.split(',')[0] ||
+    req.headers['x-real-ip'] ||
+    '127.0.0.1';
+}
+
+// POST: Track a website visit
+app.post('/api/track-visit', async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const {
+      pageUrl,
+      sessionId,
+      userId = null
+    } = req.body;
+
+    // Validate required fields
+    if (!pageUrl || !sessionId) {
+      return res.status(400).json({ error: 'Page URL and session ID are required' });
+    }
+
+    // Get visitor information from request
+    const visitorIP = getClientIP(req);
+    const userAgent = req.headers['user-agent'] || '';
+    const referer = req.headers.referer || req.headers.referrer || '';
+
+    // Extract device and browser information
+    const deviceType = getDeviceType(userAgent);
+    const browser = getBrowserInfo(userAgent);
+    const os = getOSInfo(userAgent);
+
+    // Check if this is a unique visitor
+    const isUnique = await isUniqueVisitor(client, visitorIP, sessionId);
+
+    // Insert visit record
+    const insertQuery = `
+      INSERT INTO happyswimming.website_visits (
+        visitor_ip, user_agent, referer, page_url, session_id, user_id,
+        device_type, browser, os, is_unique_visitor
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING id, visit_timestamp
+    `;
+
+    const result = await client.query(insertQuery, [
+      visitorIP, userAgent, referer, pageUrl, sessionId, userId,
+      deviceType, browser, os, isUnique
+    ]);
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      visitId: result.rows[0].id,
+      timestamp: result.rows[0].visit_timestamp
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error tracking visit:', error);
+    res.status(500).json({ error: 'Failed to track visit' });
+  } finally {
+    client.release();
+  }
+});
+
+// GET: Admin endpoint to get visit statistics
+app.get('/api/admin/visit-statistics', async (req, res) => {
+  try {
+    const {
+      startDate,
+      endDate,
+      period = 'daily' // daily, weekly, monthly, hourly
+    } = req.query;
+
+    // Set default date range if not provided (last 30 days)
+    const defaultStartDate = new Date();
+    defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+    const defaultEndDate = new Date();
+    defaultEndDate.setDate(defaultEndDate.getDate() + 1);
+
+    const queryStartDate = startDate || defaultStartDate.toISOString();
+    const queryEndDate = endDate || defaultEndDate.toISOString();
+
+    // Basic statistics query
+    const basicStatsQuery = `
+      SELECT 
+        COUNT(*) as total_visits,
+        COUNT(DISTINCT visitor_ip) as unique_ips,
+        COUNT(DISTINCT session_id) as unique_sessions,
+        COUNT(DISTINCT user_id) FILTER (WHERE user_id IS NOT NULL) as registered_users,
+        COUNT(*) FILTER (WHERE user_id IS NULL) as anonymous_visits,
+        COUNT(*) FILTER (WHERE device_type = 'mobile') as mobile_visits,
+        COUNT(*) FILTER (WHERE device_type = 'desktop') as desktop_visits,
+        COUNT(*) FILTER (WHERE device_type = 'tablet') as tablet_visits,
+        COUNT(*) FILTER (WHERE is_unique_visitor = true) as unique_visitors
+      FROM happyswimming.website_visits 
+      WHERE visit_timestamp >= $1::timestamp
+        AND visit_timestamp <= $2::timestamp
+    `;
+
+    const basicStats = await pool.query(basicStatsQuery, [queryStartDate, queryEndDate]);
+
+    // Time-based statistics
+    let timeGrouping;
+    switch (period) {
+      case 'hourly':
+        timeGrouping = "DATE_TRUNC('hour', visit_timestamp)";
+        break;
+      case 'weekly':
+        timeGrouping = "DATE_TRUNC('week', visit_timestamp)";
+        break;
+      case 'monthly':
+        timeGrouping = "DATE_TRUNC('month', visit_timestamp)";
+        break;
+      default:
+        timeGrouping = "DATE_TRUNC('day', visit_timestamp)";
+    }
+
+    const timeStatsQuery = `
+      SELECT 
+        ${timeGrouping} as period,
+        COUNT(*) as visits,
+        COUNT(DISTINCT visitor_ip) as unique_ips,
+        COUNT(DISTINCT session_id) as unique_sessions,
+        COUNT(DISTINCT user_id) FILTER (WHERE user_id IS NOT NULL) as registered_users
+      FROM happyswimming.website_visits 
+      WHERE visit_timestamp >= $1::timestamp
+        AND visit_timestamp <= $2::timestamp
+      GROUP BY ${timeGrouping}
+      ORDER BY period DESC
+      LIMIT 50
+    `;
+
+    const timeStats = await pool.query(timeStatsQuery, [queryStartDate, queryEndDate]);
+
+    // Top pages
+    const topPagesQuery = `
+      SELECT 
+        page_url,
+        COUNT(*) as visits,
+        COUNT(DISTINCT visitor_ip) as unique_visitors
+      FROM happyswimming.website_visits 
+      WHERE visit_timestamp >= $1::timestamp
+        AND visit_timestamp <= $2::timestamp
+      GROUP BY page_url
+      ORDER BY visits DESC
+      LIMIT 20
+    `;
+
+    const topPages = await pool.query(topPagesQuery, [queryStartDate, queryEndDate]);
+
+    // Browser statistics
+    const browserStatsQuery = `
+      SELECT 
+        browser,
+        COUNT(*) as visits,
+        COUNT(DISTINCT visitor_ip) as unique_visitors
+      FROM happyswimming.website_visits 
+      WHERE visit_timestamp >= $1::timestamp
+        AND visit_timestamp <= $2::timestamp
+      GROUP BY browser
+      ORDER BY visits DESC
+    `;
+
+    const browserStats = await pool.query(browserStatsQuery, [queryStartDate, queryEndDate]);
+
+    // Device statistics
+    const deviceStatsQuery = `
+      SELECT 
+        device_type,
+        COUNT(*) as visits,
+        COUNT(DISTINCT visitor_ip) as unique_visitors
+      FROM happyswimming.website_visits 
+      WHERE visit_timestamp >= $1::timestamp
+        AND visit_timestamp <= $2::timestamp
+      GROUP BY device_type
+      ORDER BY visits DESC
+    `;
+
+    const deviceStats = await pool.query(deviceStatsQuery, [queryStartDate, queryEndDate]);
+
+    // Recent visits for real-time monitoring
+    const recentVisitsQuery = `
+      SELECT 
+        v.visit_timestamp,
+        v.page_url,
+        v.visitor_ip,
+        v.device_type,
+        v.browser,
+        v.os,
+        u.email as user_email,
+        u.role as user_role
+      FROM happyswimming.website_visits v
+      LEFT JOIN happyswimming.users u ON v.user_id = u.id
+      ORDER BY v.visit_timestamp DESC
+      LIMIT 100
+    `;
+
+    const recentVisits = await pool.query(recentVisitsQuery);
+
+    res.json({
+      basicStats: basicStats.rows[0],
+      timeStats: timeStats.rows,
+      topPages: topPages.rows,
+      browserStats: browserStats.rows,
+      deviceStats: deviceStats.rows,
+      recentVisits: recentVisits.rows,
+      period: period,
+      dateRange: {
+        startDate: queryStartDate,
+        endDate: queryEndDate
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching visit statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch visit statistics' });
+  }
+});
+
+// GET: Admin endpoint for daily visit trends
+app.get('/api/admin/daily-visit-trends', async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const daysInt = parseInt(days);
+
+    // Validate days parameter
+    if (isNaN(daysInt) || daysInt < 1 || daysInt > 365) {
+      return res.status(400).json({ error: 'Days parameter must be between 1 and 365' });
+    }
+
+    const query = `
+      SELECT 
+        visit_date,
+        total_visits,
+        unique_visitors,
+        unique_ips,
+        registered_users,
+        anonymous_users,
+        mobile_visits,
+        desktop_visits,
+        tablet_visits
+      FROM happyswimming.daily_visit_stats 
+      WHERE visit_date >= CURRENT_DATE - INTERVAL '${daysInt} days'
+      ORDER BY visit_date DESC
+    `;
+
+    const result = await pool.query(query);
+
+    // Calculate summary statistics
+    const totalVisits = result.rows.reduce((sum, row) => sum + parseInt(row.total_visits || 0), 0);
+    const averageVisitsPerDay = result.rows.length > 0
+      ? Math.round(totalVisits / result.rows.length)
+      : 0;
+
+    res.json({
+      trends: result.rows,
+      summary: {
+        totalDays: result.rows.length,
+        averageVisitsPerDay: averageVisitsPerDay,
+        totalVisits: totalVisits
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching daily visit trends:', error);
+    res.status(500).json({ error: 'Failed to fetch daily visit trends' });
+  }
+});
+
+// GET: Export visit data (CSV or JSON)
+app.get('/api/admin/export-visits', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const { startDate, endDate, format = 'json' } = req.query;
+
+    // Set default date range if not provided
+    const defaultStartDate = new Date();
+    defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+    const defaultEndDate = new Date();
+
+    const queryStartDate = startDate || defaultStartDate.toISOString();
+    const queryEndDate = endDate || defaultEndDate.toISOString();
+
+    const query = `
+      SELECT 
+        v.visit_timestamp,
+        v.page_url,
+        v.visitor_ip,
+        v.device_type,
+        v.browser,
+        v.os,
+        v.referer,
+        u.email as user_email,
+        u.role as user_role,
+        v.is_unique_visitor
+      FROM happyswimming.website_visits v
+      LEFT JOIN happyswimming.users u ON v.user_id = u.id
+      WHERE v.visit_timestamp >= $1::timestamp
+        AND v.visit_timestamp <= $2::timestamp
+      ORDER BY v.visit_timestamp DESC
+      LIMIT 10000
+    `;
+
+    const result = await pool.query(query, [queryStartDate, queryEndDate]);
+
+    if (format === 'csv') {
+      // Create CSV content
+      const headers = ['Timestamp', 'Page URL', 'IP Address', 'Device Type', 'Browser', 'OS', 'Referer', 'User Email', 'User Role', 'Unique Visitor'];
+      const csvRows = [headers.join(',')];
+
+      result.rows.forEach(row => {
+        const csvRow = [
+          `"${row.visit_timestamp}"`,
+          `"${row.page_url || ''}"`,
+          `"${row.visitor_ip || ''}"`,
+          `"${row.device_type || ''}"`,
+          `"${row.browser || ''}"`,
+          `"${row.os || ''}"`,
+          `"${row.referer || ''}"`,
+          `"${row.user_email || ''}"`,
+          `"${row.user_role || ''}"`,
+          `"${row.is_unique_visitor || false}"`
+        ];
+        csvRows.push(csvRow.join(','));
+      });
+
+      const csvContent = csvRows.join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=website_visits_${new Date().toISOString().split('T')[0]}.csv`);
+      res.send(csvContent);
+    } else {
+      // Return JSON format
+      res.json({
+        visits: result.rows,
+        total: result.rows.length,
+        exportDate: new Date().toISOString(),
+        dateRange: {
+          startDate: queryStartDate,
+          endDate: queryEndDate
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('Error exporting visit data:', error);
+    res.status(500).json({ error: 'Failed to export visit data' });
+  }
+});
+
+// GET: Real-time visit statistics (for live monitoring)
+app.get('/api/admin/realtime-visits', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const { minutes = 5 } = req.query;
+    const minutesInt = parseInt(minutes);
+
+    // Get visits from the last N minutes
+    const query = `
+      SELECT 
+        v.visit_timestamp,
+        v.page_url,
+        v.visitor_ip,
+        v.device_type,
+        v.browser,
+        v.os,
+        u.email as user_email,
+        u.role as user_role,
+        v.session_id
+      FROM happyswimming.website_visits v
+      LEFT JOIN happyswimming.users u ON v.user_id = u.id
+      WHERE v.visit_timestamp >= NOW() - INTERVAL '${minutesInt} minutes'
+      ORDER BY v.visit_timestamp DESC
+      LIMIT 50
+    `;
+
+    const result = await pool.query(query);
+
+    // Get current online users (active in last 5 minutes)
+    const onlineUsersQuery = `
+      SELECT 
+        COUNT(DISTINCT session_id) as active_sessions,
+        COUNT(DISTINCT visitor_ip) as active_ips,
+        COUNT(DISTINCT user_id) FILTER (WHERE user_id IS NOT NULL) as active_users
+      FROM happyswimming.website_visits
+      WHERE visit_timestamp >= NOW() - INTERVAL '5 minutes'
+    `;
+
+    const onlineStats = await pool.query(onlineUsersQuery);
+
+    res.json({
+      recentVisits: result.rows,
+      onlineStats: onlineStats.rows[0],
+      timestamp: new Date().toISOString(),
+      timeRange: `Last ${minutesInt} minutes`
+    });
+
+  } catch (error) {
+    console.error('Error fetching real-time visits:', error);
+    res.status(500).json({ error: 'Failed to fetch real-time visits' });
+  }
+});
+
+// DELETE: Clear old visit data (admin only, for maintenance)
+app.delete('/api/admin/cleanup-visits', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const { days = 365 } = req.query;
+    const daysInt = parseInt(days);
+
+    // Only allow cleanup of data older than 30 days for safety
+    if (daysInt < 30) {
+      return res.status(400).json({ error: 'Cannot delete data newer than 30 days' });
+    }
+
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      // Delete old visit records
+      const deleteQuery = `
+        DELETE FROM happyswimming.website_visits 
+        WHERE visit_timestamp < CURRENT_DATE - INTERVAL '${daysInt} days'
+      `;
+
+      const result = await client.query(deleteQuery);
+
+      // Delete old daily stats (keep at least 90 days)
+      if (daysInt > 90) {
+        const deleteDailyStatsQuery = `
+          DELETE FROM happyswimming.daily_visit_stats 
+          WHERE visit_date < CURRENT_DATE - INTERVAL '${daysInt} days'
+        `;
+
+        await client.query(deleteDailyStatsQuery);
+      }
+
+      await client.query('COMMIT');
+
+      res.json({
+        success: true,
+        deletedRecords: result.rowCount,
+        message: `Deleted ${result.rowCount} visit records older than ${daysInt} days`
+      });
+
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
+  } catch (error) {
+    console.error('Error cleaning up visit data:', error);
+    res.status(500).json({ error: 'Failed to cleanup visit data' });
+  }
+});
+
+// ==============================================
+// END OF WEBSITE VISITS TRACKING API ENDPOINTS
+// ==============================================
 
 // ============================================
 // END OF ADMIN COURSE MANAGEMENT ENDPOINTS

@@ -30,6 +30,17 @@ export const routes: Routes = [
     path: 'services-manager',
     loadComponent: () => import('./services-manager/services-manager.component').then(c => c.ServicesManagerComponent)
   },
+  
+  // NEW: Visits Viewer Route (Admin Only)
+  {
+    path: 'visits-viewer',
+    loadComponent: () => import('./visits-viewer/visits-viewer.component').then(m => m.VisitsViewerComponent),
+    canActivate: [authGuard],
+    data: { 
+      title: 'Website Analytics',
+      description: 'View website visit statistics and analytics'
+    }
+  },
   {
     path: 'students-management',
     loadComponent: () => import('./students-management/students-management.component').then(c => c.StudentsManagementComponent),
