@@ -31,12 +31,12 @@ app.use(express.json());
 
 // Database connection DEV
 // const pool = new Pool({
-//   user: process.env.DB_USER || 'postgres',
-//   host: process.env.DB_HOST || 'localhost',
-//   database: process.env.DB_NAME || 'happyswimming',
-//   password: process.env.DB_PASSWORD || 'postgres',
-//   port: process.env.DB_PORT || 5432,
-//   schema: 'happyswimming'
+// user: process.env.DB_USER || 'postgres',
+// host: process.env.DB_HOST || 'localhost',
+// database: process.env.DB_NAME || 'happyswimming',
+// password: process.env.DB_PASSWORD || 'postgres',
+// port: process.env.DB_PORT || 5432,
+// schema: 'happyswimming'
 // });
 
 // Database connection PROD
@@ -4909,6 +4909,7 @@ app.post('/api/qr-visits/register', async (req, res) => {
 
     // Validate required fields
     if (!userId || !pageUrl || !sessionId) {
+      console.log('Missing required fields:', { userId, pageUrl, sessionId });
       return res.status(400).json({
         error: 'Missing required fields: userId, pageUrl, sessionId'
       });
@@ -4916,11 +4917,16 @@ app.post('/api/qr-visits/register', async (req, res) => {
 
     console.log('Registering QR access for userId:', userId);
 
-    // Get visitor IP address
-    const visitorIp = req.headers['x-forwarded-for'] ||
-      req.connection.remoteAddress ||
-      req.socket.remoteAddress ||
-      (req.connection.socket ? req.connection.socket.remoteAddress : null);
+    // Get visitor IP address (handle x-forwarded-for as comma-separated list)
+    let visitorIp = req.headers['x-forwarded-for'];
+    if (visitorIp) {
+      // Take the first IP if multiple are present
+      visitorIp = visitorIp.split(',')[0].trim();
+    } else if (req.socket && req.socket.remoteAddress) {
+      visitorIp = req.socket.remoteAddress;
+    } else {
+      visitorIp = null;
+    }
 
     // Get user information
     const userQuery = `
