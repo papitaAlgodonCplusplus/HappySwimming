@@ -28,8 +28,13 @@
   .assign-professional {
     background-color: #8a2be2;
   }
+
   .visits-viewer {
     background-color: #ff6347;
+  }
+
+  .qr-visits-viewer {
+    background-color: #4682b4;
   }
 
   .grid-item {
@@ -78,6 +83,21 @@
               <line x1="16" y1="13" x2="8" y2="13"></line>
               <line x1="16" y1="17" x2="8" y2="17"></line>
               <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="isAdmin" class="grid-item qr-visits-viewer" (click)="navigateTo('/qr-visits-viewer')">
+        <div class="item-content">
+          <h2 class="item-title">{{ 'qrVisitsViewer.title' | translate }}</h2>
+          <p class="item-description">{{ 'qrVisitsViewer.description' | translate }}</p>
+          <div class="icon-container">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18"></rect>
+              <path d="M9 9h6v6H9z"></path>
+              <circle cx="12" cy="12" r="1"></circle>
             </svg>
           </div>
         </div>

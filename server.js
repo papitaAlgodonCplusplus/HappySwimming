@@ -31,12 +31,12 @@ app.use(express.json());
 
 // Database connection DEV
 // const pool = new Pool({
-// user: process.env.DB_USER || 'postgres',
-// host: process.env.DB_HOST || 'localhost',
-// database: process.env.DB_NAME || 'happyswimming',
-// password: process.env.DB_PASSWORD || 'postgres',
-// port: process.env.DB_PORT || 5432,
-// schema: 'happyswimming'
+//   user: process.env.DB_USER || 'postgres',
+//   host: process.env.DB_HOST || 'localhost',
+//   database: process.env.DB_NAME || 'happyswimming',
+//   password: process.env.DB_PASSWORD || 'postgres',
+//   port: process.env.DB_PORT || 5432,
+//   schema: 'happyswimming'
 // });
 
 // Database connection PROD
@@ -4886,6 +4886,463 @@ app.delete('/api/admin/cleanup-visits', authenticateToken, isAdmin, async (req, 
     res.status(500).json({ error: 'Failed to cleanup visit data' });
   }
 });
+
+// Backend API endpoints for QR Visit Tracking
+// Add these endpoints to your existing server.js file
+
+// QR Visit Tracking Endpoints
+
+// Register QR code access
+app.post('/api/qr-visits/register', async (req, res) => {
+  try {
+    const {
+      userId,
+      pageUrl,
+      sessionId,
+      accessTimestamp,
+      deviceType,
+      browser,
+      os,
+      userAgent,
+      referrer
+    } = req.body;
+
+    // Validate required fields
+    if (!userId || !pageUrl || !sessionId) {
+      return res.status(400).json({
+        error: 'Missing required fields: userId, pageUrl, sessionId'
+      });
+    }
+
+    console.log('Registering QR access for userId:', userId);
+
+    // Get visitor IP address
+    const visitorIp = req.headers['x-forwarded-for'] ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    // Get user information
+    const userQuery = `
+      SELECT u.id, u.email, u.first_name, u.last_name1, u.last_name2, u.role,
+             c.company_name
+      FROM happyswimming.users u
+      LEFT JOIN happyswimming.clients c ON u.id = c.user_id
+      WHERE u.id = $1 AND u.is_authorized = true AND u.is_active = true
+    `;
+
+    const userResult = await pool.query(userQuery, [userId]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found or not authorized' });
+    }
+
+    const user = userResult.rows[0];
+    // Complete Backend API for QR Visit Tracking
+    // Add these endpoints to your existing server.js file
+
+    const userName = `${user.first_name} ${user.last_name1}${user.last_name2 ? ' ' + user.last_name2 : ''}`;
+
+    // Generate QR code ID based on userId
+    const qrCodeId = `QR_${userId}_${Date.now()}`;
+
+    // Generate QR preview URL
+    const qrPreviewUrl = await generateQRPreview(userId);
+
+    // Insert QR visit record
+    const insertQuery = `
+      INSERT INTO happyswimming.qr_visits 
+      (qr_code_id, user_id, user_name, user_email, company_name, access_timestamp, 
+       page_url, visitor_ip, user_agent, device_type, browser, os, qr_preview_url, 
+       session_id, referrer)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      RETURNING id
+    `;
+
+    const result = await pool.query(insertQuery, [
+      qrCodeId,
+      userId,
+      userName,
+      user.email,
+      user.company_name || null,
+      accessTimestamp || new Date().toISOString(),
+      pageUrl,
+      visitorIp,
+      userAgent || null,
+      deviceType || 'unknown',
+      browser || 'unknown',
+      os || 'unknown',
+      qrPreviewUrl,
+      sessionId,
+      referrer || null
+    ]);
+
+    console.log('QR visit registered with ID:', result.rows[0].id);
+
+    res.json({
+      success: true,
+      message: 'QR access registered successfully',
+      visitId: result.rows[0].id,
+      qrCodeId: qrCodeId
+    });
+
+  } catch (error) {
+    console.error('Error registering QR access:', error);
+    res.status(500).json({ error: 'Failed to register QR access' });
+  }
+});
+
+// Get QR visit statistics
+app.get('/api/qr-visits/statistics', async (req, res) => {
+  try {
+    const { startDate, endDate, userId } = req.query;
+
+    console.log('Fetching QR visit statistics with filters:', { startDate, endDate, userId });
+
+    let whereConditions = [];
+    let queryParams = [];
+    let paramCount = 0;
+
+    // Add date filters
+    if (startDate) {
+      paramCount++;
+      whereConditions.push(`access_timestamp >= $${paramCount}`);
+      queryParams.push(startDate);
+    }
+
+    if (endDate) {
+      paramCount++;
+      whereConditions.push(`access_timestamp <= $${paramCount}`);
+      queryParams.push(endDate + ' 23:59:59');
+    }
+
+    // Add user filter
+    if (userId) {
+      paramCount++;
+      whereConditions.push(`user_id = $${paramCount}`);
+      queryParams.push(userId);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    // Get total visits
+    const totalQuery = `
+      SELECT COUNT(*) as total_visits,
+             COUNT(DISTINCT user_id) as unique_users
+      FROM happyswimming.qr_visits
+      ${whereClause}
+    `;
+
+    const totalResult = await pool.query(totalQuery, queryParams);
+
+    // Get today's visits
+    const todayQuery = `
+      SELECT COUNT(*) as today_visits
+      FROM happyswimming.qr_visits
+      WHERE DATE(access_timestamp) = CURRENT_DATE
+      ${userId ? `AND user_id = $${queryParams.length + 1}` : ''}
+    `;
+
+    const todayParams = userId ? [...queryParams, userId] : [];
+    const todayResult = await pool.query(todayQuery, todayParams);
+
+    // Get this week's visits
+    const weekQuery = `
+      SELECT COUNT(*) as week_visits
+      FROM happyswimming.qr_visits
+      WHERE access_timestamp >= DATE_TRUNC('week', CURRENT_DATE)
+      ${userId ? `AND user_id = $${queryParams.length + 1}` : ''}
+    `;
+
+    const weekResult = await pool.query(weekQuery, todayParams);
+
+    // Get this month's visits
+    const monthQuery = `
+      SELECT COUNT(*) as month_visits
+      FROM happyswimming.qr_visits
+      WHERE access_timestamp >= DATE_TRUNC('month', CURRENT_DATE)
+      ${userId ? `AND user_id = $${queryParams.length + 1}` : ''}
+    `;
+
+    const monthResult = await pool.query(monthQuery, todayParams);
+
+    // Get top accessed QRs
+    const topQRsQuery = `
+      SELECT user_id, user_name, company_name, qr_preview_url,
+             COUNT(*) as access_count,
+             MAX(access_timestamp) as last_access
+      FROM happyswimming.qr_visits
+      ${whereClause}
+      GROUP BY user_id, user_name, company_name, qr_preview_url
+      ORDER BY access_count DESC
+      LIMIT 10
+    `;
+
+    const topQRsResult = await pool.query(topQRsQuery, queryParams);
+
+    const statistics = {
+      total_qr_visits: parseInt(totalResult.rows[0].total_visits),
+      unique_users: parseInt(totalResult.rows[0].unique_users),
+      today_visits: parseInt(todayResult.rows[0].today_visits),
+      this_week_visits: parseInt(weekResult.rows[0].week_visits),
+      this_month_visits: parseInt(monthResult.rows[0].month_visits),
+      top_accessed_qrs: topQRsResult.rows
+    };
+
+    res.json(statistics);
+
+  } catch (error) {
+    console.error('Error fetching QR visit statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch QR visit statistics' });
+  }
+});
+
+// Get detailed QR visit records with pagination
+app.get('/api/qr-visits/records', async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 50,
+      startDate,
+      endDate,
+      userId
+    } = req.query;
+
+    console.log('Fetching QR visit records:', { page, limit, startDate, endDate, userId });
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    let whereConditions = [];
+    let queryParams = [];
+    let paramCount = 0;
+
+    // Add date filters
+    if (startDate) {
+      paramCount++;
+      whereConditions.push(`access_timestamp >= $${paramCount}`);
+      queryParams.push(startDate);
+    }
+
+    if (endDate) {
+      paramCount++;
+      whereConditions.push(`access_timestamp <= $${paramCount}`);
+      queryParams.push(endDate + ' 23:59:59');
+    }
+
+    // Add user filter
+    if (userId) {
+      paramCount++;
+      whereConditions.push(`user_id = $${paramCount}`);
+      queryParams.push(userId);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    // Get total count
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM happyswimming.qr_visits
+      ${whereClause}
+    `;
+
+    const countResult = await pool.query(countQuery, queryParams);
+    const totalRecords = parseInt(countResult.rows[0].total);
+
+    // Get paginated records
+    paramCount++;
+    const limitParam = `$${paramCount}`;
+    paramCount++;
+    const offsetParam = `$${paramCount}`;
+
+    const recordsQuery = `
+      SELECT *
+      FROM happyswimming.qr_visits
+      ${whereClause}
+      ORDER BY access_timestamp DESC
+      LIMIT ${limitParam} OFFSET ${offsetParam}
+    `;
+
+    const recordsResult = await pool.query(recordsQuery, [
+      ...queryParams,
+      parseInt(limit),
+      offset
+    ]);
+
+    const totalPages = Math.ceil(totalRecords / parseInt(limit));
+
+    res.json({
+      records: recordsResult.rows,
+      total: totalRecords,
+      page: parseInt(page),
+      totalPages: totalPages,
+      limit: parseInt(limit)
+    });
+
+  } catch (error) {
+    console.error('Error fetching QR visit records:', error);
+    res.status(500).json({ error: 'Failed to fetch QR visit records' });
+  }
+});
+
+// Generate QR code preview
+app.post('/api/qr-visits/generate-preview', async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    const previewUrl = await generateQRPreview(userId);
+
+    res.json({ previewUrl });
+
+  } catch (error) {
+    console.error('Error generating QR preview:', error);
+    res.status(500).json({ error: 'Failed to generate QR preview' });
+  }
+});
+
+// Export QR visit data
+app.get('/api/qr-visits/export', async (req, res) => {
+  try {
+    const {
+      format = 'csv',
+      startDate,
+      endDate,
+      userId
+    } = req.query;
+
+    console.log('Exporting QR visit data:', { format, startDate, endDate, userId });
+
+    let whereConditions = [];
+    let queryParams = [];
+    let paramCount = 0;
+
+    // Add date filters
+    if (startDate) {
+      paramCount++;
+      whereConditions.push(`access_timestamp >= $${paramCount}`);
+      queryParams.push(startDate);
+    }
+
+    if (endDate) {
+      paramCount++;
+      whereConditions.push(`access_timestamp <= $${paramCount}`);
+      queryParams.push(endDate + ' 23:59:59');
+    }
+
+    // Add user filter
+    if (userId) {
+      paramCount++;
+      whereConditions.push(`user_id = $${paramCount}`);
+      queryParams.push(userId);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    const exportQuery = `
+      SELECT 
+        qr_code_id,
+        user_id,
+        user_name,
+        user_email,
+        company_name,
+        access_timestamp,
+        page_url,
+        visitor_ip,
+        device_type,
+        browser,
+        os,
+        session_id,
+        referrer
+      FROM happyswimming.qr_visits
+      ${whereClause}
+      ORDER BY access_timestamp DESC
+    `;
+
+    const result = await pool.query(exportQuery, queryParams);
+
+    if (format === 'csv') {
+      // Generate CSV
+      const csvHeader = [
+        'QR Code ID',
+        'User ID',
+        'User Name',
+        'Email',
+        'Company',
+        'Access Time',
+        'Page URL',
+        'IP Address',
+        'Device Type',
+        'Browser',
+        'OS',
+        'Session ID',
+        'Referrer'
+      ].join(',');
+
+      const csvRows = result.rows.map(row => [
+        `"${row.qr_code_id || ''}"`,
+        `"${row.user_id || ''}"`,
+        `"${row.user_name || ''}"`,
+        `"${row.user_email || ''}"`,
+        `"${row.company_name || ''}"`,
+        `"${row.access_timestamp || ''}"`,
+        `"${row.page_url || ''}"`,
+        `"${row.visitor_ip || ''}"`,
+        `"${row.device_type || ''}"`,
+        `"${row.browser || ''}"`,
+        `"${row.os || ''}"`,
+        `"${row.session_id || ''}"`,
+        `"${row.referrer || ''}"`
+      ].join(','));
+
+      const csvContent = [csvHeader, ...csvRows].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="qr-visits-export.csv"');
+      res.send(csvContent);
+
+    } else {
+      // Return JSON
+      res.json({
+        exportDate: new Date().toISOString(),
+        filters: { startDate, endDate, userId },
+        totalRecords: result.rows.length,
+        data: result.rows
+      });
+    }
+
+  } catch (error) {
+    console.error('Error exporting QR visit data:', error);
+    res.status(500).json({ error: 'Failed to export QR visit data' });
+  }
+});
+
+// Helper function to generate QR preview URL
+async function generateQRPreview(userId) {
+  try {
+    const QRCode = require('qrcode');
+
+    const url = `https://www.happyswimming.net/services-manager?userId=${userId}`;
+
+    const qrDataUrl = await QRCode.toDataURL(url, {
+      width: 200,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      },
+      errorCorrectionLevel: 'M'
+    });
+
+    return qrDataUrl;
+
+  } catch (error) {
+    console.error('Error generating QR preview:', error);
+    return null;
+  }
+}
 
 // ==============================================
 // END OF WEBSITE VISITS TRACKING API ENDPOINTS

@@ -41,6 +41,16 @@ export const routes: Routes = [
       description: 'View website visit statistics and analytics'
     }
   },
+  // QRVisitsViewerComponent
+  {
+    path: 'qr-visits-viewer',
+    loadComponent: () => import('./qr-visits-viewer/qr-visits-viewer.component').then(m => m.QRVisitsViewerComponent),
+    canActivate: [authGuard],
+    data: {
+      title: 'QR Code Visits',
+      description: 'View QR code visit statistics and analytics'
+    }
+  },
   {
     path: 'students-management',
     loadComponent: () => import('./students-management/students-management.component').then(c => c.StudentsManagementComponent),

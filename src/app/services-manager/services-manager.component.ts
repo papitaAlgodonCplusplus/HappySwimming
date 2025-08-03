@@ -261,7 +261,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         }
       });
     } catch (error) {
-      
+
     }
 
     return this.currentLanguage;
@@ -274,13 +274,13 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     try {
       this.translateService.getCurrentLang().subscribe(lang => {
         if (typeof lang === 'string' && lang !== this.currentLanguage) {
-          
+
           this.currentLanguage = lang;
           this.translateAllCourses();
         }
       });
     } catch (error) {
-      
+
     }
   }
 
@@ -328,7 +328,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
    */
   private async translateSingleCourse(course: Course): Promise<void> {
     try {
-      
+
 
       // Prepare texts to translate
       const textsToTranslate: any[] = [];
@@ -352,19 +352,19 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         headers: this.getAuthHeaders()
       }).toPromise();
 
-      
-      
-      
+
+
+
 
       // Extract translated texts - handle different response formats
       let translations: string[] = [];
 
       if (response && response.translations && Array.isArray(response.translations)) {
-        
+
 
         // The translations array contains objects or strings, we need to extract the actual text
         translations = response.translations.map((item: any, index: number) => {
-          
+
 
           // If item is a string, return it directly
           if (typeof item === 'string') {
@@ -393,7 +393,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           return textsToTranslate[index] || '';
         });
 
-        
+
       }
       // Check if response is directly an array
       else if (Array.isArray(response)) {
@@ -409,7 +409,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           }
           return textsToTranslate[index] || '';
         });
-        
+
       }
       // Fallback: use original texts
       else {
@@ -422,7 +422,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         const translatedName = translations[0];
         if (typeof translatedName === 'string') {
           course.translatedName = translatedName;
-          
+
         } else {
           console.warn('Translated name is not a string:', translatedName, 'type:', typeof translatedName);
           course.translatedName = course.name; // Fallback to original
@@ -433,7 +433,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         const translatedDescription = translations[1];
         if (typeof translatedDescription === 'string') {
           course.translatedDescription = translatedDescription;
-          
+
         } else {
           console.warn('Translated description is not a string:', translatedDescription, 'type:', typeof translatedDescription);
           course.translatedDescription = course.description; // Fallback to original
@@ -459,7 +459,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
    */
   getCourseName(course: Course): string {
     const result = course.translatedName || course.name;
-    
+
 
     // Safety check to ensure we're returning a string
     if (typeof result === 'object') {
@@ -475,7 +475,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
    */
   getCourseDescription(course: Course): string {
     const result = course.translatedDescription || course.description;
-    
+
 
     // Safety check to ensure we're returning a string
     if (typeof result === 'object') {
@@ -490,7 +490,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
    * Manually refresh translations
    */
   refreshTranslations(): void {
-    
+
     this.translateAllCourses();
   }
 
@@ -499,7 +499,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
    */
   async debugTranslation(): Promise<void> {
     try {
-      
+
       const testData = {
         texts: ['NADO EN FAMILIA', 'Test description'],
         targetLang: 'en',
@@ -510,12 +510,12 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         headers: this.getAuthHeaders()
       }).toPromise();
 
-      
-      
-      
-      
-      
-      
+
+
+
+
+
+
     } catch (error) {
       console.error('Debug translation error:', error);
     }
@@ -587,6 +587,70 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
     }, 500);
   }
 
+
+  private generateSessionId(): string {
+    return 'session_' + Math.random().toString(36).substring(2) + '_' + Date.now();
+  }
+
+  private getDeviceType(): string {
+    const ua = navigator.userAgent;
+    if (/tablet|ipad|playbook|silk/i.test(ua)) {
+      return 'tablet';
+    }
+    if (/mobile|iphone|ipod|android|blackberry|opera|mini|windows\sce|palm|smartphone|iemobile/i.test(ua)) {
+      return 'mobile';
+    }
+    return 'desktop';
+  }
+
+  private getBrowserName(): string {
+    const ua = navigator.userAgent;
+    if (ua.includes('Firefox')) return 'Firefox';
+    if (ua.includes('Chrome')) return 'Chrome';
+    if (ua.includes('Safari')) return 'Safari';
+    if (ua.includes('Edge')) return 'Edge';
+    if (ua.includes('Opera')) return 'Opera';
+    return 'Unknown';
+  }
+
+  private getOperatingSystem(): string {
+    const ua = navigator.userAgent;
+    if (ua.includes('Windows')) return 'Windows';
+    if (ua.includes('Mac')) return 'macOS';
+    if (ua.includes('Linux')) return 'Linux';
+    if (ua.includes('Android')) return 'Android';
+    if (ua.includes('iOS')) return 'iOS';
+    return 'Unknown';
+  }
+
+  // Add this method to services-manager.component.ts:
+  private registerQRAccess(): void {
+    if (!this.userId) return;
+
+    const sessionId = this.generateSessionId();
+    const pageUrl = window.location.href;
+
+    const accessData = {
+      userId: this.userId,
+      pageUrl: pageUrl,
+      sessionId: sessionId,
+      deviceType: this.getDeviceType(),
+      browser: this.getBrowserName(),
+      os: this.getOperatingSystem(),
+      userAgent: navigator.userAgent,
+      referrer: document.referrer || null
+    };
+
+    this.http.post(`${this.apiUrl}/qr-visits/register`, accessData).subscribe({
+      next: (response) => {
+        console.log('QR access registered:', response);
+      },
+      error: (error) => {
+        console.error('Error registering QR access:', error);
+      }
+    });
+  }
+
   ngOnInit(): void {
     // Get current language and subscribe to changes
     this.getCurrentLanguage();
@@ -598,6 +662,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
         this.isQRAccess = true;
         this.userId = parseInt(params['userId'], 10);
         this.userRole = 'client';
+        this.registerQRAccess();
 
         this.http.post(`${this.apiUrl}/should-not-authenticate`, {}).subscribe(() => { });
         this.loadClientInfoByUserId(this.userId!);
@@ -640,7 +705,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       })
     ).subscribe(clientInfo => {
       if (clientInfo) {
-        
+
         this.clientInfo = clientInfo;
         this.userRole = 'client';
         this.userClientName = clientInfo.companyName || `${clientInfo.firstName} ${clientInfo.lastName1}`;
@@ -663,8 +728,8 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           return;
         }
         this.userRole = (user.email === 'admin@gmail.com') ? 'admin' : 'client';
-        
-        
+
+
         const userIdStr = user.id || localStorage.getItem('userId');
         this.userId = userIdStr ? parseInt(userIdStr, 10) : null;
         this.clientInfo = {
@@ -702,7 +767,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   }
 
   private loadAdminCourses(): void {
-    
+
     this.http.get<Course[]>(`${this.apiUrl}/client/available-courses`, {
       headers: this.getAuthHeaders()
     }).pipe(
@@ -716,7 +781,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
       })
     ).subscribe(courses => {
       if (this.isQRAccess && this.clientInfo?.companyName) {
-        
+
         // Filter courses for the specific client using partial match (LIKE)
         const clientName = this.clientInfo.companyName.toLowerCase();
         this.adminCourses = courses.filter(course => {
@@ -725,9 +790,9 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
           return match && course.type === 'admin_course';
         });
       } else {
-        
+
         const clientName = this.removeParentheses(this.userClientName || (this.clientInfo?.companyName ? this.clientInfo.companyName : '') || '').toLowerCase();
-        
+
         this.adminCourses = courses.filter(course => {
           const courseClientName = (course.clientName || '').toLowerCase();
           const match = courseClientName.includes(clientName);
