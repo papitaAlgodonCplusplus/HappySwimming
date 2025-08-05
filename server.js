@@ -2428,68 +2428,48 @@ app.put('/api/admin/authorize/:userId', authenticateToken, isAdmin, async (req, 
     res.status(500).json({ error: 'An error occurred while authorizing the user' });
   }
 });
+
 // Delete a user (admin only) - CASCADE delete all related data
 app.delete('/api/admin/users/:userId', authenticateToken, isAdmin, async (req, res) => {
   const userId = req.params.userId;
-
+  
   // Validate userId
   if (!userId || isNaN(parseInt(userId))) {
     return res.status(400).json({ error: 'Invalid user ID' });
   }
-
+  
   const client = await pool.connect();
-
+  
   try {
     await client.query('BEGIN');
-
-    // Get user's role to determine which tables to clean up
-    const userQuery = 'SELECT role FROM users WHERE id = $1';
+    
+    // Check if user exists before deletion
+    const userQuery = 'SELECT id, role FROM users WHERE id = $1';
     const userResult = await client.query(userQuery, [userId]);
-
+    
     if (userResult.rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'User not found' });
     }
-
-    const userRole = userResult.rows[0].role;
-
-    // Delete all related data in cascade
-    // 1. Delete from tables referencing client or professional
-    // 2. Delete from client/professional tables
-    // 3. Delete from users table
-
-    // Delete from client_services (by client_id and professional_id)
+    
+    // Delete from admin_courses first (this table doesn't have CASCADE set up)
     await client.query(`
-      DELETE FROM client_services 
-      WHERE client_id IN (SELECT id FROM clients WHERE user_id = $1)
-         OR professional_id IN (SELECT id FROM professionals WHERE user_id = $1)
-    `, [userId]);
-
-    // Delete from professional_services
-    await client.query(`
-      DELETE FROM professional_services 
+      DELETE FROM admin_courses 
       WHERE professional_id IN (SELECT id FROM professionals WHERE user_id = $1)
     `, [userId]);
-
-    // Delete from professional_specialties
-    await client.query(`
-      DELETE FROM professional_specialties 
-      WHERE professional_id IN (SELECT id FROM professionals WHERE user_id = $1)
-    `, [userId]);
-
-    // Delete from clients
-    await client.query('DELETE FROM clients WHERE user_id = $1', [userId]);
-
-    // Delete from professionals
-    await client.query('DELETE FROM professionals WHERE user_id = $1', [userId]);
-
-    // Delete from users
+    
+    // Delete user - CASCADE will automatically delete most related records
+    // if foreign key constraints are properly set up with ON DELETE CASCADE
     const deleteQuery = 'DELETE FROM users WHERE id = $1 RETURNING id';
     const result = await client.query(deleteQuery, [userId]);
-
+    
     await client.query('COMMIT');
-
-    res.json({ success: true, message: 'User and all related data deleted successfully', userId: userId });
+    
+    res.json({ 
+      success: true, 
+      message: 'User and all related data deleted successfully via CASCADE', 
+      userId: userId 
+    });
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error deleting user:', error);
