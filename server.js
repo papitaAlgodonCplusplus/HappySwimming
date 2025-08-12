@@ -4990,24 +4990,24 @@ app.get('/api/qr-visits/statistics', async (req, res) => {
     let paramCount = 0;
 
     // Add date filters
-    if (startDate) {
-      paramCount++;
-      whereConditions.push(`access_timestamp >= $${paramCount}`);
-      queryParams.push(startDate);
-    }
+    // if (startDate) {
+    //   paramCount++;
+    //   whereConditions.push(`access_timestamp >= $${paramCount}`);
+    //   queryParams.push(startDate);
+    // }
 
-    if (endDate) {
-      paramCount++;
-      whereConditions.push(`access_timestamp <= $${paramCount}`);
-      queryParams.push(endDate + ' 23:59:59');
-    }
+    // if (endDate) {
+    //   paramCount++;
+    //   whereConditions.push(`access_timestamp <= $${paramCount}`);
+    //   queryParams.push(endDate + ' 23:59:59');
+    // }
 
-    // Add user filter
-    if (userId) {
-      paramCount++;
-      whereConditions.push(`user_id = $${paramCount}`);
-      queryParams.push(userId);
-    }
+    // // Add user filter
+    // if (userId) {
+    //   paramCount++;
+    //   whereConditions.push(`user_id = $${paramCount}`);
+    //   queryParams.push(userId);
+    // }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
@@ -5103,26 +5103,27 @@ app.get('/api/qr-visits/records', async (req, res) => {
     let paramCount = 0;
 
     // Add date filters
-    if (startDate) {
-      paramCount++;
-      whereConditions.push(`access_timestamp >= $${paramCount}`);
-      queryParams.push(startDate);
-    }
+    // if (startDate) {
+    //   paramCount++;
+    //   whereConditions.push(`access_timestamp >= $${paramCount}`);
+    //   queryParams.push(startDate);
+    // }
 
-    if (endDate) {
-      paramCount++;
-      whereConditions.push(`access_timestamp <= $${paramCount}`);
-      queryParams.push(endDate + ' 23:59:59');
-    }
+    // if (endDate) {
+    //   paramCount++;
+    //   whereConditions.push(`access_timestamp <= $${paramCount}`);
+    //   queryParams.push(endDate + ' 23:59:59');
+    // }
 
-    // Add user filter
-    if (userId) {
-      paramCount++;
-      whereConditions.push(`user_id = $${paramCount}`);
-      queryParams.push(userId);
-    }
+    // // Add user filter
+    // if (userId) {
+    //   paramCount++;
+    //   whereConditions.push(`user_id = $${paramCount}`);
+    //   queryParams.push(userId);
+    // }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+    console.log('Where clause:', whereClause);
 
     // Get total count
     const countQuery = `
@@ -5132,7 +5133,9 @@ app.get('/api/qr-visits/records', async (req, res) => {
     `;
 
     const countResult = await pool.query(countQuery, queryParams);
+    console.log('Total QR visit records:', countResult.rows[0].total);
     const totalRecords = parseInt(countResult.rows[0].total);
+    console.log('Total records:', totalRecords);
 
     // Get paginated records
     paramCount++;
@@ -5153,6 +5156,7 @@ app.get('/api/qr-visits/records', async (req, res) => {
       parseInt(limit),
       offset
     ]);
+    console.log('Fetched QR visit records:', recordsResult.rows.length);
 
     const totalPages = Math.ceil(totalRecords / parseInt(limit));
 
@@ -5206,24 +5210,24 @@ app.get('/api/qr-visits/export', async (req, res) => {
     let paramCount = 0;
 
     // Add date filters
-    if (startDate) {
-      paramCount++;
-      whereConditions.push(`access_timestamp >= $${paramCount}`);
-      queryParams.push(startDate);
-    }
+    // if (startDate) {
+    //   paramCount++;
+    //   whereConditions.push(`access_timestamp >= $${paramCount}`);
+    //   queryParams.push(startDate);
+    // }
 
-    if (endDate) {
-      paramCount++;
-      whereConditions.push(`access_timestamp <= $${paramCount}`);
-      queryParams.push(endDate + ' 23:59:59');
-    }
+    // if (endDate) {
+    //   paramCount++;
+    //   whereConditions.push(`access_timestamp <= $${paramCount}`);
+    //   queryParams.push(endDate + ' 23:59:59');
+    // }
 
-    // Add user filter
-    if (userId) {
-      paramCount++;
-      whereConditions.push(`user_id = $${paramCount}`);
-      queryParams.push(userId);
-    }
+    // // Add user filter
+    // if (userId) {
+    //   paramCount++;
+    //   whereConditions.push(`user_id = $${paramCount}`);
+    //   queryParams.push(userId);
+    // }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
