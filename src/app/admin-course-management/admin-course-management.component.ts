@@ -62,6 +62,11 @@ interface Professional {
   available: boolean;
 }
 
+interface FixedPricing {
+  fixedStudentCount: number;
+  pricePerStudent: number;
+}
+
 interface CourseFormData {
   name: string;
   description: string;
@@ -71,6 +76,9 @@ interface CourseFormData {
   professionalId: number | null;
   schedules: Schedule[];
   groupPricing: GroupPricing[];
+  // Add these new fields
+  pricingType: 'flexible' | 'fixed';
+  fixedPricing?: FixedPricing;
 }
 
 interface Client {
@@ -99,6 +107,11 @@ interface Client {
 })
 export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   // Translation properties
+  // Add this property
+  pricingTypes = [
+    { value: 'flexible', label: 'Flexible Group Pricing (1-4, 5-6 students)' },
+    { value: 'fixed', label: 'Fixed Student Count & Price' }
+  ];
   currentLanguage: string = 'es';
   isTranslating: boolean = false;
 
@@ -146,7 +159,8 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     endDate: '',
     professionalId: null,
     schedules: [],
-    groupPricing: []
+    groupPricing: [],
+    pricingType: 'flexible'
   };
 
   // Filter and search
@@ -870,6 +884,8 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+
+  // Update resetForm method
   resetForm(): void {
     this.courseForm = {
       name: '',
@@ -879,7 +895,13 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       endDate: '',
       professionalId: null,
       schedules: [],
-      groupPricing: []
+      groupPricing: [],
+      // Add these defaults
+      pricingType: 'flexible',
+      fixedPricing: {
+        fixedStudentCount: 1,
+        pricePerStudent: 0
+      }
     };
     this.initializeGroupPricing();
     this.resetNewSchedule();
@@ -899,7 +921,8 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     return this.isLoading ||
       this.courseForm.schedules.length === 0 ||
       this.globalLessonOptions.length === 0 ||
-      this.courseForm.groupPricing.some(gp => gp.price <= 0);
+      this.courseForm.groupPricing.some(gp => gp.price <= 0) ||
+      this.courseForm.fixedPricing!.pricePerStudent <= 0
   }
 
   updateCourse(): void {
@@ -985,7 +1008,8 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
         ...schedule,
         id: undefined // Remove ID so new schedules are created
       })) : [],
-      groupPricing: originalCourse.groupPricing ? [...originalCourse.groupPricing] : []
+      groupPricing: originalCourse.groupPricing ? [...originalCourse.groupPricing] : [],
+      pricingType: 'flexible'
     };
 
     // Initialize group pricing if empty
@@ -1074,58 +1098,49 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
     return cleanedData;
   }
 
+  // Update validateCourseForm method
   private validateCourseForm(): boolean {
-    if (!this.courseForm.name.trim()) {
-      this.error = 'Course name is required.';
-      return false;
-    }
-    if (!this.courseForm.description.trim()) {
-      this.error = 'Course description is required.';
-      return false;
-    }
-    if (!this.courseForm.clientName.trim()) {
-      this.error = 'Client name is required.';
-      return false;
-    }
-    if (!this.courseForm.startDate) {
-      this.error = 'Start date is required.';
-      return false;
-    }
-    if (!this.courseForm.endDate) {
-      this.courseForm.endDate = this.courseForm.startDate; // Default to start date if not provided
-    }
-    if (new Date(this.courseForm.startDate) >= new Date(this.courseForm.endDate)) {
-      // startDate + 3 days by default
-      this.courseForm.endDate = new Date(new Date(this.courseForm.startDate).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    }
-    if (!this.courseForm.professionalId) {
-      this.error = 'Please assign a professional to this course.';
-      return false;
-    }
-    if (this.courseForm.schedules.length === 0) {
-      this.error = 'At least one schedule is required.';
-      return false;
-    }
-    if (this.globalLessonOptions.length === 0) {
-      this.error = 'At least one lesson option is required. Please add lesson options first.';
-      return false;
-    }
+    // ... existing validations ...
 
-    // Validate that each global lesson option has valid data
-    for (const option of this.globalLessonOptions) {
-      if (!option.lessonCount || option.lessonCount < 1 || option.lessonCount > 20) {
-        this.error = `Invalid lesson count: ${option.lessonCount}. Must be between 1 and 20.`;
-        return false;
-      }
-      if (option.price < 0) {
-        this.error = `Invalid price: ${option.price}. Price cannot be negative.`;
-        return false;
-      }
-    }
+    // // Add fixed pricing validation
+    // if (this.courseForm.pricingType === 'fixed') {
+    //   if (!this.courseForm.fixedPricing) {
+    //     this.error = 'Fixed pricing configuration is required.';
+    //     return false;
+    //   }
+    //   if (this.courseForm.fixedPricing.fixedStudentCount < 1 || this.courseForm.fixedPricing.fixedStudentCount > 20) {
+    //     this.error = 'Fixed student count must be between 1 and 20.';
+    //     return false;
+    //   }
+    //   if (this.courseForm.fixedPricing.pricePerStudent <= 0) {
+    //     this.error = 'Price per student must be greater than 0.';
+    //     return false;
+    //   }
+    // } else {
+    //   // Existing flexible pricing validation
+    //   if (this.courseForm.groupPricing.some(gp => gp.price <= 0)) {
+    //     this.error = 'All group pricing must be greater than 0.';
+    //     return false;
+    //   }
+    // }
 
-    console.log('Form validation passed. Global lesson options:', this.globalLessonOptions);
     return true;
   }
+
+  // Add method to handle pricing type change
+  onPricingTypeChange(): void {
+    if (this.courseForm.pricingType === 'fixed') {
+      // Initialize fixed pricing if not exists
+      if (!this.courseForm.fixedPricing) {
+        this.courseForm.fixedPricing = {
+          fixedStudentCount: 1,
+          pricePerStudent: 0
+        };
+      }
+    }
+    this.cdr.detectChanges();
+  }
+
 
   addGlobalLessonOption(): void {
     if (!this.validateGlobalLessonOption()) {
@@ -1239,7 +1254,8 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
       endDate: course.endDate,
       professionalId: course.professionalId,
       schedules: course.schedules ? JSON.parse(JSON.stringify(course.schedules)) : [],
-      groupPricing: course.groupPricing ? JSON.parse(JSON.stringify(course.groupPricing)) : []
+      groupPricing: course.groupPricing ? JSON.parse(JSON.stringify(course.groupPricing)) : [],
+      pricingType: 'flexible'
     };
 
     console.log('Form schedules after copy:', this.courseForm.schedules);

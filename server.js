@@ -31,12 +31,12 @@ app.use(express.json());
 
 // Database connection DEV
 // const pool = new Pool({
-// user: process.env.DB_USER || 'postgres',
-// host: process.env.DB_HOST || 'localhost',
-// database: process.env.DB_NAME || 'happyswimming',
-// password: process.env.DB_PASSWORD || 'postgres',
-// port: process.env.DB_PORT || 5432,
-// schema: 'happyswimming'
+//   user: process.env.DB_USER || 'postgres',
+//   host: process.env.DB_HOST || 'localhost',
+//   database: process.env.DB_NAME || 'happyswimming',
+//   password: process.env.DB_PASSWORD || 'postgres',
+//   port: process.env.DB_PORT || 5432,
+//   schema: 'happyswimming'
 // });
 
 // Database connection PROD
@@ -2432,43 +2432,43 @@ app.put('/api/admin/authorize/:userId', authenticateToken, isAdmin, async (req, 
 // Delete a user (admin only) - CASCADE delete all related data
 app.delete('/api/admin/users/:userId', authenticateToken, isAdmin, async (req, res) => {
   const userId = req.params.userId;
-  
+
   // Validate userId
   if (!userId || isNaN(parseInt(userId))) {
     return res.status(400).json({ error: 'Invalid user ID' });
   }
-  
+
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
-    
+
     // Check if user exists before deletion
     const userQuery = 'SELECT id, role FROM users WHERE id = $1';
     const userResult = await client.query(userQuery, [userId]);
-    
+
     if (userResult.rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
     // Delete from admin_courses first (this table doesn't have CASCADE set up)
     await client.query(`
       DELETE FROM admin_courses 
       WHERE professional_id IN (SELECT id FROM professionals WHERE user_id = $1)
     `, [userId]);
-    
+
     // Delete user - CASCADE will automatically delete most related records
     // if foreign key constraints are properly set up with ON DELETE CASCADE
     const deleteQuery = 'DELETE FROM users WHERE id = $1 RETURNING id';
     const result = await client.query(deleteQuery, [userId]);
-    
+
     await client.query('COMMIT');
-    
-    res.json({ 
-      success: true, 
-      message: 'User and all related data deleted successfully via CASCADE', 
-      userId: userId 
+
+    res.json({
+      success: true,
+      message: 'User and all related data deleted successfully via CASCADE',
+      userId: userId
     });
   } catch (error) {
     await client.query('ROLLBACK');
@@ -3276,7 +3276,6 @@ app.delete('/api/enrollments/:id', authenticateToken, async (req, res) => {
 // ADMIN COURSE MANAGEMENT ENDPOINTS
 // ============================================
 
-// GET: Fetch all admin courses
 app.get('/api/admin/courses', authenticateToken, async (req, res) => {
   try {
     const query = `
@@ -3294,7 +3293,12 @@ app.get('/api/admin/courses', authenticateToken, async (req, res) => {
         ac.current_students,
         ac.created_at,
         ac.updated_at,
+        ac.pricing_type,
         CONCAT(pu.first_name, ' ', pu.last_name1) as professional_name,
+        
+        -- Fixed pricing
+        cfp.fixed_student_count,
+        cfp.price_per_student,
         
         -- Get schedules with lesson options
         COALESCE(
@@ -3325,6 +3329,7 @@ app.get('/api/admin/courses', authenticateToken, async (req, res) => {
       LEFT JOIN happyswimming.users pu ON p.user_id = pu.id
       LEFT JOIN happyswimming.course_schedules cs ON ac.id = cs.course_id
       LEFT JOIN happyswimming.course_group_pricing cgp ON ac.id = cgp.course_id
+      LEFT JOIN happyswimming.course_fixed_pricing cfp ON ac.id = cfp.course_id
       LEFT JOIN (
         SELECT 
           cs2.id as schedule_id,
@@ -3342,7 +3347,8 @@ app.get('/api/admin/courses', authenticateToken, async (req, res) => {
       GROUP BY ac.id, ac.course_code, ac.name, ac.description, ac.client_name, 
                ac.start_date, ac.end_date, ac.professional_id, ac.status, 
                ac.max_students, ac.current_students, ac.created_at, ac.updated_at,
-               pu.first_name, pu.last_name1
+               ac.pricing_type, pu.first_name, pu.last_name1,
+               cfp.fixed_student_count, cfp.price_per_student
       ORDER BY ac.created_at DESC
     `;
 
@@ -3360,8 +3366,13 @@ app.get('/api/admin/courses', authenticateToken, async (req, res) => {
       status: row.status,
       maxStudents: row.max_students,
       currentStudents: row.current_students,
+      pricingType: row.pricing_type || 'flexible',
       schedules: row.schedules || [],
-      groupPricing: row.group_pricing || [],
+      groupPricing: row.pricing_type === 'flexible' ? (row.group_pricing || []) : [],
+      fixedPricing: row.pricing_type === 'fixed' && row.fixed_student_count ? {
+        fixedStudentCount: row.fixed_student_count,
+        pricePerStudent: parseFloat(row.price_per_student || 0)
+      } : null,
       createdAt: row.created_at
     }));
 
@@ -3588,35 +3599,59 @@ app.post('/api/admin/courses', authenticateToken, async (req, res) => {
       endDate,
       professionalId,
       schedules,
-      groupPricing
+      groupPricing,
+      pricingType = 'flexible',
+      fixedPricing
     } = req.body;
 
+    // if not endDate, assing it 2030, 1, 1
+    if (!endDate) {
+      endDate = new Date(2030, 0, 1).toISOString();
+    }
+    
     // Validation
-    if (!name || !description || !clientName || !startDate || !endDate || !professionalId) {
+    if (!name || !description || !clientName || !startDate || !professionalId) {
+      console.error('❌ Course creation error: Missing required fields');
       return res.status(400).json({ error: 'All basic fields are required' });
     }
 
     if (new Date(startDate) >= new Date(endDate)) {
+      console.error('❌ Course creation error: Invalid date range');
       return res.status(400).json({ error: 'End date must be after start date' });
     }
 
     if (!schedules || schedules.length === 0) {
+      console.error('❌ Course creation error: At least one schedule is required');
       return res.status(400).json({ error: 'At least one schedule is required' });
     }
 
-    // Validate groupPricing: must contain exactly one '1-4' and one '5-6' entry, and no duplicates
-    if (Array.isArray(groupPricing)) {
-      // Remove duplicates and keep only the first occurrence of each studentRange
-      const uniquePricing = [];
-      const seen = new Set();
-      for (const gp of groupPricing) {
-        if ((gp.studentRange === '1-4' || gp.studentRange === '5-6') && !seen.has(gp.studentRange)) {
-          uniquePricing.push(gp);
-          seen.add(gp.studentRange);
-        }
+    // Validate pricing based on type
+    if (pricingType === 'fixed') {
+      if (!fixedPricing || !fixedPricing.fixedStudentCount || !fixedPricing.pricePerStudent) {
+        console.error('❌ Course creation error: Fixed pricing configuration is required');
+        return res.status(400).json({ error: 'Fixed pricing configuration is required' });
       }
-      // Overwrite groupPricing with unique entries
-      groupPricing = uniquePricing;
+      if (fixedPricing.fixedStudentCount < 1 || fixedPricing.fixedStudentCount > 20) {
+        console.error('❌ Course creation error: Fixed student count must be between 1 and 20');
+        return res.status(400).json({ error: 'Fixed student count must be between 1 and 20' });
+      }
+      if (fixedPricing.pricePerStudent <= 0) {
+        console.error('❌ Course creation error: Price per student must be greater than 0');
+        return res.status(400).json({ error: 'Price per student must be greater than 0' });
+      }
+    } else {
+      // Validate groupPricing for flexible pricing
+      if (Array.isArray(groupPricing)) {
+        const uniquePricing = [];
+        const seen = new Set();
+        for (const gp of groupPricing) {
+          if ((gp.studentRange === '1-4' || gp.studentRange === '5-6') && !seen.has(gp.studentRange)) {
+            uniquePricing.push(gp);
+            seen.add(gp.studentRange);
+          }
+        }
+        groupPricing = uniquePricing;
+      }
     }
 
     // Verify professional exists
@@ -3626,16 +3661,22 @@ app.post('/api/admin/courses', authenticateToken, async (req, res) => {
     );
 
     if (professionalCheck.rows.length === 0) {
+      console.error('❌ Course creation error: Professional not found');
       return res.status(400).json({ error: 'Professional not found' });
     }
+
+    // Set max_students based on pricing type
+    const maxStudents = pricingType === 'fixed'
+      ? fixedPricing.fixedStudentCount
+      : 6;
 
     // Insert course
     const courseQuery = `
       INSERT INTO happyswimming.admin_courses 
-      (name, description, client_name, start_date, end_date, professional_id, created_by, max_students)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      (name, description, client_name, start_date, end_date, professional_id, created_by, max_students, pricing_type)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id, course_code, name, description, client_name, start_date, end_date, 
-                professional_id, status, max_students, current_students, created_at
+                professional_id, status, max_students, current_students, created_at, pricing_type
     `;
 
     const courseResult = await client.query(courseQuery, [
@@ -3646,7 +3687,8 @@ app.post('/api/admin/courses', authenticateToken, async (req, res) => {
       endDate,
       professionalId,
       req.user.id,
-      6 // Max students is 6 (can be 1-4 or 5-6)
+      maxStudents,
+      pricingType
     ]);
 
     const newCourse = courseResult.rows[0];
@@ -3677,13 +3719,22 @@ app.post('/api/admin/courses', authenticateToken, async (req, res) => {
       }
     }
 
-    // Insert group pricing
-    for (const pricing of groupPricing) {
-      if (pricing.price > 0 && (pricing.studentRange === '1-4' || pricing.studentRange === '5-6')) {
-        await client.query(
-          'INSERT INTO happyswimming.course_group_pricing (course_id, student_range, price) VALUES ($1, $2, $3)',
-          [courseId, pricing.studentRange, pricing.price]
-        );
+    // Handle pricing based on type
+    if (pricingType === 'fixed') {
+      // Insert fixed pricing
+      await client.query(
+        'INSERT INTO happyswimming.course_fixed_pricing (course_id, fixed_student_count, price_per_student) VALUES ($1, $2, $3)',
+        [courseId, fixedPricing.fixedStudentCount, fixedPricing.pricePerStudent]
+      );
+    } else {
+      // Insert group pricing (existing logic)
+      for (const pricing of groupPricing) {
+        if (pricing.price > 0 && (pricing.studentRange === '1-4' || pricing.studentRange === '5-6')) {
+          await client.query(
+            'INSERT INTO happyswimming.course_group_pricing (course_id, student_range, price) VALUES ($1, $2, $3)',
+            [courseId, pricing.studentRange, pricing.price]
+          );
+        }
       }
     }
 
@@ -3712,8 +3763,10 @@ app.post('/api/admin/courses', authenticateToken, async (req, res) => {
       status: newCourse.status,
       maxStudents: newCourse.max_students,
       currentStudents: newCourse.current_students,
+      pricingType: newCourse.pricing_type,
       schedules: schedules,
-      groupPricing: groupPricing,
+      groupPricing: pricingType === 'flexible' ? groupPricing : [],
+      fixedPricing: pricingType === 'fixed' ? fixedPricing : null,
       createdAt: newCourse.created_at
     };
 

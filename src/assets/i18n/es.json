@@ -300,6 +300,13 @@
     "| Clase de 45 minutos | Clases individuales de 30 minutos | PRINCIPIANTES: para aprender el control de la respiración y habilidades en el agua como base sólida | INTERMEDIO: para comenzar a aprender los fundamentos de los estilos de nado | NADADORES CONFIADOS: para mejorar la técnica": "| Clase de 45 minutos | Clases individuales de 30 minutos | PRINCIPIANTES: para aprender el control de la respiración y habilidades en el agua como base sólida | INTERMEDIO: para comenzar a aprender los fundamentos de los estilos de nado | NADADORES CONFIADOS: para mejorar la técnica",
     "Single Pricing Option": "Opción de Precio Único",
     "adminCourseManagement": {
+        "pricingConfiguration": "Configuración de Precios",
+        "pricingConfigurationSubtitle": "Configura los precios y la disponibilidad de los cursos",
+        "pricingType": "Tipo de Precio",
+        "fixedPricingConfiguration": "Configuración de Precios Fijos",
+        "fixedStudentCount": "Número de Estudiantes Fijos",
+        "courseConfiguration": "Configuración del Curso",
+        "totalRevenue": "Ingresos Totales",
         "title": "Gestión de Cursos Admin",
         "subtitle": "Crear, editar y gestionar cursos en la plataforma",
         "accessDenied": "Acceso denegado",
