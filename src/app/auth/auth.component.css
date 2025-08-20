@@ -76,7 +76,7 @@ label {
 }
 
 .btn-normal {
-  background-color: #ffffff7c;
+  background-color: #ffffff;
   color: #0066cc;
 }
 
@@ -128,13 +128,11 @@ app-header {
 
 .client-btn {
   background-color: rgb(255, 255, 255, 0.5);
-  font-size: small;
   border-right: none;
 }
 
 .professional-btn {
   background-color: rgb(255, 255, 255, 0.5);
-  font-size: small;
   border-left: none;
 }
 

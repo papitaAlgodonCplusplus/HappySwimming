@@ -34,6 +34,7 @@ interface LessonOption {
 
 interface AdminCourse {
   id?: number;
+  fixedPricing?: FixedPricing;
   courseCode?: string;
   name: string;
   description: string;
@@ -275,8 +276,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
    */
   private async translateSingleCourse(course: AdminCourse): Promise<void> {
     try {
-      console.log('Admin: Translating course:', course.name);
-
       // Prepare texts to translate
       const textsToTranslate: any[] = [];
       if (course.name) textsToTranslate.push(course.name);
@@ -298,18 +297,13 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
         headers: this.getAuthHeaders()
       }).toPromise();
 
-      console.log('Admin: Translation response for', course.name, ':', response);
 
       // Extract translated texts - handle different response formats
       let translations: string[] = [];
 
       if (response && response.translations && Array.isArray(response.translations)) {
-        console.log('Admin: Found translations array:', response.translations);
-
         // The translations array contains objects or strings, extract the actual text
         translations = response.translations.map((item: any, index: number) => {
-          console.log(`Admin: Processing translation item ${index}:`, item, 'type:', typeof item);
-
           // If item is a string, return it directly
           if (typeof item === 'string') {
             return item;
@@ -329,15 +323,12 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
             }
 
             // If it's an object but doesn't match expected formats, convert to string
-            console.warn('Admin: Unknown translation object format:', item);
             return JSON.stringify(item);
           }
 
           // Fallback: return original text for this index
           return textsToTranslate[index] || '';
         });
-
-        console.log('Admin: Extracted translations:', translations);
       }
       // Check if response is directly an array
       else if (Array.isArray(response)) {
@@ -353,7 +344,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
           }
           return textsToTranslate[index] || '';
         });
-        console.log('Admin: Response is array, extracted:', translations);
       }
       // Fallback: use original texts
       else {
@@ -366,7 +356,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
         const translatedName = translations[0];
         if (typeof translatedName === 'string') {
           course.translatedName = translatedName;
-          console.log('Admin: Set translated name (string):', translatedName);
         } else {
           console.warn('Admin: Translated name is not a string:', translatedName, 'type:', typeof translatedName);
           course.translatedName = course.name; // Fallback to original
@@ -377,7 +366,6 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
         const translatedDescription = translations[1];
         if (typeof translatedDescription === 'string') {
           course.translatedDescription = translatedDescription;
-          console.log('Admin: Set translated description (string):', translatedDescription.substring(0, 50) + '...');
         } else {
           console.warn('Admin: Translated description is not a string:', translatedDescription, 'type:', typeof translatedDescription);
           course.translatedDescription = course.description; // Fallback to original
@@ -1431,6 +1419,10 @@ export class AdminCourseManagementComponent implements OnInit, OnDestroy {
   }
 
   getGroupPricingDisplay(course: AdminCourse): string {
+    if (course.fixedPricing) {
+      return `Fixed pricing: €${course.fixedPricing.pricePerStudent} for ${course.fixedPricing.fixedStudentCount} students`;
+    }
+
     if (!course.groupPricing || course.groupPricing.length === 0) {
       return 'No group pricing set';
     }
