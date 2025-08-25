@@ -156,7 +156,7 @@ app-header {
 
 .hero-subtitle {
   font-size: 2rem;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   font-family: 'Lexend Peta', sans-serif;
   font-weight: 300;
 }
@@ -243,17 +243,17 @@ app-header {
   .hero-title {
     position: absolute;
     font-size: 1.6rem;
-    margin-top: -3.5rem;
+    margin-top: -2rem;
     margin-left: 1.5rem;
   }
   
   .hero-subtitle {
     font-size: 1.2rem;
-    letter-spacing: 1px;
+    letter-spacing: 0.2px;
     padding: 0 1rem;
     position: absolute;
-    margin-top: -1rem;
-    margin-left: 1rem;
+    margin-top: 0rem;
+    margin-left: 2.5rem;
   }
   
   /* Moved buttons container above ACCESS section */
