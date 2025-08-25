@@ -1,0 +1,18 @@
+<div class="reviews-container">
+	<h2>Reviews</h2>
+	<div *ngFor="let review of reviews" class="review-card">
+		<div class="review-header">
+			<span class="review-author">{{ review.author }}</span>
+			<span class="review-date">{{ review.date }}</span>
+		</div>
+		<div class="review-rating">
+			<ng-container *ngFor="let star of [].constructor(review.rating)">
+				<span class="star">★</span>
+			</ng-container>
+			<ng-container *ngFor="let star of [].constructor(5 - review.rating)">
+				<span class="star empty">☆</span>
+			</ng-container>
+		</div>
+		<div class="review-comment">{{ review.comment }}</div>
+	</div>
+</div>

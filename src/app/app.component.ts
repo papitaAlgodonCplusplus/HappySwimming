@@ -87,6 +87,7 @@ export class AppComponent implements OnInit {
       if (!window.location.pathname.includes('/auth') &&
         !window.location.pathname.includes('/about') &&
         !window.location.pathname.includes('/services') &&
+        !window.location.pathname.includes('/reviews') &&
         !window.location.pathname.includes('/register')) {
         this.router.navigate(['/auth']);
       }

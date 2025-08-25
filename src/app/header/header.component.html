@@ -9,6 +9,7 @@
     <a [routerLink]="['/about']" class="nav-item">{{ 'aboutUs' | translate }}</a>
     <a [routerLink]="['/services']" class="nav-item">{{ 'services' | translate }}</a>
     <a href="javascript:void(0)" class="nav-item" (click)="openContactModal()">{{ 'contactUs' | translate }}</a>
+    <a [routerLink]="['/reviews']" class="nav-item">{{ 'reviews' | translate }}</a>
 
     <!-- Logout option when authenticated -->
     <ng-container *ngIf="isAuthenticated">
@@ -44,6 +45,7 @@
   <a [routerLink]="['/services']" class="mobile-nav-item" (click)="toggleMobileMenu()">{{ 'services' | translate }}</a>
   <a href="javascript:void(0)" class="mobile-nav-item" (click)="openContactModalFromMobile()">{{ 'contactUs' | translate
     }}</a>
+  <a [routerLink]="['/reviews']" class="mobile-nav-item" (click)="toggleMobileMenu()">{{ 'reviews' | translate }}</a>
 
   <!-- Show these options when authenticated -->
   <ng-container *ngIf="isAuthenticated">

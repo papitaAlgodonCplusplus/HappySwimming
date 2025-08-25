@@ -17,8 +17,10 @@
 }
 
 .title {
+  margin-top: -8rem;
+  margin-left: 16rem;
+  margin-bottom: 11rem;
   font-size: 3rem;
-  margin-bottom: 3rem;
   color: #204376;
   font-weight: bold;
   font-family: 'Lexend Peta', sans-serif;
@@ -194,68 +196,104 @@ app-header {
        (max-height: 912px) and (max-width: 500px) {
   .auth-container {
     flex-direction: column;
-    overflow-y: auto; /* Allow scrolling on mobile */
+    overflow-y: auto;
     height: auto;
     min-height: 100vh;
   }
   
   .login-section {
     width: 100%;
-    order: 2; /* Move login section below image section */
+    order: 2;
     padding: 2rem 1.5rem;
+    background: linear-gradient(135deg, #0088cc 0%, #4db8ff 100%);
   }
   
   .image-section {
     width: 100%;
-    order: 1; /* Move image section to top */
+    order: 1;
     margin-top: 0;
-    height: 35vh; /* Reduced height */
-    min-height: 300px; /* Ensure minimum height */
+    height: 25vh;
+    min-height: 200px;
+    background-image: url('../../assets/abc.jpg');
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
   }
   
   .title {
+    position: relative;
     font-size: 2rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 6rem;
+    margin-top: -10rem;
+    margin-left: 0;
     text-align: center;
   }
   
   .hero-content {
-    bottom: 10%;
-    position: relative; /* Change from absolute to relative positioning */
-    margin-top: 0; /* Reduce space between buttons and title */
+    position: relative;
+    width: 100%;
+    text-align: center;
+    color: white;
+    padding: 1rem 0;
+    margin-bottom: 1rem;
   }
   
   .hero-title {
-    margin-top: 4vh;
+    position: absolute;
     font-size: 1.6rem;
-    margin-bottom: 0.1rem; /* Reduce space between title and subtitle */
+    margin-top: -3.5rem;
+    margin-left: 1.5rem;
   }
   
   .hero-subtitle {
     font-size: 1.2rem;
-    letter-spacing: 3px; /* Increased horizontal spacing */
-    padding: 0 1rem; /* Add some padding for better spacing */
+    letter-spacing: 1px;
+    padding: 0 1rem;
+    position: absolute;
+    margin-top: -1rem;
+    margin-left: 1rem;
   }
   
+  /* Moved buttons container above ACCESS section */
   .buttons-container {
-    margin-top: 4rem;
-    flex-direction: row; /* Changed from column to row for horizontal alignment */
-    height: auto;
-    gap: 1rem; /* Gap between buttons */
+    order: -1; /* Move to very top */
+    display: flex;
+    flex-direction: row;
+    width: 115%;
+    margin-left: -7%;
     padding: 1rem;
-    justify-content: space-between; /* Distribute buttons with space between */
+    gap: 1rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    background: transparent;
   }
   
   .user-btn {
-    margin: 0; /* Remove individual margins since we're using gap */
-    height: 4rem; /* Smaller height */
-    font-size: 1.2rem;
-    flex: 1; /* Each button takes equal space */
-    max-width: calc(50% - 0.5rem); /* Ensure buttons don't exceed half width minus half the gap */
+    margin: 0;
+    height: 3.5rem;
+    font-size: 1.1rem;
+    flex: 1;
+    border-radius: 15px;
+    font-weight: 600;
+  }
+  
+  /* New colors for buttons in mobile view */
+  .client-btn {
+    background-color: rgba(32, 67, 118, 0.9); /* Dark blue matching the title color */
+    color: white;
+    border: 2px solid #204376;
+  }
+  
+  .professional-btn {
+    background-color: rgba(255, 255, 255, 0.9); /* Light background */
+    color: #204376; /* Dark blue text to match the theme */
+    border: 2px solid #204376;
   }
   
   .btn {
-    width: 100%; /* Wider buttons */
+    width: 100%;
   }
   
   .form-group {
@@ -270,4 +308,3 @@ app-header {
     padding: 0.8rem;
   }
 }
-

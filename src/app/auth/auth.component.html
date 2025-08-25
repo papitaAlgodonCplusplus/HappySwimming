@@ -30,6 +30,11 @@
 <app-header></app-header>
 <div class="auth-container">
   <div class="login-section">
+    <div class="buttons-container">
+      <button class="user-btn client-btn" (click)="navigateToRegisterSelector()">{{ 'client' | translate }}</button>
+      <button class="user-btn professional-btn" (click)="navigateToFreeProfessional()">{{ 'professionals' | translate
+        }}</button>
+    </div>
     <h1 class="title">{{ 'login' | translate }}</h1>
 
     <!-- Add error message display -->
@@ -72,11 +77,8 @@
   </div>
 
   <div class="image-section">
-    <div class="buttons-container">
-      <button class="user-btn client-btn" (click)="navigateToRegisterSelector()">{{ 'client' | translate }}</button>
-      <button class="user-btn professional-btn" (click)="navigateToFreeProfessional()">{{ 'professionals' | translate
-        }}</button>
-    </div>
+    <br/>
+    <br/>
 
     <div class="hero-content">
       <h1 class="hero-title">{{ 'title' | translate }}</h1>
