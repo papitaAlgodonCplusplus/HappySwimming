@@ -2,7 +2,8 @@
   width: 100%;
   background-color: #3ba2ce;
   font-family: 'Lexend Peta', sans-serif;
-  padding-top: 6vh; /* Additional padding on top of the margin-top */
+  padding-top: 6vh;
+  /* Additional padding on top of the margin-top */
 }
 
 .services-content {
@@ -222,6 +223,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -233,50 +235,51 @@
   .column-title {
     font-size: 1.4rem;
   }
-  
+
   .column-subtitle {
     font-size: 1rem;
   }
-  
+
   .box-title {
     font-size: 1.1rem;
   }
-  
+
   .box-detail {
     font-size: 0.9rem;
   }
-  
+
   .detail-group {
-    flex-direction: column;
+    margin-left: -1rem;
+    transform: translateX(10rem);
   }
-  
+
   .detail-label {
     margin-bottom: 0.5rem;
     font-weight: 600;
   }
-  
+
   .service-description {
     font-size: 0.85rem;
   }
-  
+
   .levels-container {
     flex-direction: column;
   }
-  
+
   .level-box {
     width: 100%;
   }
-  
+
   .navigation-controls {
     gap: 1rem;
   }
-  
+
   .nav-arrow {
     width: 40px;
     height: 40px;
     font-size: 1.2rem;
   }
-  
+
   .min-people {
     display: block;
     font-size: 0.8rem;
@@ -289,29 +292,33 @@
   .services-content {
     padding: 1rem 0.5rem;
   }
-  
+
   .box-content {
-    padding: 1rem;
+    padding: 0rem;
   }
-  
+
+  .box-content2 {
+    padding: 0rem;
+  }
+
   .column-title {
     font-size: 1.2rem;
   }
-  
+
   .box-title {
     font-size: 0.9rem;
   }
-  
-  .box-detail, 
+
+  .box-detail,
   .detail-label,
   .detail-item {
     font-size: 0.8rem;
   }
-  
+
   .service-description {
     font-size: 0.75rem;
   }
-  
+
   .nav-arrow {
     width: 35px;
     height: 35px;

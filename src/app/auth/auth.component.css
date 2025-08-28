@@ -7,6 +7,12 @@
   overflow-x: hidden;
 }
 
+.btn-container {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
 .login-section {
   width: 50%;
   background: linear-gradient(135deg, #0088cc 0%, #4db8ff 100%);
@@ -17,9 +23,9 @@
 }
 
 .title {
-  margin-top: -8rem;
+  margin-top: 1rem;
   margin-left: 16rem;
-  margin-bottom: 11rem;
+  margin-bottom: 0rem;
   font-size: 3rem;
   color: #204376;
   font-weight: bold;
@@ -90,7 +96,6 @@ label {
   background-position: center;
   display: flex;
   flex-direction: column;
-  margin-top: 10vh;
 }
 
 app-header {
@@ -110,7 +115,7 @@ app-header {
   background-color: #ffffff;
   color: #0066cc;
   border: none;
-  font-size: 1.8rem;
+  font-size: 1.2rem;
   cursor: pointer;
   font-weight: bold;
   font-family: 'Lexend Peta', sans-serif;
@@ -119,8 +124,8 @@ app-header {
   align-items: center;
   transition: all 0.3s ease;
   border-radius: 30px;
-  margin: 30px 10px 20px 10px;
-  height: 8rem;
+  margin: 20px 5px 20px 10px;
+  height: 3rem;
   width: 100%;
 }
 
@@ -155,7 +160,7 @@ app-header {
 }
 
 .hero-subtitle {
-  font-size: 2rem;
+  font-size: 1rem;
   letter-spacing: 1px;
   font-family: 'Lexend Peta', sans-serif;
   font-weight: 300;
@@ -192,22 +197,22 @@ app-header {
 }
 
 /* Responsive design for screens up to 412x912 */
-@media (max-width: 412px), 
-       (max-height: 912px) and (max-width: 500px) {
+@media (max-width: 412px),
+(max-height: 912px) and (max-width: 500px) {
   .auth-container {
     flex-direction: column;
     overflow-y: auto;
     height: auto;
     min-height: 100vh;
   }
-  
+
   .login-section {
     width: 100%;
     order: 2;
     padding: 2rem 1.5rem;
     background: linear-gradient(135deg, #0088cc 0%, #4db8ff 100%);
   }
-  
+
   .image-section {
     width: 100%;
     order: 1;
@@ -221,16 +226,16 @@ app-header {
     flex-direction: column;
     justify-content: flex-end;
   }
-  
+
   .title {
     position: relative;
     font-size: 2rem;
-    margin-bottom: 6rem;
-    margin-top: -10rem;
+    margin-bottom: 1rem;
+    margin-top: 1rem;
     margin-left: 0;
     text-align: center;
   }
-  
+
   .hero-content {
     position: relative;
     width: 100%;
@@ -239,26 +244,27 @@ app-header {
     padding: 1rem 0;
     margin-bottom: 1rem;
   }
-  
+
   .hero-title {
     position: absolute;
     font-size: 1.6rem;
     margin-top: -2rem;
     margin-left: 1.5rem;
   }
-  
+
   .hero-subtitle {
-    font-size: 1.2rem;
+    font-size: 1rem;
     letter-spacing: 0.2px;
     padding: 0 1rem;
     position: absolute;
     margin-top: 0rem;
-    margin-left: 2.5rem;
+    margin-left: 1.3rem;
   }
-  
+
   /* Moved buttons container above ACCESS section */
   .buttons-container {
-    order: -1; /* Move to very top */
+    order: -1;
+    /* Move to very top */
     display: flex;
     flex-direction: row;
     width: 115%;
@@ -269,41 +275,47 @@ app-header {
     margin-bottom: 1rem;
     background: transparent;
   }
-  
+
   .user-btn {
     margin: 0;
     height: 3.5rem;
-    font-size: 1.1rem;
+    font-size: 1rem;
     flex: 1;
     border-radius: 15px;
     font-weight: 600;
   }
-  
+
   /* New colors for buttons in mobile view */
   .client-btn {
-    background-color: rgba(32, 67, 118, 0.9); /* Dark blue matching the title color */
+    background-color: rgba(32, 67, 118, 0.9);
+    /* Dark blue matching the title color */
     color: white;
+    flex: 0 0 40%;
+    /* fixed 40% of the container */
     border: 2px solid #204376;
   }
-  
+
   .professional-btn {
-    background-color: rgba(255, 255, 255, 0.9); /* Light background */
-    color: #204376; /* Dark blue text to match the theme */
+    background-color: rgba(255, 255, 255, 0.9);
+    /* Light background */
+    color: #204376;
+    flex: 0 0 60%;
+    /* Dark blue text to match the theme */
     border: 2px solid #204376;
   }
-  
+
   .btn {
     width: 100%;
   }
-  
+
   .form-group {
     margin-bottom: 1.5rem;
   }
-  
+
   label {
     font-size: 1rem;
   }
-  
+
   .form-control {
     padding: 0.8rem;
   }

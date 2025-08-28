@@ -30,17 +30,21 @@
 <app-header></app-header>
 <div class="auth-container">
   <div class="login-section">
-    <div class="buttons-container">
-      <button class="user-btn client-btn" (click)="navigateToRegisterSelector()">{{ 'client' | translate }}</button>
-      <button class="user-btn professional-btn" (click)="navigateToFreeProfessional()">{{ 'professionals' | translate
-        }}</button>
+    <div class="btn-container">
+      <button class="user-btn client-btn" (click)="navigateToRegisterSelector()">
+        {{ 'client' | translate }}
+      </button>
+      <button class="user-btn professional-btn" (click)="navigateToFreeProfessional()">
+        {{ 'professionals' | translate }}
+      </button>
     </div>
+
     <h1 class="title">{{ 'login' | translate }}</h1>
 
     <!-- Add error message display -->
-    <div *ngIf="errorMessage" class="error-message">
+    <!-- <div *ngIf="errorMessage" class="error-message">
       {{ errorMessage }}
-    </div>
+    </div> -->
 
     <!-- Add success message display -->
     <div *ngIf="successMessage" class="success-message">
@@ -77,8 +81,8 @@
   </div>
 
   <div class="image-section">
-    <br/>
-    <br/>
+    <br />
+    <br />
 
     <div class="hero-content">
       <h1 class="hero-title">{{ 'title' | translate }}</h1>
