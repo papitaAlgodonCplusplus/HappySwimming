@@ -46,7 +46,7 @@ export interface QRVisitStatistics {
 export class QRVisitTrackingService {
   private apiUrl = window.location.hostname === 'localhost' 
     ? 'http://localhost:10000/api'
-    : 'https://happyswimming.onrender.com/api';
+    : 'https://happyswimming-e632.onrender.com/api';
 
   private qrVisitStatsSubject = new BehaviorSubject<QRVisitStatistics | null>(null);
 

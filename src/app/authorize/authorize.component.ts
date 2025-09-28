@@ -77,7 +77,7 @@ export class AuthorizeComponent implements OnInit, OnDestroy {
     const isDevelopment = window.location.hostname === 'localhost';
     const apiUrl = isDevelopment
       ? 'http://localhost:10000/api'     // Development URL
-      : 'https://happyswimming.onrender.com/api';   // Production URL
+      : 'https://happyswimming-e632.onrender.com/api';   // Production URL
     this.http.post(`${apiUrl}/should-authenticate`, {}).subscribe();
     console.log('AuthorizeComponent initialized');
 

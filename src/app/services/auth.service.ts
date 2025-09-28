@@ -64,7 +64,7 @@ export class AuthService {
   // API URL is dynamically set based on environment
   private apiUrl = this.isDevelopment
     ? 'http://localhost:10000/api'     // Development URL
-    : 'https://happyswimming.onrender.com/api';   // Production URL
+    : 'https://happyswimming-e632.onrender.com/api';   // Production URL
 
   private currentUserSubject = new BehaviorSubject<any>(null);
   private tokenExpirationTimer: any;

@@ -292,7 +292,7 @@ export class EconomicManagerComponent implements OnInit, OnDestroy {
     const isDevelopment = window.location.hostname === 'localhost';
     const apiUrl = isDevelopment
       ? 'http://localhost:10000/api'
-      : 'https://happyswimming.onrender.com/api';
+      : 'https://happyswimming-e632.onrender.com/api';
     this.http.post(`${apiUrl}/should-authenticate`, {}).subscribe();
 
     // Subscribe to language changes

@@ -55,7 +55,7 @@ const corsOptions = {
     // Allow requests from these origins
     const allowedOrigins = [
       'https://www.happyswimming.net',
-      'https://happyswimming.onrender.com',
+      'https://happyswimming-e632.onrender.com',
       'http://localhost:4200'
     ];
 

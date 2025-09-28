@@ -172,7 +172,7 @@ export class ServicesManagerComponent implements OnInit, OnDestroy {
   private isDevelopment = window.location.hostname === 'localhost';
   private apiUrl = this.isDevelopment
     ? 'http://localhost:10000/api'
-    : 'https://happyswimming.onrender.com/api';
+    : 'https://happyswimming-e632.onrender.com/api';
 
   private authService = inject(AuthService);
   private datePipe = inject(DatePipe);

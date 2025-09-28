@@ -38,7 +38,7 @@ export class GoogleTranslationService {
   private isDevelopment = window.location.hostname === 'localhost';
   private apiUrl = this.isDevelopment
     ? 'http://localhost:10000/api'
-    : 'https://happyswimming.onrender.com/api';
+    : 'https://happyswimming-e632.onrender.com/api';
 
   // Cache for translations to avoid repeated API calls
   private translationCache = new Map<string, string>();
